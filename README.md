@@ -6,7 +6,6 @@ IntelliHire is an AI-powered platform designed to streamline and automate the hi
 The system simulates a real interviewer by leveraging speech-to-text and text-to-speech technologies, creating an interactive and engaging
 interview experience. IntelliHire evaluates technical competency, generates structured reports that help recruiters make fair, data-driven, and efficient hiring decisions.
 
----
 
 Sprint 1 -- Implemented Features
 
@@ -14,9 +13,8 @@ Sprint 1 -- Implemented Features
 -   **Resume Parser (v1)**: Extracts key candidate details and skills.
 -   **Dynamic Question Generation**: Role- and resume-specific interview
     questions.
-    
----
 
+    
 ## Technology Stack
 
 ### Core Application
@@ -34,8 +32,6 @@ Sprint 1 -- Implemented Features
 ### Dev
 - **Version Control**: Git, GitHub
 
----
-
 ## Setup Instructions
 
 ``` bash
@@ -46,8 +42,6 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python main.py
 ```
-
----
 
 ## Future Enhancements
 
