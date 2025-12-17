@@ -11,3 +11,7 @@ huggingface-hub
 python-dotenv
 numpy
 scikit-learn
+langchain-community 
+PyMuPDF 
+tiktoken 
+faiss-cpu
