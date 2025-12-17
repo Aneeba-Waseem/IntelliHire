@@ -12,7 +12,24 @@ Sprint 1 -- Implemented Features
 -   **Frontend pages**: Optimized UI (landing page, auth page, interview interface, HR dashboard).
 -   **Resume Parser (v1)**: Extracts key candidate details and skills.
 -   **Dynamic Question Generation**: Domain specific question generation.
-
+-   **Question Generation Dataset** (Domain-Specific):
+     Designed and created a curated dataset consisting of 3,176 technical questions spanning multiple computer science and software engineering domains.
+     The dataset is used for training and fine-tuning the LLM to generate relevant, role-specific interview questions.
+     Covered Domains:
+        Oject-Oriented Programming (OOP)
+        Data Structures & Algorithms (DSA)
+        Databases
+        Operating Systems (OS)
+        Computer Networks
+        Machine Learning (ML)
+        Deep Learning (DL)
+        Computer Vision (CV)
+        Large Language Models (LLMs)
+        System Design
+        DevOps
+        Web Development
+        Mobile App Development
+        Software Engineering
     
 ## Technology Stack
 
