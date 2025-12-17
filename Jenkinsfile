@@ -5,6 +5,9 @@ pipeline {
         NODE_HOME = tool name: 'Node20'
         PATH = "${NODE_HOME}\\bin;${env.PATH}"
         PYTHON = "C:\\Users\\MT\\AppData\\Local\\Programs\\Python\\Python311"
+        VENV_DIR = "IntelliHire.AI\\.venv"
+        // Prepend the virtual environment Scripts directory to PATH
+        PATH = "${VENV_DIR}\\Scripts;${env.PATH}"
     }
 
     stages {
@@ -22,7 +25,14 @@ pipeline {
                 }
 
                 dir('IntelliHire.AI') {
-                    bat "\"${env.PYTHON}\" -m pip install -r requirements.txt"
+                    // Create virtual environment if it doesn't exist
+                    bat """
+                    if not exist ${env.VENV_DIR} (
+                        \"${env.PYTHON}\" -m venv .venv
+                    )
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                    """
                 }
             }
         }
@@ -42,9 +52,11 @@ pipeline {
                 echo 'Validating AI build (lint + tests)...'
 
                 dir('IntelliHire.AI') {
-                    bat "\"${env.PYTHON}\" -m pip install flake8 pytest"
-                    bat "\"${env.PYTHON}\" -m flake8 . || echo Flake8 warnings found"
-                    bat "\"${env.PYTHON}\" -m pytest || echo No AI tests configured"
+                    bat """
+                    pip install flake8 pytest
+                    flake8 . || echo Flake8 warnings found
+                    pytest || echo No AI tests configured
+                    """
                 }
             }
         }
