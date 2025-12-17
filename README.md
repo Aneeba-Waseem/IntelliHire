@@ -1,10 +1,12 @@
-##IntelliHire: AI-Powered Interview Platform
+# IntelliHire: AI-Powered Interview Platform
 
-#Project Overview
+## Project Overview
 
 IntelliHire is an AI-powered platform designed to streamline and automate the hiring process through intelligent technical interviews.
 The system simulates a real interviewer by leveraging speech-to-text and text-to-speech technologies, creating an interactive and engaging
 interview experience. IntelliHire evaluates technical competency, generates structured reports that help recruiters make fair, data-driven, and efficient hiring decisions.
+
+---
 
 Sprint 1 -- Implemented Features
 
@@ -15,16 +17,28 @@ Sprint 1 -- Implemented Features
 -   **Resume Parser (v1)**: Extracts key candidate details and skills.
 -   **Dynamic Question Generation**: Role- and resume-specific interview
     questions.
+    
+---
 
 ## Technology Stack
 
--   **Backend**: Node.js\
--   **Frontend**: React.js, WebRTC\
--   **AI Module**: Fine-tuned Large Language Model (LLM)\
--   **Database**: Vector Database\
--   **Speech-to-Text**: ElevenLabs\
--   **Text-to-Speech**: ElevenLabs\
--   **Dev Tools**: Git, GitHub, Docker
+### Core Application
+- **Frontend**: React.js, WebRTC  
+- **Backend**: Node.js  
+
+### AI & Data Processing
+- **AI Module**: Fine-tuned Large Language Model (LLM)
+- **Resume Parsing**: Python, LangChain
+- **Vector Database**: FAISS (local)
+
+### Audio Processing
+- **Speech-to-Text & Text-to-Speech**: ElevenLabs
+
+### Dev & Deployment
+- **Version Control**: Git, GitHub
+- **Containerization**: Docker
+
+---
 
 ## Setup Instructions
 
@@ -36,6 +50,8 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python main.py
 ```
+
+---
 
 ## Future Enhancements
 
