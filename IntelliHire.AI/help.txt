@@ -1,0 +1,4 @@
+activate venv
+pip install ipykernel
+python -m ipykernel install --user --name=intelli_env --display-name "IntelliHire venv"
+in notebook from kernal set "IntelliHire venv" kernal
