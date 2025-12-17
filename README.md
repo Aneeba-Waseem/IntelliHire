@@ -11,8 +11,7 @@ Sprint 1 -- Implemented Features
 
 -   **Frontend pages**: Optimized UI (landing page, auth page, interview interface, HR dashboard).
 -   **Resume Parser (v1)**: Extracts key candidate details and skills.
--   **Dynamic Question Generation**: Role- and resume-specific interview
-    questions.
+-   **Dynamic Question Generation**: Domain specific question generation.
 
     
 ## Technology Stack
