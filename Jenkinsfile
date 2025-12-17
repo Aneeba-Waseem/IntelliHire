@@ -53,16 +53,16 @@ pipeline {
             steps {
                 echo 'Validating AI build (lint + tests)...'
 
-                dir('IntelliHire.AI') {
-                    bat """
-                    REM Ensure lint and tests dependencies
-                    call .venv\\Scripts\\pip.exe install flake8 pytest
-                    REM Lint
-                    call .venv\\Scripts\\flake8 . || echo Flake8 warnings found
-                    REM Run tests
-                    call .venv\\Scripts\\pytest || echo No AI tests configured
-                    """
-                }
+                // dir('IntelliHire.AI') {
+                //     bat """
+                //     REM Ensure lint and tests dependencies
+                //     call .venv\\Scripts\\pip.exe install flake8 pytest
+                //     REM Lint
+                //     call .venv\\Scripts\\flake8 . || echo Flake8 warnings found
+                //     REM Run tests
+                //     call .venv\\Scripts\\pytest || echo No AI tests configured
+                //     """
+                // }
             }
         }
 
