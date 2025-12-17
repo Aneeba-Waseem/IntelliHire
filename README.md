@@ -1,6 +1,6 @@
-**IntelliHire: AI-Powered Interview Platform**
+##IntelliHire: AI-Powered Interview Platform
 
-*Project Overview*
+#Project Overview
 
 IntelliHire is an AI-powered platform designed to streamline and automate the hiring process through intelligent technical interviews.
 The system simulates a real interviewer by leveraging speech-to-text and text-to-speech technologies, creating an interactive and engaging
