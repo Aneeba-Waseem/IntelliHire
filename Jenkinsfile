@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         NODE_HOME = tool name: 'Node20'
-        PYTHON = "C:\\Users\\MT\\AppData\\Local\\Programs\\Python\\Python311"
+        PYTHON = "C:\\Users\\MT\\AppData\\Local\\Programs\\Python\\Python311.exe"
         VENV_DIR = "IntelliHire.AI\\.venv"
         // Combine Node bin and Python venv into one PATH
         PATH = "${NODE_HOME}\\bin;${VENV_DIR}\\Scripts;${env.PATH}"
