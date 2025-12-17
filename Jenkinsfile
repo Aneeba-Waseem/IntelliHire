@@ -1,101 +1,92 @@
 pipeline {
-    agent any // Jenkins agent to run the pipeline
+    agent any
 
     environment {
-        NODE_HOME = tool name: 'Node20'          // Node.js tool configured in Jenkins
-        PATH = "${NODE_HOME}\\bin;${env.PATH}"   // added Node.js binaries to PATH
-        PYTHON = "C:\\Program Files\\Python\\python.exe" // local Py interpreter path
-    }
-
-    triggers {
-        githubPush() 
+        NODE_HOME = tool name: 'Node20'
+        PATH = "${NODE_HOME}\\bin;${env.PATH}"
+        PYTHON = "C:\\Users\\MT\\AppData\\Local\\Programs\\Python\\Python311"
     }
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                echo "Cloning repository..."
-                git branch: 'main', url: 'https://github.com/Aneeba-Waseem/IntelliHire.git'
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
+                echo 'Installing dependencies...'
+
                 dir('IntelliHire.Client') {
-                    echo "Installing React dependencies..."
-                    bat 'npm install' 
+                    bat 'npm install'
                 }
+
                 dir('IntelliHire.Server') {
-                    echo "Installing Node backend dependencies..."
-                    bat 'npm install' 
+                    bat 'npm install'
                 }
+
                 dir('IntelliHire.AI') {
-                    echo "Installing Python dependencies..."
-                    bat "\"${env.PYTHON}\" -m pip install -r requirements.txt" 
+                    bat "\"${env.PYTHON}\" -m pip install -r requirements.txt"
                 }
             }
         }
 
-        stage('Code Quality Check') {
+        stage('Build Backend') {
             steps {
+                echo 'Validating backend build (install + tests)...'
+
+                dir('IntelliHire.Server') {
+                    bat 'npm test || echo No backend tests configured'
+                }
+            }
+        }
+
+        stage('Build AI') {
+            steps {
+                echo 'Validating AI build (lint + tests)...'
+
                 dir('IntelliHire.AI') {
-                    echo "Running flake8 checks..."
-                    bat "\"${env.PYTHON}\" -m pip install flake8" 
-                    bat "\"${env.PYTHON}\" -m flake8 . || echo Flake8 warnings found" // Running Python code style check
+                    bat "\"${env.PYTHON}\" -m pip install flake8 pytest"
+                    bat "\"${env.PYTHON}\" -m flake8 . || echo Flake8 warnings found"
+                    bat "\"${env.PYTHON}\" -m pytest || echo No AI tests configured"
                 }
             }
         }
 
         stage('Build Frontend') {
             steps {
+                echo 'Building React frontend...'
+
                 dir('IntelliHire.Client') {
-                    echo "Building React app..."
-                    bat 'npm run build' 
+                    bat 'npm run build'
                 }
             }
         }
 
-        stage('Run Backend Tests') {
+        stage('Package Build Artifacts') {
             steps {
-                dir('IntelliHire.Server') {
-                    echo "Running backend tests..."
-                    bat 'npm test || echo No backend tests configured' // Executing backend unit tests (if defined)
-                }
+                echo 'Packaging build artifacts...'
+
+                bat '''
+                tar -czf IntelliHire_Build.tar.gz ^
+                IntelliHire.Client/build ^
+                IntelliHire.Server ^
+                IntelliHire.AI
+                '''
             }
         }
 
-        stage('Run AI Tests') {
+        stage('Archive Artifacts') {
             steps {
-                dir('IntelliHire.AI') {
-                    echo "Running pytest..."
-                    bat "\"${env.PYTHON}\" -m pip install pytest" 
-                    bat "\"${env.PYTHON}\" -m pytest || echo No AI tests configured" // Executing Python unit tests
-                }
-            }
-        }
+                echo 'Archiving build output...'
 
-        stage('Package Build') {
-            steps {
-                echo "Packaging build into tar.gz archive..."
-                bat 'tar -czf IntelliHire_Build.tar.gz IntelliHire.Client/build IntelliHire.Server IntelliHire.AI' // Create compressed build archive .tar.gz
-            }
-        }
-
-        stage('Archive Build Artifacts') {
-            steps {
-                echo "Archiving build output..."
-                archiveArtifacts artifacts: 'IntelliHire_Build.tar.gz', fingerprint: true // Storing the archive in Jenkins for download
+                archiveArtifacts artifacts: 'IntelliHire_Build.tar.gz', fingerprint: true
             }
         }
     }
 
     post {
         success {
-            echo 'Build completed successfully.' 
+            echo 'Build completed successfully.'
         }
         failure {
-            echo 'Build failed! Check console output for errors.' 
+            echo 'Build failed. Check logs above.'
         }
     }
 }
