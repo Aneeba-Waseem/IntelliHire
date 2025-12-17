@@ -10,10 +10,7 @@ interview experience. IntelliHire evaluates technical competency, generates stru
 
 Sprint 1 -- Implemented Features
 
--   **User Authentication**: Secure sign-up and login for candidates and
-    recruiters.
--   **Responsive Landing Page**: Optimized UI for smooth navigation
-    across devices.
+-   **Frontend pages**: Optimized UI (landing page, auth page, interview interface, HR dashboard).
 -   **Resume Parser (v1)**: Extracts key candidate details and skills.
 -   **Dynamic Question Generation**: Role- and resume-specific interview
     questions.
@@ -23,7 +20,7 @@ Sprint 1 -- Implemented Features
 ## Technology Stack
 
 ### Core Application
-- **Frontend**: React.js, WebRTC  
+- **Frontend**: React.js 
 - **Backend**: Node.js  
 
 ### AI & Data Processing
@@ -34,9 +31,8 @@ Sprint 1 -- Implemented Features
 ### Audio Processing
 - **Speech-to-Text & Text-to-Speech**: ElevenLabs
 
-### Dev & Deployment
+### Dev
 - **Version Control**: Git, GitHub
-- **Containerization**: Docker
 
 ---
 
@@ -56,4 +52,4 @@ python main.py
 ## Future Enhancements
 
 - Integration of standalone modules
-- further iteration on fine tuning of model
+- Further iteration on fine tuning of model
