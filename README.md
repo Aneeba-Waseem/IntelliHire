@@ -1,1 +1,43 @@
-Testing for jenkins trigger
+IntelliHire: AI-Powered Interview Platform
+
+Project Overview
+
+IntelliHire is an AI-powered platform designed to streamline and automate the hiring process through intelligent technical interviews.
+The system simulates a real interviewer by leveraging speech-to-text and text-to-speech technologies, creating an interactive and engaging
+interview experience. IntelliHire evaluates technical competency, generates structured reports that help recruiters make fair, data-driven, and efficient hiring decisions.
+
+Sprint 1 -- Implemented Features
+
+-   **User Authentication**: Secure sign-up and login for candidates and
+    recruiters.
+-   **Responsive Landing Page**: Optimized UI for smooth navigation
+    across devices.
+-   **Resume Parser (v1)**: Extracts key candidate details and skills.
+-   **Dynamic Question Generation**: Role- and resume-specific interview
+    questions.
+
+## Technology Stack
+
+-   **Backend**: Node.js\
+-   **Frontend**: React.js, WebRTC\
+-   **AI Module**: Fine-tuned Large Language Model (LLM)\
+-   **Database**: Vector Database\
+-   **Speech-to-Text**: ElevenLabs\
+-   **Text-to-Speech**: ElevenLabs\
+-   **Dev Tools**: Git, GitHub, Docker
+
+## Setup Instructions
+
+``` bash
+git clone https://github.com/org/intellihire.git
+cd intellihire
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python main.py
+```
+
+## Future Enhancements
+
+- Integration of standalone modules
+- further iteration on fine tuning of model
