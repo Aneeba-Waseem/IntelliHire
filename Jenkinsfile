@@ -3,11 +3,10 @@ pipeline {
 
     environment {
         NODE_HOME = tool name: 'Node20'
-        PATH = "${NODE_HOME}\\bin;${env.PATH}"
         PYTHON = "C:\\Users\\MT\\AppData\\Local\\Programs\\Python\\Python311"
         VENV_DIR = "IntelliHire.AI\\.venv"
-        // Prepend the virtual environment Scripts directory to PATH
-        PATH = "${VENV_DIR}\\Scripts;${env.PATH}"
+        // Combine Node bin and Python venv into one PATH
+        PATH = "${NODE_HOME}\\bin;${VENV_DIR}\\Scripts;${env.PATH}"
     }
 
     stages {
