@@ -3,9 +3,9 @@ pipeline {
 
     environment {
         NODE_HOME = tool name: 'Node20'
-        PYTHON = "C:\\Users\\MT\\AppData\\Local\\Programs\\Python\\Python311.exe"
+        PYTHON_EXE = "C:\\Users\\MT\\AppData\\Local\\Programs\\Python\\Python311\\python.exe"
         VENV_DIR = "IntelliHire.AI\\.venv"
-        // Combine Node bin and Python venv into one PATH
+        // Node bin first, then Python venv Scripts, then system PATH
         PATH = "${NODE_HOME}\\bin;${VENV_DIR}\\Scripts;${env.PATH}"
     }
 
@@ -24,14 +24,16 @@ pipeline {
                 }
 
                 dir('IntelliHire.AI') {
+                    // Create virtual environment if it doesn't exist
                     bat """
-                    REM Create virtual environment if it doesn't exist
+                    REM Create venv if missing
                     if not exist .venv (
-                        \"${env.PYTHON}\" -m venv .venv
+                        ${env.PYTHON_EXE} -m venv .venv
                     )
-                    REM Upgrade pip and install requirements
-                    .venv\\Scripts\\pip.exe install --upgrade pip
-                    .venv\\Scripts\\pip.exe install -r requirements.txt
+                    REM Upgrade pip
+                    call .venv\\Scripts\\pip.exe install --upgrade pip
+                    REM Install requirements
+                    call .venv\\Scripts\\pip.exe install -r requirements.txt
                     """
                 }
             }
@@ -53,9 +55,12 @@ pipeline {
 
                 dir('IntelliHire.AI') {
                     bat """
-                    pip install flake8 pytest
-                    flake8 . || echo Flake8 warnings found
-                    pytest || echo No AI tests configured
+                    REM Ensure lint and tests dependencies
+                    call .venv\\Scripts\\pip.exe install flake8 pytest
+                    REM Lint
+                    call .venv\\Scripts\\flake8 . || echo Flake8 warnings found
+                    REM Run tests
+                    call .venv\\Scripts\\pytest || echo No AI tests configured
                     """
                 }
             }
@@ -75,12 +80,12 @@ pipeline {
             steps {
                 echo 'Packaging build artifacts...'
 
-                bat '''
+                bat """
                 tar -czf IntelliHire_Build.tar.gz ^
                 IntelliHire.Client/build ^
                 IntelliHire.Server ^
                 IntelliHire.AI
-                '''
+                """
             }
         }
 
