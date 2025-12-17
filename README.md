@@ -18,7 +18,6 @@ Sprint 1 -- Implemented Features
 
 ### Core Application
 - **Frontend**: React.js 
-- **Backend**: Node.js  
 
 ### AI & Data Processing
 - **AI Module**: Fine-tuned Large Language Model (LLM)
