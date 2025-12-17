@@ -24,13 +24,14 @@ pipeline {
                 }
 
                 dir('IntelliHire.AI') {
-                    // Create virtual environment if it doesn't exist
                     bat """
-                    if not exist ${env.VENV_DIR} (
+                    REM Create virtual environment if it doesn't exist
+                    if not exist .venv (
                         \"${env.PYTHON}\" -m venv .venv
                     )
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
+                    REM Upgrade pip and install requirements
+                    .venv\\Scripts\\pip.exe install --upgrade pip
+                    .venv\\Scripts\\pip.exe install -r requirements.txt
                     """
                 }
             }
