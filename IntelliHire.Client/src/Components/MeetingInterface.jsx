@@ -220,20 +220,20 @@ export default function MeetingInterface() {
           {/* AI Notes Panel */}
           {showNotes && (
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              <div className="bg-gradient-to-r from-blue-900 to-blue-800 p-4 rounded-lg border border-blue-700">
-                <div className="flex items-center space-x-2 mb-3">
-                  <Sparkles className="w-5 h-5 text-blue-400" />
-                  <h3 className="text-white font-semibold">Live AI Insights</h3>
-                </div>
-                <div className="space-y-2">
+              {/* <div className="bg-gradient-to-r from-blue-900 to-blue-800 p-4 rounded-lg border border-blue-700"> */}
+                {/* <div className="flex items-center space-x-2 mb-3"> */}
+                  {/* <Sparkles className="w-5 h-5 text-blue-400" /> */}
+                  {/* <h3 className="text-white font-semibold">Live AI Insights</h3> */}
+                {/* </div> */}
+                {/* <div className="space-y-2">
                   {aiInsights.map((insight, i) => (
                     <div key={i} className="flex items-start space-x-2 text-sm">
                       <insight.icon className={`w-4 h-4 text-${insight.color}-400 mt-0.5 flex-shrink-0`} />
                       <span className="text-gray-300">{insight.text}</span>
                     </div>
                   ))}
-                </div>
-              </div>
+                </div> */}
+              {/* </div> */}
 
               <div>
                 <h3 className="text-white font-semibold mb-3">Questions Asked</h3>

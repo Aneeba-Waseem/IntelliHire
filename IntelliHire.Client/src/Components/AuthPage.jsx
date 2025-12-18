@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Mail, Lock, User, Building2, Briefcase, Sparkles } from 'lucide-react';
+import { Mail, Lock, User, Building2, Briefcase, Sparkles, AlertCircle } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -8,20 +9,39 @@ export default function AuthPage() {
     password: '',
     fullName: '',
     company: '',
-    role: ''
   });
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Handle authentication logic here
-  };
-
+  // Handle input field updates
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    setError(''); // clear error when user starts typing
+  };
+
+  // Handle form submission
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    // Validation
+    if (!formData.email || !formData.password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+
+    if (!isLogin && (!formData.fullName || !formData.company)) {
+      setError('Please complete all required fields to sign up.');
+      return;
+    }
+
+    // Mock authentication success
+    console.log('Form submitted:', formData);
+
+    // Navigate to dashboard on success
+    navigate('/dashboard');
   };
 
   return (
@@ -39,7 +59,7 @@ export default function AuthPage() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -mr-32 -mt-32"></div>
             <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full -ml-48 -mb-48"></div>
           </div>
-          
+
           <div className="relative z-10">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
@@ -84,7 +104,7 @@ export default function AuthPage() {
               <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-xl font-bold text-gray-800">TalentAI Pro</h1>
+              <h1 className="text-xl font-bold text-gray-800">IntelliHire</h1>
             </div>
 
             <div className="text-center mb-8">
@@ -95,6 +115,14 @@ export default function AuthPage() {
                 {isLogin ? 'Sign in to your recruiter account' : 'Create your recruiter account'}
               </p>
             </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="flex items-center bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg mb-4">
+                <AlertCircle className="w-5 h-5 mr-2" />
+                <span className="text-sm">{error}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {!isLogin && (
@@ -112,7 +140,6 @@ export default function AuthPage() {
                         onChange={handleChange}
                         className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                         placeholder="John Doe"
-                        required={!isLogin}
                       />
                     </div>
                   </div>
@@ -130,7 +157,6 @@ export default function AuthPage() {
                         onChange={handleChange}
                         className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                         placeholder="Tech Corp Inc."
-                        required={!isLogin}
                       />
                     </div>
                   </div>
@@ -150,7 +176,6 @@ export default function AuthPage() {
                     onChange={handleChange}
                     className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     placeholder="recruiter@company.com"
-                    required
                   />
                 </div>
               </div>
@@ -168,7 +193,6 @@ export default function AuthPage() {
                     onChange={handleChange}
                     className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     placeholder="••••••••"
-                    required
                   />
                 </div>
               </div>
@@ -197,7 +221,10 @@ export default function AuthPage() {
               <p className="text-gray-600">
                 {isLogin ? "Don't have an account? " : "Already have an account? "}
                 <button
-                  onClick={() => setIsLogin(!isLogin)}
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    setError('');
+                  }}
                   className="text-blue-600 hover:text-blue-700 font-semibold"
                 >
                   {isLogin ? 'Sign Up' : 'Sign In'}
@@ -210,7 +237,7 @@ export default function AuthPage() {
                 By signing up, you agree to our{' '}
                 <a href="#" className="text-blue-600 hover:underline">Terms of Service</a>
                 {' '}and{' '}
-                <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a>
+                <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a>.
               </p>
             )}
           </div>

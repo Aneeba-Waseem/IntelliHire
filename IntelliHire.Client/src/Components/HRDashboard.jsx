@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, Video, BarChart3, Users, Clock, TrendingUp, Search, Filter, Plus, Eye, Download, CheckCircle, XCircle, AlertCircle, Sparkles, Menu, Bell, Settings, LogOut, Home, FileText } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 export default function HRDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -101,6 +102,7 @@ export default function HRDashboard() {
       </div>
     );
   };
+    const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -195,7 +197,8 @@ export default function HRDashboard() {
                           <div className="text-sm font-medium">{int.date}</div>
                           <div className="text-sm text-gray-600">{int.time}</div>
                         </div>
-                        <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        <button  onClick={() => navigate('/meeting')}
+                        className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                           <Video className="w-4 h-4 mr-2" />Join
                         </button>
                       </div>

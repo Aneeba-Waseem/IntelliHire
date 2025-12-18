@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Menu, X, Sparkles, Users, Briefcase, Target, Zap, BarChart3, Shield, ArrowRight, CheckCircle, Star, TrendingUp, Clock, Award } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const features = [
     {
@@ -72,9 +74,11 @@ export default function LandingPage() {
               <a href="#for-recruiters" className="text-gray-600 hover:text-blue-600 font-medium transition">For Recruiters</a>
               <a href="#" className="text-gray-600 hover:text-blue-600 font-medium transition">Pricing</a>
               <button className="text-blue-600 hover:text-blue-700 font-semibold transition">Sign In</button>
-              <button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition shadow-md hover:shadow-lg">
+              <button  onClick={() => navigate('/auth')}
+               className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition shadow-md hover:shadow-lg">
                 Get Started
               </button>
+              
             </div>
 
             {/* Mobile Menu Button */}
