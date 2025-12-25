@@ -1,22 +1,28 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import AuthPage from './Components/AuthPage'
-import LandingPage from './Components/LandingPage'
-import HRDashboard from './Components/HRDashboard'
-import MeetingInterface from './Components/MeetingInterface'
-import { Routes, Route, Link } from "react-router-dom"
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import { useSelector } from "react-redux";
+
+import AuthPage from "./Components/Auth/AuthPage";
+import LandingPage from "./Components/LandingPage";
+import HRDashboard from "./Components/HRDashboard";
+import MeetingInterface from "./Components/MeetingInterface";
+import useAuthRefresh from "./hooks/useAuthRefresh";
 
 function App() {
-  return (
-   <div>
-    {/* <MeetingInterface/> */}
-    {/* <HRDashboard/> */}
-    {/* <LandingPage/> */}
-    <AuthPage />
-   </div>
-  )
+    useAuthRefresh(); // refresh token every 14 min
+
+    return (
+        <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/dashboard" element={<HRDashboard />} />
+            <Route path="/meeting" element={<MeetingInterface />} />
+
+            {/* Optional: catch-all route */}
+            <Route path="*" element={<LandingPage />} />
+        </Routes>
+    );
 }
 
-export default App
+export default App;
