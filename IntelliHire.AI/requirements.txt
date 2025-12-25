@@ -11,4 +11,3 @@ huggingface-hub
 python-dotenv
 numpy
 scikit-learn
-datasets
