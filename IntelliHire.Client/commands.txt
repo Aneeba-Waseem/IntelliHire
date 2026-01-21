@@ -1,0 +1,22 @@
+#for frontend
+np install
+npm install react-redux
+npm install @reduxjs/toolkit
+npm install axios
+npm install lucide-react
+npm install react-router-dom
+npm install @headlessui/react
+npm install @heroicons/react
+npm install react-router-dom@latest
+npm install @iconify/react
+
+
+#for backend
+npm install dotenv
+npm install bcryptjs
+npm install jsonwebtoken
+npm install sequelize
+npm install socket.io
+npm install pg pg-hstore
+
+

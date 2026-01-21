@@ -15,3 +15,4 @@ export const store = configureStore({
 store.subscribe(() => {
     saveAuthState(store.getState().auth);
 });
+export default store;

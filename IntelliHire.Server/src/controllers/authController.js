@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import RefreshToken from "../models/RefreshToken.js";
+import { v4 as uuidv4 } from 'uuid';
 
 // ---------------- HELPERS ----------------
 
@@ -21,7 +22,10 @@ const generateAccessToken = (user, refreshTokenInstance) => {
 
 // Generate refresh token (stored only in DB)
 const generateRefreshToken = async (user) => {
+    const token = uuidv4(); // generate a random UUID token
+
     const refreshTokenInstance = await RefreshToken.create({
+        token,
         userId: user.id,
         isExpired: false,
     });

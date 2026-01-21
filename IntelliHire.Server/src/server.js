@@ -3,13 +3,14 @@ import app from "./app.js";
 import sequelize from "./config/db.js";
 import { createServer } from "http";
 import { Server } from "socket.io";
+dotenv.config({ path: "./src/.env" }); // <- add the correct path
 
 // Import models AFTER db connection to define associations
-import "./models/index.js";
+import "././index.js";
 
 dotenv.config();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 // Wrap app in HTTP server
 const server = createServer(app);
