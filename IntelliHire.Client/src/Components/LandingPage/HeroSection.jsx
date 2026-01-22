@@ -45,7 +45,7 @@ export default function HeroSection() {
 
           {/* Stats */}
           <motion.div
-            className="w-full"
+            className="w-full mt-4"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
@@ -106,12 +106,12 @@ export default function HeroSection() {
       </div>
 
       {/* Bottom Section */}
-      <div id="bottom-section" className="flex flex-col items-center bg-[#F2FAF5] py-10 px-6 lg:px-20">
+      <div id="bottom-section" className="flex flex-col items-center bg-[#F2FAF5] py-10 ">
         <div className="w-full text-center mb-10">
           <h2 className="text-4xl lg:text-5xl mt-10 font-bold text-[#29445D]">
             Why Choose IntelliHire?
           </h2>
-          <p className="text-[#45767C] mt-4 text-xl lg:text-2xl max-w-3xl mx-auto">
+          <p className="text-[#45767C] px-9 mt-4 text-xl lg:text-2xl max-w-3xl mx-auto">
             Discover how IntelliHire helps recruiters hire smarter and empowers candidates to grow their careers.
           </p>
         </div>

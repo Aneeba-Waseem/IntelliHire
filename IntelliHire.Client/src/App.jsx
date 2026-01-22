@@ -8,7 +8,6 @@ import HRDashboard from "./Components/HRDashboard";
 import MeetingInterface from "./Components/MeetingInterface";
 import useAuthRefresh from "./hooks/useAuthRefresh";
 import HeroSection from "./Components/LandingPage/HeroSection";
-import TakeInterview from "./Components/userPages/TakeInterview";
 import Navbar from "./Components/LandingPage/Navbar";
 import Footer from "./Components/LandingPage/Footer";
 
@@ -31,7 +30,6 @@ function App() {
         <Route path="/dashboard" element={<HRDashboard />} />
         <Route path="/heroSection" element={<HeroSection />} />
         <Route path="/meeting" element={<MeetingInterface />} />
-        <Route path="/take-interview" element={<TakeInterview />} />
       </Routes>
 
       {/* Conditionally render Footer */}

@@ -48,7 +48,7 @@ const Stats = () => {
   }, [recisInView]);
 
   return (
-    <div className="flex justify-evenly gap-8 text-center py-10">
+    <div className=" flex justify-evenly md:gap-8 text-center py-10">
       {/* Experience */}
       <div>
         <Motion.h1
