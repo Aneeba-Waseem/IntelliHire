@@ -68,7 +68,7 @@ const MeetingButton = ({ onConnected }) => {
       hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]
       ${loading || connected ? "opacity-50 cursor-not-allowed" : ""}`}
     >
-      {loading ? "Connecting..." : connected ? "Connected " : "Join Now"}
+      {loading ? "Connecting..." : connected ? "Connected 🎙️" : "Join Now"}
     </button>
   );
 };

@@ -164,7 +164,7 @@ app.router.add_get("/", index)
 app.router.add_post("/offer", offer)
 
 # =========================
-# RUN
+# RUN server
 # =========================
 if __name__ == "__main__":
     print("🚀 Server running at http://localhost:8080")
