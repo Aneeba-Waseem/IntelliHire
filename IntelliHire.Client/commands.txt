@@ -21,6 +21,7 @@ npm install jsonwebtoken
 npm install sequelize
 npm install socket.io
 npm install pg pg-hstore
+npm install node-fetch
 
-
-net ghtia he awaz cut ri. smjh ni a ri
+#frontend -> backend 
+npm install cors

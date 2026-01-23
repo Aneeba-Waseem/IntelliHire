@@ -155,17 +155,14 @@ async def offer(request):
 # =========================
 # HTTP ROUTES
 # =========================
-async def index(request):
-    print("🌍 index.html served")
-    return web.FileResponse("index.html")
+
 
 app = web.Application()
-app.router.add_get("/", index)
 app.router.add_post("/offer", offer)
 
 # =========================
 # RUN server
 # =========================
 if __name__ == "__main__":
-    print("🚀 Server running at http://localhost:8080")
-    web.run_app(app, port=8080)
+    print("🚀 Server running at http://localhost:9000")
+    web.run_app(app, port=9000)
