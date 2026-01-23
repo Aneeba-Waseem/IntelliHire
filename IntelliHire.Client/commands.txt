@@ -9,7 +9,10 @@ npm install @headlessui/react
 npm install @heroicons/react
 npm install react-router-dom@latest
 npm install @iconify/react
-
+npm install --save @fortawesome/fontawesome-free
+npm install tw-animate-css
+npm i baseline-browser-mapping@latest -D
+npm install react-icons
 
 #for backend
 npm install dotenv
@@ -20,3 +23,4 @@ npm install socket.io
 npm install pg pg-hstore
 
 
+net ghtia he awaz cut ri. smjh ni a ri
