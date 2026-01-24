@@ -29,7 +29,7 @@ const MeetingButton = ({ onConnected }) => {
       await pc.setLocalDescription(offer);
 
       // 5. Send to backend
-      const response = await fetch("http://localhost:9000/offer", {
+      const response = await fetch("http://localhost:8000/api/interview/offer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
