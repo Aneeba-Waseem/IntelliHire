@@ -16,3 +16,5 @@ __pycache__/
 *.pyc
 
 
+IntelliHire_AI/IntelliHireEnvironment/
+.IntelliHire_AI/IntelliHireEnvironment/
