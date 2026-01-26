@@ -13,6 +13,7 @@ DEEPGRAM_WS_URL = (
     "&channels=1"
     "&interim_results=true"
     "&punctuate=true"
+    "&model=nova-3"
 )
 
 async def run_deepgram(audio_queue):
