@@ -3,9 +3,9 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import AuthPage from "./Components/Auth/AuthPage";
-import LandingPage from "./Components/LandingPage";
-import HRDashboard from "./Components/HRDashboard";
-import MeetingInterface from "./Components/MeetingInterface";
+// import LandingPage from "./Components/LandingPage";
+// import HRDashboard from "./Components/HRDashboard";
+// import MeetingInterface from "./Components/MeetingInterface";
 import useAuthRefresh from "./hooks/useAuthRefresh";
 import HeroSection from "./Components/LandingPage/HeroSection";
 import Navbar from "./Components/LandingPage/Navbar";
@@ -30,11 +30,11 @@ function App() {
 
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<LandingPage />} />
+        {/* <Route path="/" element={<LandingPage />} /> */}
         <Route path="/auth" element={<AuthPage />} />
-        <Route path="/dashboard" element={<HRDashboard />} />
+        {/* <Route path="/dashboard" element={<HRDashboard />} /> */}
         <Route path="/heroSection" element={<HeroSection />} />
-        <Route path="/meeting" element={<MeetingInterface />} />        
+        {/* <Route path="/meeting" element={<MeetingInterface />} />         */}
         <Route path="/common" element={<CommonPage />} />
         <Route path="/meetingSection" element={<MeetInterface />} />
         <Route path="/meetingPermissions" element={<MeetingPermissions />} />
