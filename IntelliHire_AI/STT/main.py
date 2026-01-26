@@ -1,6 +1,7 @@
 import aiohttp_cors
 from aiohttp import web
 from STT.route import offer
+from STT.webrtc import stream_audio
 
 app = web.Application()
 

@@ -25,3 +25,4 @@ scipy
 fastapi 
 uvicorn 
 av
+aiohttp_cors

@@ -28,4 +28,21 @@ router.post("/offer", async (req, res) => {
   }
 });
 
+
+router.post("/api/interview/offer", async (req, res) => {
+  try {
+    const response = await fetch("http://localhost:8080/offer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req.body),
+    });
+
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error("Error forwarding offer:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 export default router;
