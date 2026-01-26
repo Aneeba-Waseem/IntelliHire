@@ -1,35 +1,49 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-
+import React from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
+import '@fortawesome/fontawesome-free/css/all.min.css';
+import AuthPage from "./Components/Auth/AuthPage";
+import LandingPage from "./Components/LandingPage";
+import HRDashboard from "./Components/HRDashboard";
+import MeetingInterface from "./Components/MeetingInterface";
+import useAuthRefresh from "./hooks/useAuthRefresh";
+import HeroSection from "./Components/LandingPage/HeroSection";
+import Navbar from "./Components/LandingPage/Navbar";
+import Footer from "./Components/LandingPage/Footer";
+import TopBar from "./Components/CommonComponents/TopBar";
+import MeetInterface from "./Components/Meeting/MeetInterface";
+import CommonPage from "./Components/CommonComponents/CommonPage";
+import MeetingPermissions from "./Components/Meeting/MeetingPermission";
 function App() {
-  const [count, setCount] = useState(0)
+  useAuthRefresh(); // refresh token every 14 min
+
+  const location = useLocation();
+  // Pages where we don't want Navbar and Footer
+  const LandingNavBar = location.pathname === "/heroSection";
+  const auth = location.pathname === "/auth";
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div>
+      {/* Conditionally render Navbar */}
+      {LandingNavBar && <Navbar />}
+      {!LandingNavBar && !auth && <TopBar/>}
+
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/dashboard" element={<HRDashboard />} />
+        <Route path="/heroSection" element={<HeroSection />} />
+        <Route path="/meeting" element={<MeetingInterface />} />        
+        <Route path="/common" element={<CommonPage />} />
+        <Route path="/meetingSection" element={<MeetInterface />} />
+        <Route path="/meetingPermissions" element={<MeetingPermissions />} />
+      </Routes>
+      {/* <Footer /> */}
+      {/* Conditionally render Footer */}
+      {!auth && <Footer />}
+    </div>
+  );
 }
 
-export default App
+export default App;
