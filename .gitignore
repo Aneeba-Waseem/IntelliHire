@@ -19,6 +19,6 @@ __pycache__/
 venv/
 .venv/
 
-IntelliHireEnvironment/
-.IntelliHireEnvironment/
+IntelliHire_AI/IntelliHireEnvironment/
+.IntelliHire_AI/IntelliHireEnvironment/
 
