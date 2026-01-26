@@ -4,11 +4,11 @@ import { NavLink } from "react-router-dom";
 const iconBase =
   "text-[#2F4B4A] cursor-pointer transition text-xl sm:text-2xl";
 
-const Sidebar = () => {
+const SidebarCustom = () => {
   return (
     <div
       className="
-        w-[12vw] sm:w-[7vw] md:w-[7vw] lg:w-[6vw]
+        w-[12vw] sm:w-[7vw] md:w-[7vw] lg:w-[6vw] mt-20
         max-h-[350px] sm:max-h-[450px] md:max-h-[450px]
         max-w-[64px]
         min-w-[44px]
@@ -20,8 +20,8 @@ const Sidebar = () => {
         gap-6 sm:gap-10
         shadow-sm
         mx-[2vw] sm:mx-[1.5vw]
-      "
-    >
+      "   
+      >
       <NavItem to="/" icon="fa-house" />
       <NavItem to="/scheduled" icon="fa-calendar-check" regular />
       <NavItem to="/completed" icon="fa-circle-check" />
@@ -50,4 +50,4 @@ const NavItem = ({ to, icon, regular }) => (
   </NavLink>
 );
 
-export default Sidebar;
+export default SidebarCustom;

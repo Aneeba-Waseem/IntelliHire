@@ -3,12 +3,24 @@ import app from "./app.js";
 import sequelize from "./config/db.js";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import cors from "cors"
 dotenv.config({ path: "./src/.env" }); // <- add the correct path
+import express from "express"
 
 // Import models AFTER db connection to define associations
 import "././index.js";
 
 dotenv.config();
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
+
+app.use(express.json());
 
 const PORT = process.env.PORT || 8000;
 
@@ -41,3 +53,5 @@ export { io };
         console.error("DB connection failed:", err);
     }
 })();
+
+
