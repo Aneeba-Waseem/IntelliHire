@@ -14,6 +14,8 @@ import TopBar from "./Components/CommonComponents/TopBar";
 import MeetInterface from "./Components/Meeting/MeetInterface";
 import CommonPage from "./Components/CommonComponents/CommonPage";
 import MeetingPermissions from "./Components/Meeting/MeetingPermission";
+import Dashboard from "./Components/Dashboard/Dashboard";
+import Meet from "./Components/Meeting/Meet";
 function App() {
   useAuthRefresh(); // refresh token every 14 min
 
@@ -21,12 +23,12 @@ function App() {
   // Pages where we don't want Navbar and Footer
   const LandingNavBar = location.pathname === "/heroSection";
   const auth = location.pathname === "/auth";
-
+  const Meeting = location.pathname === "/Meet";
   return (
     <div>
       {/* Conditionally render Navbar */}
       {LandingNavBar && <Navbar />}
-      {!LandingNavBar && !auth && <TopBar/>}
+      {!LandingNavBar && !auth  && <TopBar/>}
 
       <Routes>
         {/* Public Routes */}
@@ -38,10 +40,12 @@ function App() {
         <Route path="/common" element={<CommonPage />} />
         <Route path="/meetingSection" element={<MeetInterface />} />
         <Route path="/meetingPermissions" element={<MeetingPermissions />} />
+        <Route path="/userDashboard" element={<Dashboard />} />
+        <Route path="/Meet" element={<Meet />} />
       </Routes>
       {/* <Footer /> */}
       {/* Conditionally render Footer */}
-      {!auth && <Footer />}
+      {!auth && !Meeting  &&  <Footer />}
     </div>
   );
 }

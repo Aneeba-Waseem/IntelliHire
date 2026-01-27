@@ -13,6 +13,10 @@ npm install --save @fortawesome/fontawesome-free
 npm install tw-animate-css
 npm i baseline-browser-mapping@latest -D
 npm install react-icons
+npm install embla-carousel-react
+npm install @radix-ui/react-slot
+npm install class-variance-authority
+npm install tailwind-merge
 
 #for backend
 npm install dotenv
