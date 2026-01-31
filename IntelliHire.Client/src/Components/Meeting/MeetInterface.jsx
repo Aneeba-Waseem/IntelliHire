@@ -3,9 +3,15 @@ import { motion as Motion } from "motion/react";
 import SidebarCustom from "../CommonComponents/SidebarCustom";
 import InterviewSchedule from "./InterviewSchedule";
 import InterviewRules from "./InterviewRules";
+import { useNavigate } from "react-router-dom";
 
 const MeetInterface = () => {
   const [rulesChecked, setRulesChecked] = useState(false);
+  const navigate = useNavigate();
+
+  const handleClick = (e) => {
+        navigate('/meetingPermissions')
+    };
 
   return (
     <div className="bg-[#D1DED3] w-full min-h-screen flex flex-row overflow-x-hidden overflow-y-hidden">
@@ -68,6 +74,8 @@ const MeetInterface = () => {
                 bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
                 hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]
                 ${!rulesChecked ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer"}`}
+
+                onClick={handleClick}
             >
               Next
             </Motion.button>

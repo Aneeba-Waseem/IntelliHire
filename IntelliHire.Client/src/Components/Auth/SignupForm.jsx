@@ -3,10 +3,12 @@ import { User, Building2, Mail, Lock } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { registerUser } from "../../features/auth/authThunks";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function SignUpForm() {
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -20,14 +22,19 @@ export default function SignUpForm() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     // Optional: you can validate password match here before dispatching
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
-    dispatch(registerUser(formData));
+    const success = await dispatch(registerUser(formData));
+    if (registerUser.fulfilled.match(success)) {
+      alert("Verification email sent! Please check your inbox.");
+      navigate("/verify-notice"); // page that tells user to check email
+    }
+
   };
 
   const containerVariants = {

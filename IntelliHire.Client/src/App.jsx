@@ -16,6 +16,8 @@ import CommonPage from "./Components/CommonComponents/CommonPage";
 import MeetingPermissions from "./Components/Meeting/MeetingPermission";
 import Dashboard from "./Components/Dashboard/Dashboard";
 import Meet from "./Components/Meeting/Meet";
+import VerificationNotice from "./Components/Auth/VerificationNotice";
+
 function App() {
   useAuthRefresh(); // refresh token every 14 min
 
@@ -24,11 +26,12 @@ function App() {
   const LandingNavBar = location.pathname === "/heroSection";
   const auth = location.pathname === "/auth";
   const Meeting = location.pathname === "/Meet";
+  const userVerification = location.pathname === "/verify-notice"
   return (
     <div>
       {/* Conditionally render Navbar */}
       {LandingNavBar && <Navbar />}
-      {!LandingNavBar && !auth  && <TopBar/>}
+      {!LandingNavBar && !userVerification && !auth  && <TopBar/>}
 
       <Routes>
         {/* Public Routes */}
@@ -42,10 +45,11 @@ function App() {
         <Route path="/meetingPermissions" element={<MeetingPermissions />} />
         <Route path="/userDashboard" element={<Dashboard />} />
         <Route path="/Meet" element={<Meet />} />
+        <Route path="/verify-notice" element={<VerificationNotice/>} />
       </Routes>
       {/* <Footer /> */}
       {/* Conditionally render Footer */}
-      {!auth && !Meeting  &&  <Footer />}
+      {!auth && !Meeting && !userVerification &&  <Footer />}
     </div>
   );
 }

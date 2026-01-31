@@ -26,6 +26,7 @@ npm install sequelize
 npm install socket.io
 npm install pg pg-hstore
 npm install node-fetch
+npm install nodemailer
 
 #frontend -> backend 
 npm install cors

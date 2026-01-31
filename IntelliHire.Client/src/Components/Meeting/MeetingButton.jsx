@@ -1,10 +1,12 @@
 // MeetingButton.jsx
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const MeetingButton = ({ onConnected }) => {
   const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
-
+  const navigate = useNavigate();
+  
   const joinMeeting = async () => {
     setLoading(true);
 
@@ -55,7 +57,8 @@ const MeetingButton = ({ onConnected }) => {
       setConnected(false);
     } finally {
       setLoading(false);
-    }
+    }  
+    navigate('/Meet')
   };
 
   return (
@@ -67,6 +70,7 @@ const MeetingButton = ({ onConnected }) => {
       bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
       hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]
       ${loading || connected ? "opacity-50 cursor-not-allowed" : ""}`}
+      
     >
       {loading ? "Connecting..." : connected ? "Connected 🎙️" : "Join Now"}
     </button>

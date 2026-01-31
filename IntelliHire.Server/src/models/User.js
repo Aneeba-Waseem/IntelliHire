@@ -28,7 +28,18 @@ const User = sequelize.define("User", {
   password: {
     type: DataTypes.STRING,
     allowNull: false
-  }
+  },
+
+  // New fields
+  isVerified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+
+  verifyToken: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
 });
 
 export default User;

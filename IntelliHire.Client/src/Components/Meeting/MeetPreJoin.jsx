@@ -8,7 +8,11 @@ const MeetPreJoin = () => {
     const [micOn, setMicOn] = useState(false);
     const [stream, setStream] = useState(null);
     const videoRef = useRef(null);
-
+    
+    const handleClick = (e) => {
+        navigate('/Meet')
+    };
+    
     // Handle camera + mic stream
     useEffect(() => {
         const getMedia = async () => {

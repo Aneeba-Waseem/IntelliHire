@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import RefreshToken from "../models/RefreshToken.js";
 import { v4 as uuidv4 } from 'uuid';
+import sendEmail from "../utils/sendEmail.js"
 
 // ---------------- HELPERS ----------------
 
@@ -49,23 +50,39 @@ export const register = async (req, res) => {
             password: hashedPassword,
         });
 
-        const refreshTokenInstance = await generateRefreshToken(user);
-        const accessToken = generateAccessToken(user, refreshTokenInstance);
+        // const refreshTokenInstance = await generateRefreshToken(user);
+        // const accessToken = generateAccessToken(user, refreshTokenInstance);
 
-        res.status(201).json({
-            accessToken,
-            user: {
-                id: user.id,
-                fullName: user.fullName,
-                email: user.email,
-                company: user.company,
-            },
-        });
-    } catch (err) {
+        // res.status(201).json({
+        //     accessToken,
+        //     user: {
+        //         id: user.id,
+        //         fullName: user.fullName,
+        //         email: user.email,
+        //         company: user.company,
+        //     },
+        // });
+
+
+        // Generate email verification token (JWT)
+        const verifyToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        user.verifyToken = verifyToken;
+        await user.save();
+
+        // Send verification email
+        const verifyLink = `${process.env.CLIENT_URL}/verify-notice?token=${verifyToken}`;
+        await sendEmail(user.email, "Verify your email", `Click here to verify: ${verifyLink}`);
+
+        res.status(201).json({ message: "Verification email sent. Check your inbox!" });
+    }
+
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Something went wrong" });
     }
 };
+
+// ---------------- email verification ----------------
 
 // ---------------- LOGIN ----------------
 export const login = async (req, res) => {
