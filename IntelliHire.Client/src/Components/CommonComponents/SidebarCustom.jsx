@@ -8,7 +8,7 @@ const SidebarCustom = () => {
   return (
     <div
       className="
-        w-[12vw] sm:w-[7vw] md:w-[7vw] lg:w-[6vw] mt-20
+        w-[12vw] sm:w-[7vw] md:w-[7vw] lg:w-[6vw]
         max-h-[350px] sm:max-h-[450px] md:max-h-[450px]
         max-w-[64px]
         min-w-[44px]

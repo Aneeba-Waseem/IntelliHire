@@ -17,6 +17,9 @@ npm install embla-carousel-react
 npm install @radix-ui/react-slot
 npm install class-variance-authority
 npm install tailwind-merge
+npm install lucide-react recharts
+npm install @fortawesome/react-fontawesome @fortawesome/free-regular-svg-icons @fortawesome/free-solid-svg-icons
+
 
 #for backend
 npm install dotenv

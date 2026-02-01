@@ -31,7 +31,7 @@ function App() {
     <div>
       {/* Conditionally render Navbar */}
       {LandingNavBar && <Navbar />}
-      {!LandingNavBar && !userVerification && !auth  && <TopBar/>}
+      {!LandingNavBar && !userVerification && !auth && <TopBar />}
 
       <Routes>
         {/* Public Routes */}
@@ -45,11 +45,11 @@ function App() {
         <Route path="/meetingPermissions" element={<MeetingPermissions />} />
         <Route path="/userDashboard" element={<Dashboard />} />
         <Route path="/Meet" element={<Meet />} />
-        <Route path="/verify-notice" element={<VerificationNotice/>} />
+        <Route path="/verify-notice" element={<VerificationNotice />} />
       </Routes>
       {/* <Footer /> */}
       {/* Conditionally render Footer */}
-      {!auth && !Meeting && !userVerification &&  <Footer />}
+      {!auth && !Meeting && !userVerification && <Footer />}
     </div>
   );
 }
