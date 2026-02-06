@@ -37,9 +37,9 @@ export default function DashboardCarousel({ title, icon, data }) {
         {data.map((item) => (
           <CarouselItem
             key={item.id}
-            className="pl-3 basis-full sm:basis-1/2 md:basis-[45%] lg:basis-[60%]"
+            className="pl-3 basis-full md:basis-1/2 lg:basis-3/3 xl:basis-[65%] flex-shrink-0"
           >
-            <Card className="h-full rounded-xl bg-white border border-[#C6D3CA] shadow-sm hover:shadow-md transition-shadow duration-200">
+            <Card className="h-full rounded-xl bg-[#F2FAF5] border border-[#C6D3CA] shadow-sm hover:shadow-md transition-shadow duration-200">
               <CardContent className="p-5 flex flex-col gap-3 text-[#29445D]">
                 {/* Header (Logo + Company Info) */}
                 <div className="flex items-center gap-3">

@@ -1,5 +1,5 @@
 import DashboardCarousel from "./DashboardCarousel";
-// import { scheduledInterviews, completedInterviews } from "./ata";
+// import { scheduledInterviews, completedInterviews } from "./data";
 import DashboardRobo from "../../assets/user/dashboard_robo.png";
 import SidebarCustom from "../CommonComponents/SidebarCustom";
 import { motion as Motion } from "framer-motion";
@@ -25,41 +25,46 @@ const itemVariants = {
 };
 
 const Dashboard = () => {
-  const sheduled = [
+  const scheduled = [
     { name: "Completed", value: 10 },
     { name: "Pending", value: 10 },
     { name: "Cancelled", value: 10 },
-
   ];
 
   const completedValue = 50; // percentage filled
   const completedCount = 10;
+
   return (
-    <div className="bg-[#D1DED3] w-full min-h-screen flex flex-row overflow-x-hidden overflow-y-hidden">
-      {/* Left Sidebar (10%) */}
-      <div className="w-[10%] min-w-[80px] flex items-around justify-center">
+    <div className="bg-[#D1DED3] w-full min-h-screen flex flex-row ">
+      {/* Left Sidebar */}
+      <div className="w-[10%] flex justify-center md:justify-start mb-0">
         <SidebarCustom />
       </div>
 
-      {/* Right Side (90%) */}
-      <div className="flex-1 flex flex-col p-6"
+
+      {/* Right Section */}
+      <div
+        className="flex-1 w-[100%] sm:w-[90%] flex flex-col p-4 md:p-6 pb-20 sm:pb-0"
         style={{ fontFamily: "Staatliches, monospace" }}
       >
+        {/* Greeting */}
         <Motion.h1
-          className="text-3xl md:text-4xl text-[#29445D] text-center"
+          className="text-2xl md:text-4xl text-[#29445D] flex items-center justify-center text-center md:text-left mb-4"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           viewport={{ once: true }}
         >
-          Hi Fatima, <span className="text-[#45767C]">How are you doing</span>
+          Hi Fatima,{" "}
+          <span className="text-[#45767C]">How are you doing</span>
         </Motion.h1>
-        {/* Cards Row at Top */}
-        <div className="flex flex-row mt-10 mb-15 justify-center items-center gap-6 h-[200px] w-full">
+
+        {/* Cards Row */}
+        <div className="flex flex-col lg:flex-row mt-10 mb-15 justify-center items-center gap-6 h-auto lg:h-[200px] w-full">
           <DashBoardCard
             title="Scheduled"
             value={20}
-            chartData={sheduled}
+            chartData={scheduled}
             chartSize={160}
           />
 
@@ -69,16 +74,15 @@ const Dashboard = () => {
             count={completedCount}
             chartSize={160}
           />
-
         </div>
 
-        {/* Rest of right section content below */}
-        <div className="flex flex-col gap-7">
+
+        {/* Remaining Dashboard Sections */}
+        <div className="flex flex-col gap-7 w-full">
           <DashBoardScheduled />
-          <DashBoardCompleted/>
+          <DashBoardCompleted />
         </div>
       </div>
-
     </div>
   );
 };

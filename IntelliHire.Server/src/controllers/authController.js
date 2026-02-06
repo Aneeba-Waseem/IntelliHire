@@ -35,52 +35,45 @@ const generateRefreshToken = async (user) => {
 
 // ---------------- REGISTER ----------------
 export const register = async (req, res) => {
-    try {
-        const { fullName, email, company, password } = req.body;
+  try {
+    const { fullName, email, company, password } = req.body;
 
-        const existingUser = await User.findOne({ where: { email } });
-        if (existingUser) return res.status(400).json({ error: "Email already in use" });
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) return res.status(400).json({ error: "Email already in use" });
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-        const user = await User.create({
-            fullName,
-            email,
-            company,
-            password: hashedPassword,
-        });
+    const user = await User.create({
+      fullName,
+      email,
+      company,
+      password: hashedPassword,
+      isVerified: false,
+    });
 
-        // const refreshTokenInstance = await generateRefreshToken(user);
-        // const accessToken = generateAccessToken(user, refreshTokenInstance);
+    // Generate email verification token (JWT)
+const verifyToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "24h" });
+    user.verifyToken = verifyToken;
+    await user.save();
 
-        // res.status(201).json({
-        //     accessToken,
-        //     user: {
-        //         id: user.id,
-        //         fullName: user.fullName,
-        //         email: user.email,
-        //         company: user.company,
-        //     },
-        // });
+    // Send verification email
+    const verifyLink = `${process.env.CLIENT_URL}/verify-notice?token=${verifyToken}`;
+    await sendEmail(user.email, "Verify your email", `Click here to verify your email: ${verifyLink}`);
 
+    res.status(201).json({ message: "Verification email sent. Check your inbox!" });
 
-        // Generate email verification token (JWT)
-        const verifyToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-        user.verifyToken = verifyToken;
-        await user.save();
+  } catch (err) {
+    console.error(err);
 
-        // Send verification email
-        const verifyLink = `${process.env.CLIENT_URL}/verify-notice?token=${verifyToken}`;
-        await sendEmail(user.email, "Verify your email", `Click here to verify: ${verifyLink}`);
-
-        res.status(201).json({ message: "Verification email sent. Check your inbox!" });
+    // Handle unique email error cleanly
+    if (err.name === "SequelizeUniqueConstraintError") {
+      return res.status(400).json({ error: "Email already exists" });
     }
 
-    catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Something went wrong" });
-    }
+    res.status(500).json({ error: "Something went wrong" });
+  }
 };
+
 
 // ---------------- email verification ----------------
 

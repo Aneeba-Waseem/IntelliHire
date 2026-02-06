@@ -7,16 +7,21 @@ const API_URL = "http://localhost:8000/api/auth";
 
 // Register
 export const registerUser = createAsyncThunk(
-    "auth/registerUser",
-    async (userData, { rejectWithValue }) => {
-        try {
-            const res = await axios.post(`${API_URL}/register`, userData);
-            return res.data;
-        } catch (err) {
-            return rejectWithValue(err.response?.data || { error: "Server error" });
-        }
+  "auth/registerUser",
+  async (userData, { rejectWithValue }) => {
+    try {
+      const res = await axios.post(`${API_URL}/register`, userData);
+      return res.data;
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Server error";
+      return rejectWithValue(msg);
     }
+  }
 );
+
 
 // Login
 export const loginUser = createAsyncThunk(

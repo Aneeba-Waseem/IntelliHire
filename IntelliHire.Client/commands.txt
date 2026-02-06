@@ -19,6 +19,8 @@ npm install class-variance-authority
 npm install tailwind-merge
 npm install lucide-react recharts
 npm install @fortawesome/react-fontawesome @fortawesome/free-regular-svg-icons @fortawesome/free-solid-svg-icons
+npm install @react-spring/web
+npm install recharts
 
 
 #for backend

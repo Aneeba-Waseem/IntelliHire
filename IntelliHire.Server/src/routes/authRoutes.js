@@ -6,32 +6,42 @@ import {
     logout,
     getCurrentUser,
 } from "../controllers/authController.js";
+import User from "../models/User.js";
+
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 // ---------------- AUTH ROUTES ----------------
-
 router.get("/verify-email", async (req, res) => {
   try {
     const { token } = req.query;
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findByPk(payload.id);
+    if (!token) return res.status(400).json({ error: "Token missing" });
 
-    if (!user) return res.status(404).send("User not found");
-    if (user.isVerified) return res.send("Email already verified");
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findByPk(payload.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    if (user.isVerified) return res.status(400).json({ error: "Email already verified" });
 
     user.isVerified = true;
     user.verifyToken = null;
     await user.save();
 
-    // Optionally auto-login: generate access + refresh token here
-    res.redirect(`${process.env.CLIENT_URL}/userDashboard`);
+    res.json({ message: "Email verified successfully!" });
   } catch (err) {
     console.error(err);
-    res.status(400).send("Invalid or expired token");
+    if (err.name === "TokenExpiredError") {
+      return res.status(400).json({ error: "Token expired. Please register again." });
+    } else if (err.name === "JsonWebTokenError") {
+      return res.status(400).json({ error: "Invalid token" });
+    }
+    res.status(500).json({ error: "Something went wrong" });
   }
 });
+
+
+
 
 // Register a new user
 router.post("/register", register);

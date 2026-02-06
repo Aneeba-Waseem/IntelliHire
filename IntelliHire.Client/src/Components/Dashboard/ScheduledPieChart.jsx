@@ -2,7 +2,7 @@
 import React from "react";
 import { PieChart, Pie, Cell } from "recharts";
 
-const COLORS = ["#5A8F7B", "#F4C542", "#E44D3A"]; // Completed, Pending, Cancelled
+const COLORS = ["#5A8F7B", "#F4C542", "#E44D3A","#4C9FBD", "#2C3E91"]; // Completed, Pending, Cancelled
 
 export default function ScheduledPieChart({
   chartData,
