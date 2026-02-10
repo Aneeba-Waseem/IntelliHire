@@ -6,6 +6,7 @@ import { motion as Motion } from "framer-motion";
 import DashBoardCard from "./DashBoardCard";
 import DashBoardScheduled from "./DashboardScheduled";
 import DashBoardCompleted from "./DashboardCompleted";
+import { useSelector } from "react-redux";
 
 // Staggered container for smooth cascading effect
 const containerVariants = {
@@ -33,6 +34,8 @@ const Dashboard = () => {
 
   const completedValue = 50; // percentage filled
   const completedCount = 10;
+  const user = useSelector (state => state.auth.user);
+
 
   return (
     <div className="bg-[#D1DED3] w-full min-h-screen flex flex-row ">
@@ -55,7 +58,7 @@ const Dashboard = () => {
           transition={{ duration: 0.8, ease: "easeOut" }}
           viewport={{ once: true }}
         >
-          Hi Fatima,{" "}
+          Hi {user?.fullName || "User"},{" "}
           <span className="text-[#45767C]">How are you doing</span>
         </Motion.h1>
 

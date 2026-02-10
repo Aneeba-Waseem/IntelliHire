@@ -11,67 +11,79 @@ import sendEmail from "../utils/sendEmail.js"
 const generateAccessToken = (user, refreshTokenInstance) => {
     return jwt.sign(
         {
-            userId: user.id,
-            userUuid: user.uuid,
+            userId: user.AutoId,
+            userUuid: user.UserId,
             email: user.email,
-            refreshTokenId: refreshTokenInstance.id,
+            refreshTokenId: refreshTokenInstance.AutoId,
         },
         process.env.JWT_SECRET || "accesssecret",
-        { expiresIn: "15m" }
+        { expiresIn: "24h" }
     );
 };
 
 // Generate refresh token (stored only in DB)
 const generateRefreshToken = async (user) => {
-    const token = uuidv4(); // generate a random UUID token
+    const count = await RefreshToken.count({
+        where: { userId: user.AutoId }
+    });
+    console.log("Existing tokens:", count);
+    await RefreshToken.update(
+        { isExpired: true },
+        { where: { userId: user.AutoId } }
+    );
 
+    const token = uuidv4(); // generate a random UUID token
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
     const refreshTokenInstance = await RefreshToken.create({
         token,
-        userId: user.id,
+        userId: user.AutoId, // <-- Use AutoId instead of id
         isExpired: false,
+        expiresAt
     });
     return refreshTokenInstance;
 };
 
 // ---------------- REGISTER ----------------
 export const register = async (req, res) => {
-  try {
-    const { fullName, email, company, password } = req.body;
+    try {
+        const { fullName, email, company, password } = req.body;
 
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) return res.status(400).json({ error: "Email already in use" });
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) return res.status(400).json({ error: "Email already in use" });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({
-      fullName,
-      email,
-      company,
-      password: hashedPassword,
-      isVerified: false,
-    });
+        const user = await User.create({
+            fullName,
+            email,
+            company,
+            password: hashedPassword,
+            isVerified: false,
+        });
 
-    // Generate email verification token (JWT)
-const verifyToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "24h" });
-    user.verifyToken = verifyToken;
-    await user.save();
+        // Generate email verification token (JWT)
+        const verifyToken = jwt.sign({ userId: user.AutoId }, process.env.JWT_SECRET, { expiresIn: "24h" });
+        user.verifyToken = verifyToken;
+        await user.save();
+        console.log("Sending email to:", user.email);
 
-    // Send verification email
-    const verifyLink = `${process.env.CLIENT_URL}/verify-notice?token=${verifyToken}`;
-    await sendEmail(user.email, "Verify your email", `Click here to verify your email: ${verifyLink}`);
+        // Send verification email
+        const verifyLink = `${process.env.CLIENT_URL}/verify-notice?token=${verifyToken}`;
+        await sendEmail(user.email, "Verify your email", `Click here to verify your email: ${verifyLink}`);
 
-    res.status(201).json({ message: "Verification email sent. Check your inbox!" });
+        res.status(201).json({ message: "Verification email sent. Check your inbox!" });
 
-  } catch (err) {
-    console.error(err);
+    } catch (err) {
+        console.error(err);
 
-    // Handle unique email error cleanly
-    if (err.name === "SequelizeUniqueConstraintError") {
-      return res.status(400).json({ error: "Email already exists" });
+        // Handle unique email error cleanly
+        if (err.name === "SequelizeUniqueConstraintError") {
+            return res.status(400).json({ error: "Email already exists" });
+        }
+
+        res.status(500).json({ error: "Something went wrong" });
     }
-
-    res.status(500).json({ error: "Something went wrong" });
-  }
 };
 
 
@@ -93,42 +105,42 @@ export const login = async (req, res) => {
 
         res.json({
             accessToken,
+            refreshToken: refreshTokenInstance.token,
             user: {
-                id: user.id,
+                id: user.AutoId,
+                uuid: user.UserId,     // send the UUID as well
                 fullName: user.fullName,
                 email: user.email,
                 company: user.company,
             },
         });
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Something went wrong" });
     }
 };
 
-// ---------------- REFRESH ACCESS TOKEN ----------------
 export const refreshAccessToken = async (req, res) => {
     try {
-        const { accessToken: oldAccessToken } = req.body;
-        if (!oldAccessToken) return res.status(400).json({ error: "Access token required" });
+        console.log("coming in the refresh acess token")
+        const { refreshToken } = req.body;
+        if (!refreshToken) return res.status(400).json({ error: "Refresh token required" });
 
-        const payload = jwt.verify(oldAccessToken, process.env.JWT_SECRET || "accesssecret");
+        const refreshTokenInstance = await RefreshToken.findOne({ where: { token: refreshToken, isExpired: false } });
+        if (!refreshTokenInstance) return res.status(403).json({ error: "Invalid refresh token" });
 
-        const refreshToken = await RefreshToken.findByPk(payload.refreshTokenId);
-        if (!refreshToken || refreshToken.isExpired) return res.status(403).json({ error: "Invalid session" });
-
-        const user = await User.findByPk(payload.userId);
+        const user = await User.findByPk(refreshTokenInstance.userId);
         if (!user) return res.status(404).json({ error: "User not found" });
 
-        // Issue new access token with same refreshTokenId
-        const newAccessToken = generateAccessToken(user, refreshToken);
-
+        const newAccessToken = generateAccessToken(user, refreshTokenInstance);
         res.json({ accessToken: newAccessToken });
     } catch (err) {
         console.error(err);
-        res.status(403).json({ error: "Invalid or expired access token" });
+        res.status(403).json({ error: "Invalid or expired refresh token" });
     }
 };
+
 
 // ---------------- LOGOUT ----------------
 export const logout = async (req, res) => {
@@ -154,12 +166,12 @@ export const logout = async (req, res) => {
 // ---------------- GET CURRENT USER ----------------
 export const getCurrentUser = async (req, res) => {
     try {
-        const user = req.user; // set in auth middleware
+        const user = req.user;
         if (!user) return res.status(404).json({ error: "User not found" });
 
         res.json({
-            id: user.id,
-            uuid: user.uuid,
+            id: user.AutoId,
+            uuid: user.UserId,
             fullName: user.fullName,
             email: user.email,
             company: user.company,

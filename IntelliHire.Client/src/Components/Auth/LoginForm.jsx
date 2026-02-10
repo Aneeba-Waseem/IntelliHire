@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function LoginForm() {
   const dispatch = useDispatch();
-  const { loading, error} = useSelector((state) => state.auth);
+  const { loading, error } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const navigate = useNavigate();
@@ -19,11 +19,20 @@ export default function LoginForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const success = await dispatch(loginUser(formData));
-    if (loginUser.fulfilled.match(success)){
+    if (loginUser.fulfilled.match(success)) {
+
       navigate('/userDashboard')
+
+      const { accessToken , user} = success.payload;  // get user from payload
+      localStorage.setItem("accessToken", accessToken);
+      console.log("✅ Login successful");
+      console.log("User ID:", user.id);
+
+      console.log("User ID:", user.uuid);
+      console.log("User Name:", user.fullName);
     }
   };
-  
+
   // Smooth container animation
   const containerVariants = {
     hidden: { opacity: 0 },

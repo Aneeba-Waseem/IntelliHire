@@ -20,7 +20,20 @@ const RefreshToken = sequelize.define("RefreshToken", {
     isExpired: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
+    },
+    userId: {  // 👈 explicitly define this
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'Users', // name of the table
+            key: 'AutoId',
+        },
+    },
+    expiresAt: {
+        type: DataTypes.DATE,
+        allowNull: false
     }
+
 });
 
 // Associations

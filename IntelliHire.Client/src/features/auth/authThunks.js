@@ -38,16 +38,22 @@ export const loginUser = createAsyncThunk(
 
 // Refresh access token
 export const refreshAccessToken = createAsyncThunk(
-    "auth/refreshAccessToken",
-    async (oldAccessToken, { rejectWithValue }) => {
-        try {
-            const res = await axios.post(`${API_URL}/refresh`, { accessToken: oldAccessToken });
-            return res.data.accessToken;
-        } catch (err) {
-            return rejectWithValue(err.response?.data || { error: "Could not refresh token" });
-        }
+  "auth/refreshAccessToken",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const refreshToken = getState().auth.refreshToken;
+
+      const res = await axios.post(`${API_URL}/refresh`, {
+        refreshToken,
+      });
+
+      return res.data.accessToken;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || { error: "Could not refresh token" });
     }
+  }
 );
+
 
 // Logout
 export const logoutUser = createAsyncThunk("auth/logoutUser", async (accessToken) => {

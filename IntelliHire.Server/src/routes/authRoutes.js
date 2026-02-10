@@ -1,12 +1,13 @@
 import express from "express";
 import {
-    register,
-    login,
-    refreshAccessToken,
-    logout,
-    getCurrentUser,
+  register,
+  login,
+  refreshAccessToken,
+  logout,
+  getCurrentUser,
 } from "../controllers/authController.js";
 import User from "../models/User.js";
+import jwt from "jsonwebtoken";
 
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -20,7 +21,18 @@ router.get("/verify-email", async (req, res) => {
 
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await User.findByPk(payload.id);
+    const user = await User.findByPk(payload.userId);
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // ⭐ Important check
+    if (user.verifyToken !== token) {
+      return res.status(400).json({ error: "Invalid verification link" });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ error: "Email already verified" });
+    }
     if (!user) return res.status(404).json({ error: "User not found" });
     if (user.isVerified) return res.status(400).json({ error: "Email already verified" });
 
