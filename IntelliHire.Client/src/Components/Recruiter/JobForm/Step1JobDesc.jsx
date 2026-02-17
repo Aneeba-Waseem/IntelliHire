@@ -142,6 +142,7 @@ export default function Step1JobDesc({ formData, setFormData, errors, setErrors,
 
       <div className="flex justify-end mt-6">
         <button
+          style={{cursor:"pointer"}}
           type="button"
           onClick={nextStep}
           className="border-2 border-[#29445D] text-[#29445D] rounded-full px-8 py-2 font-semibold hover:bg-[#29445D] hover:text-[#D1DED3] transition"

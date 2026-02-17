@@ -70,7 +70,7 @@ export default function JobForm() {
           handleNext={handleNext}
         />
       )}
-      {step === 2 && <Step2Resume handleNext={handleNext} handleBack={handleBack} />}
+      {step === 2 && <Step2Resume className="w-full" handleNext={handleNext} handleBack={handleBack} />}
       {step === 3 && <Step3Schedule handleBack={handleBack} handleSubmit={handleSubmit} />}
     </div>
   );
