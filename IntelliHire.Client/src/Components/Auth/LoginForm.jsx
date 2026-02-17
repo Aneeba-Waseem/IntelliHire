@@ -23,7 +23,7 @@ export default function LoginForm() {
 
       navigate('/userDashboard')
 
-      const { accessToken , user} = success.payload;  // get user from payload
+      const { accessToken, user } = success.payload;  // get user from payload
       localStorage.setItem("accessToken", accessToken);
       console.log("✅ Login successful");
       console.log("User ID:", user.id);
@@ -154,7 +154,7 @@ export default function LoginForm() {
           variants={itemVariants}
           className="text-red-500 text-sm"
         >
-          {error}
+          {error.message}
         </motion.p>
       )}
 

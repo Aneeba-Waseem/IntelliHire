@@ -25,6 +25,36 @@ export const fetchTechStacks = async () => {
     return [];
   }
 };
+export const saveStep1Cache = async (data) => {
+  const authState = loadAuthState();
+  const accessToken = authState?.accessToken;
+
+  const res = await fetch("http://localhost:8000/api/jobCache/cacheStep1", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) throw new Error("Failed to cache Step 1");
+  return res.json();
+};
+
+export const getStep1Cache = async () => {
+  const authState = loadAuthState();
+  const accessToken = authState?.accessToken;
+
+  const res = await fetch("http://localhost:8000/api/jobCache/cacheStep1", {
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch cached Step 1");
+  return res.json();
+};
 
 // Save job description (optional)
 export const saveJobDescription = async (data) => {
@@ -35,12 +65,12 @@ export const saveJobDescription = async (data) => {
     const accessToken = authState?.accessToken; //
     console.log("AccessToken being sent:", accessToken); // 👈 add this
 
-    const res = await authFetch("/job-description/createJob", {
+    const res = await fetch("/job-description/createJob", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         // "Authorization": `Bearer ${accessToken}` // attach JWT
-        // "Authorization": `Bearer ${accessToken}` // must send JWT here
+        "Authorization": `Bearer ${accessToken}` // must send JWT here
 
       },
       body: JSON.stringify(data),
@@ -51,4 +81,36 @@ export const saveJobDescription = async (data) => {
     console.error(err);
     throw err;
   }
+};
+
+
+export const saveStep2Cache = async (data) => {
+  const authState = loadAuthState();
+  const accessToken = authState?.accessToken;
+
+  const res = await fetch("http://localhost:8000/api/jobCache/cacheStep2", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) throw new Error("Failed to cache Step 2");
+  return res.json();
+};
+
+export const getStep2Cache = async () => {
+  const authState = loadAuthState();
+  const accessToken = authState?.accessToken;
+
+  const res = await fetch("http://localhost:8000/api/jobCache/cacheStep2", {
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch cached Step 2");
+  return res.json();
 };

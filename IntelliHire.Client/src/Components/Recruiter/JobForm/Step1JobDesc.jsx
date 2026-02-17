@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import MultiSelectField from "./MultiSelectField.jsx";
-import { fetchDomains, fetchTechStacks, saveJobDescription } from "../../../api/JobApi.js";
+import { saveStep1Cache, getStep1Cache, fetchDomains, fetchTechStacks, saveJobDescription } from "../../../api/JobApi.js";
 
 export default function Step1JobDesc({ formData, setFormData, errors, setErrors, handleNext }) {
   const [domainsOptions, setDomainsOptions] = useState([]);
@@ -15,6 +15,20 @@ export default function Step1JobDesc({ formData, setFormData, errors, setErrors,
     };
     fetchOptions();
   }, []);
+
+  useEffect(() => {
+    const fetchCache = async () => {
+      try {
+        const cached = await getStep1Cache();
+        if (cached) setFormData({ ...formData, ...cached });
+        console.log("fetched data from cache")
+      } catch (err) {
+        console.error("Failed to load cached Step 1", err);
+      }
+    };
+    fetchCache();
+  }, []);
+
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -32,28 +46,39 @@ export default function Step1JobDesc({ formData, setFormData, errors, setErrors,
   };
 
   const nextStep = async () => {
-  if (!validate()) return;
+    // if (!validate()) return;
 
-  // Prepare payload for backend
-  const payload = {
-    jobRole: formData.jobRole,
-    experience: formData.experience,
-    requirements: formData.requirements || "",
-    domains: formData.domains,      // array of strings
-    techStack: formData.techStack,  // array of strings
-    // FK_Users is handled in backend for now (hardcoded)
+    // Prepare payload for backend
+    // const payload = {
+      //   jobRole: formData.jobRole,
+      //   experience: formData.experience,
+      //   requirements: formData.requirements || "",
+      //   domains: formData.domains,      // array of strings
+      //   techStack: formData.techStack,  // array of strings
+      //   // FK_Users is handled in backend for now (hardcoded)
+      // };
+
+      // console.log("📤 Sending to backend:", payload);
+
+      // try {
+      //   await saveJobDescription(payload);
+      //   console.log("✅ Job description saved successfully");
+      //   handleNext();
+      // } catch (err) {
+      //   console.error("❌ Error saving job description:", err);
+      // }
+      if(!validate()) return;
+
+    try {
+      // Save Step1 in Redis cache
+      await saveStep1Cache(formData);
+      console.log("✅ Step 1 cached successfully");
+      handleNext();
+    } catch (err) {
+      console.error("❌ Error caching Step 1:", err);
+    }
+
   };
-
-  console.log("📤 Sending to backend:", payload);
-
-  try {
-    await saveJobDescription(payload);
-    console.log("✅ Job description saved successfully");
-    handleNext();
-  } catch (err) {
-    console.error("❌ Error saving job description:", err);
-  }
-};
 
 
   return (

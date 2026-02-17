@@ -32,6 +32,7 @@ npm install socket.io
 npm install pg pg-hstore
 npm install node-fetch
 npm install nodemailer
+npm install ioredis
 
 #frontend -> backend 
 npm install cors
