@@ -31,4 +31,20 @@ router.get("/cacheStep1", authMiddleware, async (req, res) => {
   }
 });
 
+// Save Step2 to Redis// Save Step2 batchId
+router.post("/cacheStep2Batch", authMiddleware, async (req, res) => {
+  const userId = req.user.AutoId;
+  const { batchId } = req.body;
+  await redisClient.set(`job:${userId}:step2:batchId`, batchId);
+  res.json({ message: "batchId saved" });
+});
+
+// Get Step2 batchId
+router.get("/cacheStep2Batch", authMiddleware, async (req, res) => {
+  const userId = req.user.AutoId;
+  const batchId = await redisClient.get(`job:${userId}:step2:batchId`);
+  res.json({ batchId: batchId || null });
+});
+
+
 export default router;

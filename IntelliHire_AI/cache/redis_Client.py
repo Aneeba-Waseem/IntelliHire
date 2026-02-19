@@ -14,3 +14,17 @@ def set_batch_status(batch_id: str, status: str):
 
 def get_batch_status(batch_id: str):
     return r.get(f"{batch_id}_status") or "unknown"
+
+def update_resume(batch_id: str, resume_profile: dict):
+    # overwrite updated profile in the same hash field
+    r.hset(batch_id, resume_profile["resume_id"], json.dumps(resume_profile))
+
+def update_shortlist_status(batch_id: str, resume_id: str, value: bool):
+    profile_json = r.hget(batch_id, resume_id)
+    if not profile_json:
+        return
+
+    profile = json.loads(profile_json)
+    profile["matching"]["is_shortlisted"] = value
+
+    r.hset(batch_id, resume_id, json.dumps(profile))

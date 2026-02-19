@@ -1,11 +1,31 @@
 // frontend/api/JobApi.js
+
 import { loadAuthState } from "../features/auth/persistAuth";
 import { authFetch } from "./authFetch";
+
+const BASE_URL = "http://localhost:8000/api";
+
+/* =====================================================
+   Helper: Get Auth Headers
+===================================================== */
+const getAuthHeaders = () => {
+  const authState = loadAuthState();
+  const accessToken = authState?.accessToken;
+
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${accessToken}`,
+  };
+};
+
+/* =====================================================
+   LIST APIs
+===================================================== */
 
 // Fetch domains
 export const fetchDomains = async () => {
   try {
-    const res = await fetch("http://localhost:8000/api/lists/domains");
+    const res = await fetch(`${BASE_URL}/lists/domains`);
     if (!res.ok) throw new Error("Failed to fetch domains");
     return await res.json();
   } catch (err) {
@@ -17,7 +37,7 @@ export const fetchDomains = async () => {
 // Fetch tech stacks
 export const fetchTechStacks = async () => {
   try {
-    const res = await fetch("http://localhost:8000/api/lists/techstacks");
+    const res = await fetch(`${BASE_URL}/lists/techstacks`);
     if (!res.ok) throw new Error("Failed to fetch tech stacks");
     return await res.json();
   } catch (err) {
@@ -25,16 +45,16 @@ export const fetchTechStacks = async () => {
     return [];
   }
 };
-export const saveStep1Cache = async (data) => {
-  const authState = loadAuthState();
-  const accessToken = authState?.accessToken;
 
-  const res = await fetch("http://localhost:8000/api/jobCache/cacheStep1", {
+/* =====================================================
+   STEP 1 CACHE (Job Description)
+===================================================== */
+
+// Save Step1 to Redis
+export const saveStep1Cache = async (data) => {
+  const res = await fetch(`${BASE_URL}/jobCache/cacheStep1`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${accessToken}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
 
@@ -42,75 +62,54 @@ export const saveStep1Cache = async (data) => {
   return res.json();
 };
 
+// Get Step1 from Redis
 export const getStep1Cache = async () => {
-  const authState = loadAuthState();
-  const accessToken = authState?.accessToken;
-
-  const res = await fetch("http://localhost:8000/api/jobCache/cacheStep1", {
-    headers: {
-      "Authorization": `Bearer ${accessToken}`,
-    },
+  const res = await fetch(`${BASE_URL}/jobCache/cacheStep1`, {
+    headers: getAuthHeaders(),
   });
 
   if (!res.ok) throw new Error("Failed to fetch cached Step 1");
   return res.json();
 };
 
-// Save job description (optional)
+/* =====================================================
+   STEP 2 CACHE (Resume Selection)
+===================================================== */
+
+export const saveStep2BatchId = async (batchId) => {
+  const res = await fetch("http://localhost:8000/api/jobCache/cacheStep2Batch", {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ batchId }),
+  });
+  return res.json();
+};
+
+export const getStep2BatchId = async () => {
+  const res = await fetch("http://localhost:8000/api/jobCache/cacheStep2Batch", {
+    headers: getAuthHeaders(),
+  });
+  return res.json(); // { batchId }
+};
+
+
+
+/* =====================================================
+   OPTIONAL: Save Job to DB
+===================================================== */
+
 export const saveJobDescription = async (data) => {
   try {
-    // const accessToken = localStorage.getItem("accessToken");
-    // const accessToken = obj?.accessToken;
-    const authState = loadAuthState();
-    const accessToken = authState?.accessToken; //
-    console.log("AccessToken being sent:", accessToken); // 👈 add this
-
-    const res = await fetch("/job-description/createJob", {
+    const res = await fetch(`${BASE_URL}/job-description/createJob`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        // "Authorization": `Bearer ${accessToken}` // attach JWT
-        "Authorization": `Bearer ${accessToken}` // must send JWT here
-
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
+
     if (!res.ok) throw new Error("Failed to save job description");
     return await res.json();
   } catch (err) {
     console.error(err);
     throw err;
   }
-};
-
-
-export const saveStep2Cache = async (data) => {
-  const authState = loadAuthState();
-  const accessToken = authState?.accessToken;
-
-  const res = await fetch("http://localhost:8000/api/jobCache/cacheStep2", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!res.ok) throw new Error("Failed to cache Step 2");
-  return res.json();
-};
-
-export const getStep2Cache = async () => {
-  const authState = loadAuthState();
-  const accessToken = authState?.accessToken;
-
-  const res = await fetch("http://localhost:8000/api/jobCache/cacheStep2", {
-    headers: {
-      "Authorization": `Bearer ${accessToken}`,
-    },
-  });
-
-  if (!res.ok) throw new Error("Failed to fetch cached Step 2");
-  return res.json();
 };

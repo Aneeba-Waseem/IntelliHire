@@ -20,6 +20,9 @@ def match_resume_to_jd(jd_text: str, resume_text: str) -> Dict:
     """
 
     # Embed JD and Resume
+    print(f"jd : {jd_text[:60]}...")  # debug
+    print()
+    print(f"resume : {resume_text[:60]}...")  # debug
     jd_embedding = MODEL.encode([jd_text])
     resume_embedding = MODEL.encode([resume_text])
 
