@@ -6,7 +6,7 @@ const MeetingButton = ({ onConnected }) => {
   const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
   const navigate = useNavigate();
-  
+
   const joinMeeting = async () => {
     setLoading(true);
 
@@ -31,7 +31,7 @@ const MeetingButton = ({ onConnected }) => {
       await pc.setLocalDescription(offer);
 
       // 5. Send to backend
-      const response = await fetch("http://localhost:8000/api/interview/offer", {
+      const response = await fetch("http://localhost:8001/api/stt/offer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -39,15 +39,15 @@ const MeetingButton = ({ onConnected }) => {
           type: offer.type,
         }),
       });
-
       if (!response.ok) {
         throw new Error(`Offer failed: ${response.status}`);
       }
 
+      // 6. Finalize connection
       const answer = await response.json();
 
-      // 6. Finalize connection
-      await pc.setRemoteDescription(answer);
+      // 6. Finalize connection (FIX)
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
 
       setConnected(true);
       if (onConnected) onConnected(pc);
@@ -57,7 +57,7 @@ const MeetingButton = ({ onConnected }) => {
       setConnected(false);
     } finally {
       setLoading(false);
-    }  
+    }
     navigate('/Meet')
   };
 
@@ -70,7 +70,7 @@ const MeetingButton = ({ onConnected }) => {
       bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
       hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]
       ${loading || connected ? "opacity-50 cursor-not-allowed" : ""}`}
-      
+
     >
       {loading ? "Connecting..." : connected ? "Connected 🎙️" : "Join Now"}
     </button>
