@@ -32,9 +32,11 @@ export function ModalProvider({ children }) {
         >
           <div
             className="
+           
               bg-[#DDE8E2] border-2 border-[#9CBFAC]
               rounded-2xl p-8 
               w-[90vw] md:w-[70vw] lg:w-[60vw]
+              h-auto max-h-[90vh] overflow-y-auto
               relative shadow-xl
               animate-slideUp
             "
