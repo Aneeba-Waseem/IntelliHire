@@ -1,5 +1,5 @@
 from typing import Dict
-from .resume_profile import create_resume_profile
+from ..models.resume_profile import create_resume_profile
 from .text_builder import build_resume_text
 from .matcher import match_resume_to_jd
 from cache import CACHE
