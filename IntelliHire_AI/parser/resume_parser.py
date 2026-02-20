@@ -1,12 +1,16 @@
+
 import os
+import json
 import fitz  # PyMuPDF
+from docx import Document
 from dotenv import load_dotenv
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 
+
 # -------------------------------
-# 1. Load environment variables
+# Load environment variables
 # -------------------------------
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -16,8 +20,9 @@ if not GOOGLE_API_KEY:
 
 os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 
+
 # -------------------------------
-# 2. Read PDF with link extraction
+# File Readers
 # -------------------------------
 def read_pdf_with_links(path: str) -> str:
     doc = fitz.open(path)
@@ -25,15 +30,9 @@ def read_pdf_with_links(path: str) -> str:
 
     for page in doc:
         text = page.get_text("text")
-
         links = page.get_links()
-        urls = []
 
-        for link in links:
-            uri = link.get("uri")
-            if uri:
-                urls.append(uri)
-
+        urls = [link.get("uri") for link in links if link.get("uri")]
         if urls:
             text += "\n\n[EXTRACTED LINKS]\n" + "\n".join(urls)
 
@@ -41,30 +40,54 @@ def read_pdf_with_links(path: str) -> str:
 
     return "\n\n".join(content)
 
-# -------------------------------
-# 3. Path to resume PDF (LOCAL)
-# -------------------------------
-PDF_PATH = "resume.pdf" 
 
-if not os.path.exists(PDF_PATH):
-    raise FileNotFoundError(f"Resume not found: {PDF_PATH}")
+def read_docx(path: str) -> str:
+    document = Document(path)
+    return "\n".join([para.text for para in document.paragraphs])
 
-resume_text = read_pdf_with_links(PDF_PATH)
 
-# -------------------------------
-# 4. Gemini model
-# -------------------------------
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    temperature=0.2
-)
+def read_txt(path: str) -> str:
+    with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        return f.read()
+
 
 # -------------------------------
-# 5. Prompt (STRICT JSON)
+# Unified Resume Text Loader
 # -------------------------------
-prompt = PromptTemplate(
-    input_variables=["resume"],
-    template="""
+def load_resume_text(path: str) -> str:
+    ext = os.path.splitext(path)[1].lower()
+
+    if ext == ".pdf":
+        return read_pdf_with_links(path)
+    elif ext == ".docx":
+        return read_docx(path)
+    elif ext == ".txt":
+        return read_txt(path)
+    else:
+        raise ValueError(f"Unsupported resume format: {ext}")
+
+
+# -------------------------------
+# MAIN PARSER FUNCTION
+# -------------------------------
+def parse_resume(path: str) -> dict:
+    """
+    Parses resume (.pdf, .docx, .txt) and returns structured JSON.
+    """
+
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Resume not found: {path}")
+
+    resume_text = load_resume_text(path)
+
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        temperature=0.2
+    )
+
+    prompt = PromptTemplate(
+        input_variables=["resume"],
+        template="""
 You are an expert resume parser.
 
 IMPORTANT:
@@ -109,12 +132,22 @@ Resume:
 
 JSON:
 """
-)
+    )
 
-# -------------------------------
-# 6. Run extraction
-# -------------------------------
-response = llm.invoke(prompt.format(resume=resume_text))
+    response = llm.invoke(prompt.format(resume=resume_text))
+    return safe_json_parse(response.content)
 
-print("\n=== RAW OUTPUT ===\n")
-print(response.content)
+import json
+import re
+
+def safe_json_parse(text: str) -> dict:
+    """
+    Extracts and parses JSON object from LLM output.
+    Raises clear error if JSON not found.
+    """
+    match = re.search(r"\{[\s\S]*\}", text)
+    if not match:
+        raise ValueError("No JSON object found in LLM response")
+
+    json_str = match.group()
+    return json.loads(json_str)

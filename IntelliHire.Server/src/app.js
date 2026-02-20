@@ -2,6 +2,9 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import interviewRoutes from "./routes/interviewRoutes.js"
+import jobDescriptionRoutes from "./routes/jobDescriptionRoutes.js";
+import listRoutes from "./routes/listRoutes.js";
+import jobCacheRoutes from "./routes/jobCache.js";
 
 const app = express();
 
@@ -13,8 +16,10 @@ app.use(cors({
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-
+app.use("/api/jobCache", jobCacheRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/interview", interviewRoutes)
+app.use("/api/interview", interviewRoutes);
+app.use("/api/lists", listRoutes);
+app.use("/api/job-description", jobDescriptionRoutes);
 
 export default app;

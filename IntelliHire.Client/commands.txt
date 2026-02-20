@@ -17,6 +17,11 @@ npm install embla-carousel-react
 npm install @radix-ui/react-slot
 npm install class-variance-authority
 npm install tailwind-merge
+npm install lucide-react recharts
+npm install @fortawesome/react-fontawesome @fortawesome/free-regular-svg-icons @fortawesome/free-solid-svg-icons
+npm install @react-spring/web
+npm install recharts
+
 
 #for backend
 npm install dotenv
@@ -27,6 +32,7 @@ npm install socket.io
 npm install pg pg-hstore
 npm install node-fetch
 npm install nodemailer
+npm install ioredis
 
 #frontend -> backend 
 npm install cors

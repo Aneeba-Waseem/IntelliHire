@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import cors from "cors"
 dotenv.config({ path: "./src/.env" }); // <- add the correct path
 import express from "express"
+import { redisClient } from "./config/redisClient.js";
 
 // Import models AFTER db connection to define associations
 import "././index.js";
@@ -21,6 +22,7 @@ app.use(
 );
 
 app.use(express.json());
+redisClient.on("error", (err) => console.log("Redis Client Error", err));
 
 const PORT = process.env.PORT || 8000;
 

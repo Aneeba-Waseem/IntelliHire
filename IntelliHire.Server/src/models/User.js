@@ -19,7 +19,12 @@ const User = sequelize.define("User", {
   email: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true
+    unique: true,
+    validate: {
+      isEmail: {
+        msg: "Please enter a valid email address"
+      }
+    }
   },
   company: {
     type: DataTypes.STRING,
@@ -40,6 +45,14 @@ const User = sequelize.define("User", {
     type: DataTypes.STRING,
     allowNull: true
   },
+  CompanyURL: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    validate: {
+      isUrl: true
+    }
+  }
+
 });
 
 export default User;
