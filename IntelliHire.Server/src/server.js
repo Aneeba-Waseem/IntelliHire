@@ -1,17 +1,37 @@
+// server.js
 import dotenv from "dotenv";
-import app from "./app.js";
-import sequelize from "./config/db.js";
+dotenv.config({ path: "./src/.env" });
+
+import express from "express";
+import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import cors from "cors"
-dotenv.config({ path: "./src/.env" }); // <- add the correct path
-import express from "express"
+
+// App, DB & Redis
+import app from "./app.js";
+import sequelize from "./config/db.js";
 import { redisClient } from "./config/redisClient.js";
 
-// Import models AFTER db connection to define associations
-import "././index.js";
+// Models (register associations)
+import "./index.js";
 
-dotenv.config();
+// Repositories
+import InterviewSessionRepository from "./repositories/InterviewSessionRepository.js";
+import InterviewTurnRepository from "./repositories/InterviewTurnRepository.js";
+
+// Sequelize Models
+import { InterviewSessionModel } from "./models/InterviewSessionModel.js";
+import { InterviewTurnModel } from "./models/InterviewTurnModel.js";
+
+// AI & Service Layer
+import AIClient from "./infrastructure/AIClient.js";
+import FlowService from "./services/FlowService.js";
+import InterviewController from "./controllers/InterviewController.js";
+
+// --------------------
+// Config & Middleware
+// --------------------
+const PORT = process.env.PORT || 8000;
 
 app.use(
   cors({
@@ -22,38 +42,59 @@ app.use(
 );
 
 app.use(express.json());
-redisClient.on("error", (err) => console.log("Redis Client Error", err));
 
-const PORT = process.env.PORT || 8000;
+redisClient.on("error", (err) =>
+  console.error("Redis Client Error:", err)
+);
 
-// Wrap app in HTTP server
+// --------------------
+// Repositories
+// --------------------
+const sessionRepo = new InterviewSessionRepository(InterviewSessionModel);
+const turnRepo = new InterviewTurnRepository(InterviewTurnModel);
+
+// --------------------
+// AI & Service Layer
+// --------------------
+const aiClient = new AIClient(process.env.AI_SERVICE_URL);
+const flowService = new FlowService({
+  aiClient,
+  sessionRepo,
+  turnRepo,
+});
+const interviewController = new InterviewController({ flowService });
+
+export default interviewController;
+
+// --------------------
+// HTTP & Socket.IO Setup
+// --------------------
 const server = createServer(app);
 
-// Setup Socket.IO
 const io = new Server(server, {
-    cors: {
-        origin: "http://localhost:5173",
-        methods: ["GET", "POST", "PUT", "DELETE"],
-    },
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  },
 });
 
-// Global socket instance export kareinge
 export { io };
 
+// --------------------
+// Boot Server
+// --------------------
 (async () => {
-    try {
-        await sequelize.authenticate();
-        console.log("Database connected...");
+  try {
+    await sequelize.authenticate();
+    console.log("PostgreSQL connected...");
 
-        await sequelize.sync({ alter: true });
-        console.log("Database synced...");
+    await sequelize.sync({ alter: true });
+    console.log("Database synced...");
 
-        server.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
-        });
-    } catch (err) {
-        console.error("DB connection failed:", err);
-    }
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (err) {
+    console.error("Database connection failed:", err);
+  }
 })();
-
-

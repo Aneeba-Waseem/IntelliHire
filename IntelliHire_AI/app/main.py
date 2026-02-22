@@ -29,5 +29,7 @@ app.include_router(stt_router, prefix="/api/stt")
 
 
 @app.get("/")
-def root():
-    return {"message": "IntelliHire AI running"}
+
+@app.on_event("startup")
+async def startup_event():
+    print("IntelliHire AI server started")
