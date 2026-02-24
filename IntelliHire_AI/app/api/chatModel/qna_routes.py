@@ -95,8 +95,8 @@ def build_prompt(context: str, difficulty: str) -> str:
 # --------------------------------------------------
 # API Endpoint
 # --------------------------------------------------
-@router.post("/generate-context", response_model=GenerateResponse)
-async def generate_context(req: GenerateRequest):
+@router.post("/generate-question", response_model=GenerateResponse)
+async def generate_question(req: GenerateRequest):
 
     if model is None or tokenizer is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
