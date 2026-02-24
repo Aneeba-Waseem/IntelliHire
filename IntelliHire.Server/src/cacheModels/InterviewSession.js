@@ -1,7 +1,7 @@
 // cacheModels/InterviewSession.js
-const InterviewState = require("./InterviewState");
+import InterviewState from "./InterviewState.js";
 
-class InterviewSession {
+export default class InterviewSession {
   constructor({
     id,
     candidateId,
@@ -39,5 +39,3 @@ class InterviewSession {
     };
   }
 }
-
-module.exports = InterviewSession;

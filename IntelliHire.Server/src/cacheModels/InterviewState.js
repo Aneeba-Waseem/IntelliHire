@@ -1,5 +1,5 @@
 // cacheModels/InterviewState.js
-class InterviewState {
+export default class InterviewState {
   constructor({
     phase = "rapport",          // rapport | baseline | depth | close
     candidateType = "fresher", // fresher | experienced
@@ -26,5 +26,3 @@ class InterviewState {
     return new InterviewState(this.toJSON());
   }
 }
-
-module.exports = InterviewState;

@@ -1,13 +1,12 @@
-from fastapi import APIRouter, UploadFile, File
-import os, uuid, threading
-from services.batch_worker import process_batch
-from cache.redis_Client import get_batch_status, get_all_resumes
-from cache.redis_Client import update_shortlist_status
-from services.matching_service import match_batch
-from cache.redis_Client import get_batch_status, get_all_resumes
-from pydantic import BaseModel  
-from fastapi import Form
-from fastapi import Body
+from fastapi import APIRouter, UploadFile, File, Form, Body
+from pydantic import BaseModel
+import os
+import uuid
+import threading
+
+from app.services.batch_worker import process_batch
+from app.cache.redis_Client import get_batch_status, get_all_resumes, update_shortlist_status
+from app.services.matching_service import match_batch
 
 router = APIRouter()
 UPLOAD_DIR = "uploads"

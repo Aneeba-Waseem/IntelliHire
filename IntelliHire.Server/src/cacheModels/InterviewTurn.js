@@ -1,11 +1,11 @@
 // cacheModels/InterviewTurn.js
-class InterviewTurn {
+export default class InterviewTurn {
   constructor({
     sessionId,
     question,
     idealAnswer,
     candidateAnswer,
-    evaluation = null, // can be an object like {score: 5, feedback: 'good'}
+    evaluation = null,
     topic,
     phase,
     depthLevel,
@@ -26,5 +26,3 @@ class InterviewTurn {
     return { ...this };
   }
 }
-
-module.exports = InterviewTurn;

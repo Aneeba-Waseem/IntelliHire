@@ -1,9 +1,9 @@
 // services/FlowService.js
-const InterviewState = require("../cacheModels/InterviewState");
-const InterviewTurnRepository = require("../cacheRepositories/InterviewTurnRepository");
-const InterviewSessionRepository = require("../cacheRepositories/InterviewSessionRepository");
+import InterviewState from "../cacheModels/InterviewState.js";
+import InterviewTurnRepository from "../repositories/InterviewTurnRepository.js";
+import InterviewSessionRepository from "../repositories/InterviewSessionRepository.js";
 
-class FlowService {
+export default class FlowService {
   constructor({ aiClient, sessionRepo, turnRepo }) {
     this.aiClient = aiClient;
     this.sessionRepo = sessionRepo || new InterviewSessionRepository();
@@ -69,9 +69,9 @@ class FlowService {
     const turn = await this.turnRepo.create({
       sessionId,
       question,
-      answer,
+      idealAnswer: answer,
       evaluation,
-      createdAt: Date.now(),
+      createdAt: new Date(),
     });
 
     return turn;
@@ -81,5 +81,3 @@ class FlowService {
     return await this.turnRepo.findBySessionId(sessionId);
   }
 }
-
-module.exports = FlowService;

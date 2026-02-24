@@ -1,5 +1,5 @@
-from services.parser_service import parse_and_store
-from cache.redis_Client import set_batch_status
+from .parser_service import parse_and_store
+from ..cache.redis_Client import set_batch_status
 
 def process_batch(file_paths: list, batch_id: str):
     try:

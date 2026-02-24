@@ -1,6 +1,6 @@
-from cache.redis_Client import get_all_resumes, update_resume, set_batch_status
-from matching.text_builder import build_resume_text
-from matching.matcher import match_resume_to_jd  # your scoring fn
+from ..cache.redis_Client import get_all_resumes, update_resume, set_batch_status
+from ..matching.text_builder import build_resume_text
+from ..matching.matcher import match_resume_to_jd  # your scoring fn
 
 def match_batch(batch_id: str, jd_text: str):
     set_batch_status(batch_id, "matching")

@@ -1,5 +1,5 @@
 import { DataTypes } from "sequelize";
-import sequelize from "../db.js";
+import sequelize from "../config/db.js";
 
 // 1️⃣ DimensionScore table (nested JSON is better than separate table for simplicity)
 const DimensionScoreModel = sequelize.define("DimensionScore", {
@@ -50,7 +50,7 @@ const EvaluationResultModel = sequelize.define("EvaluationResult", {
   },
 });
 
-export {
+export default{
   DimensionScoreModel,
   ScorecardModel,
   EvaluationSignalsModel,

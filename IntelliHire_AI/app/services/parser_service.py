@@ -1,6 +1,6 @@
-from parser.resume_parser import parse_resume
-from models.resume_profile import create_resume_profile
-from cache.redis_Client import save_resume
+from ..parser.resume_parser import parse_resume
+from ..models.resume_profile import create_resume_profile
+from ..cache.redis_Client import save_resume
 
 def parse_and_store(file_path: str, batch_id: str):
     try:

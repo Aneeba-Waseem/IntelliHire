@@ -1,40 +1,56 @@
-// cacheRepositories/InterviewTurnRepository.js
-const InterviewTurn = require("../cacheModels/InterviewTurn");
-const EvaluationResult = require("../cacheModels/EvaluationResult"); // assuming you have this class
+// cacheRepositories/InterviewSessionRepository.js
+import crypto from "crypto";
+import InterviewSession from "../cacheModels/InterviewSession.js";
+import InterviewState from "../cacheModels/InterviewState.js";
 
-class InterviewTurnRepository {
-  constructor(turnCache = []) {
-    // turnCache can be an in-memory array or a Redis list
-    this.cache = turnCache;
+export default class InterviewSessionRepository {
+  constructor(sessionCache = []) {
+    this.cache = sessionCache; // in-memory array or Redis hash
   }
 
-  async create(turnData) {
-    const turn = new InterviewTurn({
-      ...turnData,
-      evaluation: turnData.evaluation
-        ? new EvaluationResult(turnData.evaluation)
-        : null,
+  async create({ candidateId, jobId, initialState = {} }) {
+    const session = new InterviewSession({
+      id: crypto.randomUUID(),
+      candidateId,
+      jobId,
+      state: new InterviewState(initialState),
     });
 
-    this.cache.push(turn); // simple in-memory storage
-    return turn;
+    this.cache.push(session);
+    return session;
   }
 
-  async findBySessionId(sessionId) {
-    const turns = this.cache
-      .filter((t) => t.sessionId === sessionId)
-      .sort((a, b) => a.createdAt - b.createdAt);
+  async findById(sessionId) {
+    const data = this.cache.find((s) => s.id === sessionId);
+    if (!data) return null;
 
-    return turns.map(
-      (t) =>
-        new InterviewTurn({
-          ...t,
-          evaluation: t.evaluation
-            ? new EvaluationResult(t.evaluation)
-            : null,
-        })
-    );
+    return new InterviewSession({
+      ...data,
+      state: new InterviewState(data.state),
+    });
+  }
+
+  async updateState(sessionId, newState) {
+    const session = this.cache.find((s) => s.id === sessionId);
+    if (!session) return null;
+
+    session.state =
+      newState instanceof InterviewState
+        ? newState
+        : new InterviewState(newState);
+    return session;
+  }
+
+  async endSession(sessionId) {
+    const session = this.cache.find((s) => s.id === sessionId);
+    if (!session) return null;
+
+    session.endSession();
+    return session;
+  }
+
+  // optional: return all sessions (useful for cache flushing or debugging)
+  async all() {
+    return this.cache;
   }
 }
-
-module.exports = InterviewTurnRepository;

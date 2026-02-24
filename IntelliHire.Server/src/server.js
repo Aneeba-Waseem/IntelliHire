@@ -20,11 +20,11 @@ import InterviewSessionRepository from "./repositories/InterviewSessionRepositor
 import InterviewTurnRepository from "./repositories/InterviewTurnRepository.js";
 
 // Sequelize Models
-import { InterviewSessionModel } from "./models/InterviewSessionModel.js";
-import { InterviewTurnModel } from "./models/InterviewTurnModel.js";
+import  InterviewSession  from "./cacheModels/InterviewSession.js";
+import  InterviewTurn  from "./cacheModels/InterviewTurn.js";
 
 // AI & Service Layer
-import AIClient from "./infrastructure/AIClient.js";
+import AIClient from "./AI/AIClient.js";
 import FlowService from "./services/FlowService.js";
 import InterviewController from "./controllers/InterviewController.js";
 
@@ -50,8 +50,8 @@ redisClient.on("error", (err) =>
 // --------------------
 // Repositories
 // --------------------
-const sessionRepo = new InterviewSessionRepository(InterviewSessionModel);
-const turnRepo = new InterviewTurnRepository(InterviewTurnModel);
+const sessionRepo = new InterviewSessionRepository(InterviewSession);
+const turnRepo = new InterviewTurnRepository(InterviewTurn);
 
 // --------------------
 // AI & Service Layer

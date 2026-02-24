@@ -4,8 +4,8 @@ from pydantic import BaseModel
 from aiortc import RTCPeerConnection, RTCSessionDescription
 import asyncio
 
-from STT.webrtc_handler import stream_audio
-from STT.deepgram_client import run_deepgram
+from ..STT.webrtc_handler import stream_audio
+from ..STT.deepgram_client import run_deepgram
 
 router = APIRouter()
 
