@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.resume_routes import router as resume_router
 from app.api.stt_controller import router as stt_router
 from app.api.chatModel.qna_routes import router as qna_router
-from app.api.chatModel.groq_routes import router as groq_router
+# from app.api.chatModel.groq_routes import router as groq_router
 from app.api.chatModel import qna_routes
 
 app = FastAPI(title="IntelliHire AI")
@@ -29,7 +29,7 @@ async def startup_event():
 app.include_router(resume_router, prefix="/api/resumes")
 app.include_router(stt_router, prefix="/api/stt")
 app.include_router(qna_router, prefix="/api/chatModel/qna")
-app.include_router(groq_router, prefix="/api/chatModel/groq")
+# app.include_router(groq_router, prefix="/api/chatModel/groq")
 
 @app.get("/")
 async def root():
