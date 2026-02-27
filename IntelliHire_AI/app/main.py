@@ -7,6 +7,7 @@ from app.api.chatModel.qna_routes import router as qna_router
 from app.api.chatModel.groq_routes import router as groq_router
 from app.api.chatModel import qna_routes
 from dotenv import load_dotenv
+from app.api import evaluator_routes as evaluator_router
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,6 +35,9 @@ app.include_router(resume_router, prefix="/api/resumes")
 app.include_router(stt_router, prefix="/api/stt")
 app.include_router(qna_router, prefix="/api/chatModel/qna")
 app.include_router(groq_router, prefix="/api/chatModel/groq")
+app.include_router(evaluator_router.router, prefix="/api/evaluate")
+
+
 
 @app.get("/")
 async def root():
