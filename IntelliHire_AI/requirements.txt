@@ -85,3 +85,10 @@ aiohttp-cors
 redis
 orjson
 httpx
+
+# =========================
+# Evaluation Module
+# =========================
+
+requests>=2.31.0
+python-dotenv

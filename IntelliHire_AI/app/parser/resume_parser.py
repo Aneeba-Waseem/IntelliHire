@@ -15,10 +15,10 @@ from langchain_core.prompts import PromptTemplate
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-if not GOOGLE_API_KEY:
-    raise ValueError("GOOGLE_API_KEY not found in .env")
-
-os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
+# If a key exists in the environment or .env file, propagate it to os.environ.
+# Do not raise at import time so the app can start when parsing isn't used.
+if GOOGLE_API_KEY:
+    os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 
 
 # -------------------------------
@@ -79,6 +79,12 @@ def parse_resume(path: str) -> dict:
         raise FileNotFoundError(f"Resume not found: {path}")
 
     resume_text = load_resume_text(path)
+
+    # Ensure the Google API key is available when actually parsing (runtime check).
+    if not os.getenv("GOOGLE_API_KEY"):
+        raise ValueError(
+            "GOOGLE_API_KEY not found in environment. Set it in .env or the environment before parsing resumes."
+        )
 
     llm = ChatGoogleGenerativeAI(
         model="gemini-2.5-flash",
