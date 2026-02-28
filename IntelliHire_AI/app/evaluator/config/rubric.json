@@ -1,0 +1,35 @@
+{
+    "dimensions": {
+      "understanding": {
+        "description": "Conceptual understanding and reasoning quality.",
+        "max_score": 5
+      },
+      "correctness": {
+        "description": "Technical accuracy based on standard assumptions.",
+        "max_score": 5
+      },
+      "relevance": {
+        "description": "How directly the answer addresses the question.",
+        "max_score": 5
+      }
+    },
+  
+    "delta_scale": {
+      "strong": 0.5,
+      "partial": 0.25,
+      "weak": 0.0
+    },
+  
+    "rules": [
+      "Use ONLY these delta values: 0.0, 0.25, 0.5.",
+      "Give 0.5 only when the main concept of the ideal answer is present.",
+      "Give 0.25 for partial understanding, vague explanation, or missing key parts.",
+      "Give 0.0 if the answer is incorrect or unrelated.",
+      "Evaluate based on meaning, not exact keywords.",
+      "At least one dimension should be positive if the answer is relevant."
+    ],
+  
+    "signals": {
+      "candidate_struggling": "Emit true only if all dimensions are 0."
+    }
+  }
