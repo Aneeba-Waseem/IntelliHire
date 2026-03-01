@@ -3,6 +3,8 @@ import json
 import websockets
 import os
 from dotenv import load_dotenv
+import httpx
+from ..core.config import NODE_TRANSCRIPT_URL
 
 load_dotenv()
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
@@ -16,7 +18,23 @@ DEEPGRAM_WS_URL = (
     "&model=nova-3"
 )
 
-async def run_deepgram(audio_queue):
+async def send_to_node(session_id, text):
+    if not NODE_TRANSCRIPT_URL:
+        return
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            await client.post(
+                NODE_TRANSCRIPT_URL,
+                json={
+                    "session_id": session_id,
+                    "text": text
+                }
+            )
+    except Exception as e:
+        print("❌ Node webhook error:", e)
+
+async def run_deepgram(audio_queue, session_id=None):
     try:
         async with websockets.connect(
             DEEPGRAM_WS_URL,
@@ -43,8 +61,10 @@ async def run_deepgram(audio_queue):
                         alt = data["channel"]["alternatives"][0]
                         text = alt.get("transcript", "")
                         if text and data.get("is_final"):
-                            print("🟢 FINAL:", text)
-
+                            print(f"🟢 FINAL [{session_id}]:", text)
+                            # print("🟢 FINAL:", text)
+                            # await send_to_node(session_id, text)
+                            
             sender = asyncio.create_task(send_audio())
             receiver = asyncio.create_task(receive())
 

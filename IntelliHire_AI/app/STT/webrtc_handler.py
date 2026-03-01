@@ -16,4 +16,4 @@ async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
     except Exception:
         print("🎤 Audio track ended")
     finally:
-        await queue.put(None)  # signal Deepgram to stop
+        await queue.put(None)

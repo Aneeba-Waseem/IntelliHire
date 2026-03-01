@@ -5,34 +5,31 @@ import InterviewEvaluationRepository from "../repositories/InterviewEvaluationRe
 import TransitionEngine from "../engine/TransitionEngine.js";
 import AIClient from "../AI/AIClient.js";
 import { redisClient } from "../config/redisClient.js";
+import JobClient from "./JobClient.js";
 
 export default class FlowService {
-  constructor({ aiClient = new AIClient(), sessionRepo, turnRepo }) {
+  constructor({ aiClient = new AIClient(), sessionRepo, turnRepo,jobClient = new JobClient() }) {
     this.aiClient = aiClient;
     this.transitionEngine = new TransitionEngine();
     this.sessionRepo = sessionRepo || new InterviewSessionRepository();
     this.turnRepo = turnRepo || new InterviewTurnRepository();
     this.evalRepo = new InterviewEvaluationRepository();
-
+    this.jobClient = jobClient; 
   }
-
-  async getTopicsForJob() {
+async getTopicsForJob(token) {
   try {
-    const candidateId = 1; // In real scenario, get this from auth context or session
-    const data = await redisClient.get(`job:${candidateId}:step1`);
+    const jobData = await this.jobClient.getJobStep1(token);
 
-    if (!data) {
-      console.warn("No job step1 found for user:", candidateId);
+    if (!jobData || Object.keys(jobData).length === 0) {
+      console.warn("No job step1 found");
       return ["general"];
     }
-
-    const jobData = JSON.parse(data);
 
     const techStack = jobData.techStack || [];
     const domains = jobData.domains || [];
 
     const topics = [...techStack, ...domains]
-      .map((t) => String(t).trim())
+      .map(t => String(t).trim())
       .filter(Boolean);
 
     return topics.length ? topics : ["general"];
@@ -43,11 +40,10 @@ export default class FlowService {
 }
 
 
-
   /* =====================================================
      START INTERVIEW
   ===================================================== */
-  async startInterview({ candidateId, jobId, candidateType }) {
+  async startInterview({ candidateId, jobId, candidateType , token}) {
     try {
       // ✅ Validate inputs
       if (!candidateId || !jobId) {
@@ -71,7 +67,7 @@ export default class FlowService {
         candidateId,
         jobId,
         initialState: state,
-        topicsListed: await this.getTopicsForJob(),
+        topicsListed: await this.getTopicsForJob(token),
       });
       console.log("all tpoics in session repo " + JSON.stringify(session.topicsListed));
 

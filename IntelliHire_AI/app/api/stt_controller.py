@@ -10,6 +10,7 @@ from ..STT.deepgram_client import run_deepgram
 router = APIRouter()
 
 class OfferRequest(BaseModel):
+    session_id: str
     sdp: str
     type: str
 
@@ -23,7 +24,7 @@ async def stt_offer(body: OfferRequest):
         if track.kind == "audio":
             asyncio.create_task(stream_audio(track, audio_queue))
 
-    asyncio.create_task(run_deepgram(audio_queue))
+    asyncio.create_task(run_deepgram(audio_queue, body.session_id))
 
     await pc.setRemoteDescription(RTCSessionDescription(body.sdp, body.type))
     answer = await pc.createAnswer()

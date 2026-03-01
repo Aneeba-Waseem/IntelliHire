@@ -54,11 +54,22 @@ export default class FlowController {
         });
       }
 
+      // Extract token from Authorization header
+      const token = req.headers.authorization?.split(" ")[1];
+
+      if (!token) {
+        return res.status(401).json({
+          success: false,
+          error: "Authorization token missing",
+          code: "TOKEN_MISSING",
+        });
+      }
       // ✅ Call FlowService
       const result = await this.flowService.startInterview({
         candidateId,
         jobId,
         candidateType: candidateType || "generic",
+        token
       });
 
       console.log(`[${requestId}] Interview started:`, result.sessionId);
