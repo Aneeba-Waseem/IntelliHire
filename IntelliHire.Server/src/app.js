@@ -5,6 +5,7 @@ import interviewRoutes from "./routes/interviewRoutes.js"
 import jobDescriptionRoutes from "./routes/jobDescriptionRoutes.js";
 import listRoutes from "./routes/listRoutes.js";
 import jobCacheRoutes from "./routes/jobCache.js";
+import flowRoutes from "./routes/flowRoutes.js";
 
 const app = express();
 

@@ -6,21 +6,21 @@ export default class InterviewSession {
     id,
     candidateId,
     jobId,
-    state = new InterviewState(),
-    startedAt = new Date(),
+    state = {},
+    startedAt = null,
     endedAt = null,
+    topicsListed = [], // ✅ NEW: store topics listed by the system
   }) {
     this.id = id;
     this.candidateId = candidateId;
     this.jobId = jobId;
-    this.state = state; // InterviewState instance
-    this.startedAt = startedAt;
-    this.endedAt = endedAt;
-    this.turns = []; // store InterviewTurn instances
-  }
-
-  addTurn(turn) {
-    this.turns.push(turn);
+    this.topicsListed = topicsListed;
+    this.state =
+      state instanceof InterviewState
+        ? state
+        : new InterviewState(state);
+    this.startedAt = startedAt ? new Date(startedAt) : new Date();
+    this.endedAt = endedAt ? new Date(endedAt) : null;
   }
 
   endSession() {
@@ -32,10 +32,18 @@ export default class InterviewSession {
       id: this.id,
       candidateId: this.candidateId,
       jobId: this.jobId,
-      state: this.state.toJSON(),
-      startedAt: this.startedAt,
-      endedAt: this.endedAt,
-      turns: this.turns.map((t) => t.toJSON()),
+      topicsListed: this.topicsListed,
+      startedAt: this.startedAt.toISOString(),
+      endedAt: this.endedAt ? this.endedAt.toISOString() : null,
     };
+  }
+
+  static fromJSON(json) {
+    return new InterviewSession({
+      ...json,
+      startedAt: new Date(json.startedAt),
+      endedAt: json.endedAt ? new Date(json.endedAt) : null,
+      state: new InterviewState(json.state),
+    });
   }
 }

@@ -27,7 +27,8 @@ import  InterviewTurn  from "./cacheModels/InterviewTurn.js";
 import AIClient from "./AI/AIClient.js";
 import FlowService from "./services/FlowService.js";
 import InterviewController from "./controllers/InterviewController.js";
-
+import FlowController from "./controllers/flowController.js";
+import createFlowRoutes from "./routes/flowRoutes.js";
 // --------------------
 // Config & Middleware
 // --------------------
@@ -63,8 +64,10 @@ const flowService = new FlowService({
   turnRepo,
 });
 const interviewController = new InterviewController({ flowService });
-
+const flowController = new FlowController({ flowService });
+app.use("/api/flow", createFlowRoutes(flowController));
 export default interviewController;
+export { flowController };
 
 // --------------------
 // HTTP & Socket.IO Setup

@@ -3,7 +3,7 @@
 class TransitionEngine {
   apply({ state, evaluation, totalTurnsInPhase, availableTopics }) {
     // 1️⃣ Update last response quality
-    if (evaluation) {
+    if (evaluation?.quality) {
       state.lastResponseQuality = evaluation.quality;
 
       if (evaluation.quality === "weak") {
@@ -61,10 +61,11 @@ class TransitionEngine {
     }
   }
 
-  handleTopicSwitch(state, availableTopics) {
+  handleTopicSwitch(state, availableTopics = []) {
     const maxDepth = 4;
 
     if (state.depthLevel >= maxDepth) {
+      state.topicsCovered = state.topicsCovered || [];
       state.topicsCovered.push(state.currentTopic);
 
       const nextTopic = availableTopics.find(
@@ -81,32 +82,25 @@ class TransitionEngine {
   }
 
   decideNextAction(state) {
-    if (state.phase === "rapport") {
-      return "light_question";
+    switch (state.phase) {
+      case "rapport":
+        return "light_question";
+
+      case "baseline":
+        return "assess_fundamentals";
+
+      case "depth":
+        if (state.stuckCount >= 2) return "simplify_or_hint";
+        if (state.lastResponseQuality === "strong") return "probe_deeper";
+        return "continue_depth";
+
+      case "close":
+        return "wrap_up";
+
+      default:
+        return "continue";
     }
-
-    if (state.phase === "baseline") {
-      return "assess_fundamentals";
-    }
-
-    if (state.phase === "depth") {
-      if (state.stuckCount >= 2) {
-        return "simplify_or_hint";
-      }
-
-      if (state.lastResponseQuality === "strong") {
-        return "probe_deeper";
-      }
-
-      return "continue_depth";
-    }
-
-    if (state.phase === "close") {
-      return "wrap_up";
-    }
-
-    return "continue";
   }
 }
 
-module.exports = TransitionEngine;
+export default TransitionEngine;

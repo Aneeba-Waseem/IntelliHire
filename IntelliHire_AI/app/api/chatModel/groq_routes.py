@@ -61,3 +61,69 @@ async def generate_text(req: GenerateRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/generate-context")
+async def generate_context(req: GenerateRequest):
+    print("Request received:",  req.json())  # only if using raw Request
+    try:
+        client = get_openai_client()
+
+        prompt = f"""
+{req.prompt}
+
+in 4-5 words of technical context only.
+"""
+        print("Generated prompt for context:", prompt)
+
+        response = client.responses.create(
+            model=req.model,
+            input=prompt,
+        )
+
+        print("context:", response.output_text.strip())
+
+        return {
+            "context": response.output_text.strip()
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/convert-question")
+async def convert_question(req: GenerateRequest):
+    try:
+        client = get_openai_client()
+
+        prompt = f"""
+You are an experienced technical interviewer continuing an ongoing interview conversation.
+
+Your task:
+Rewrite the question in a natural conversational tone so it feels like a smooth continuation of discussion.
+
+Guidelines:
+- Use light conversational fillers occasionally (e.g., "hmm", "okay", "ahan", "got it", "alright").
+- Do NOT use greetings (no "Hi", "Hello", "Good morning", etc.).
+- Do NOT sound formal or robotic.
+- Do NOT overuse slang — keep it professional and natural.
+- Keep the question clear and concise.
+- It should feel like the interviewer is continuing the discussion after the candidate’s previous answer.
+- Ask only the question. No extra explanations.
+
+Original Question:
+{req.prompt}
+
+Return only the rewritten conversational question.
+"""
+
+        response = client.responses.create(
+            model=req.model,
+            input=prompt,
+        )
+        print("message:", response.output_text.strip())
+
+        return {
+            "message": response.output_text.strip()
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

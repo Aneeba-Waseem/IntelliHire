@@ -65,8 +65,8 @@ def load_model_once():
 # Request / Response Schemas
 # --------------------------------------------------
 class GenerateRequest(BaseModel):
-    topic: str
-    difficulty: str
+    context: str
+    difficulty: str # optional additional context
 
 
 class QuestionData(BaseModel):
@@ -83,10 +83,10 @@ class GenerateResponse(BaseModel):
 # --------------------------------------------------
 def build_prompt(context: str, difficulty: str) -> str:
     instruction = (
-        f"Given the Topic and Difficulty below, generate a single interview question "
+        f"Given the Context and Difficulty below, generate a single interview question "
         f"and its ideal answer. Return ONLY valid JSON in this exact structure:\n"
         '{ "data":[ {"question":"string", "ideal_answer":"string"} ] }\n\n'
-        f"Topic: {context}\n"
+        f"Context: {context}\n"
         f"Difficulty: {difficulty}\n"
     )
     return f"<s>[INST] {instruction} [/INST]"
@@ -101,7 +101,7 @@ async def generate_question(req: GenerateRequest):
     if model is None or tokenizer is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
 
-    prompt_text = build_prompt(req.topic, req.difficulty)
+    prompt_text = build_prompt(req.context, req.difficulty)
 
     try:
         inputs = tokenizer(prompt_text, return_tensors="pt").to(device)
@@ -125,6 +125,7 @@ async def generate_question(req: GenerateRequest):
         output_text = tokenizer.decode(output_tokens, skip_special_tokens=True)
 
         data = json.loads(output_text.strip())
+        print(data)
         return data
 
     except json.JSONDecodeError:

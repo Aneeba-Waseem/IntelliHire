@@ -23,7 +23,7 @@ async def evaluate(req: EvaluateRequest):
         # Ensure we pass plain JSON-serializable dicts to the runner
         input_event = jsonable_encoder(req.input_event)
         scorecard = jsonable_encoder(req.scorecard)
-
+        print("in the evaluation route, input_event is ", input_event)
         # Ensure `candidate_answer` and `answer` are present for downstream logic
         if not input_event.get("candidate_answer"):
             input_event["candidate_answer"] = input_event.get("answer")

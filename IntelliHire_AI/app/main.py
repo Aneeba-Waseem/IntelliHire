@@ -35,7 +35,7 @@ app.include_router(resume_router, prefix="/api/resumes")
 app.include_router(stt_router, prefix="/api/stt")
 app.include_router(qna_router, prefix="/api/chatModel/qna")
 app.include_router(groq_router, prefix="/api/chatModel/groq")
-app.include_router(evaluator_router.router, prefix="/api/evaluate")
+app.include_router(evaluator_router.router, prefix="/api/evaluator")
 
 
 

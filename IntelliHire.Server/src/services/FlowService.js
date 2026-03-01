@@ -1,290 +1,438 @@
-// services/FlowService.js
 import InterviewState from "../cacheModels/InterviewState.js";
 import InterviewTurnRepository from "../repositories/InterviewTurnRepository.js";
 import InterviewSessionRepository from "../repositories/InterviewSessionRepository.js";
+import InterviewEvaluationRepository from "../repositories/InterviewEvaluationRepository.js";
 import TransitionEngine from "../engine/TransitionEngine.js";
+import AIClient from "../AI/AIClient.js";
+import { redisClient } from "../config/redisClient.js";
 
 export default class FlowService {
-  constructor({ aiClient, sessionRepo, turnRepo }) {
-    this.transitionEngine = new TransitionEngine();
+  constructor({ aiClient = new AIClient(), sessionRepo, turnRepo }) {
     this.aiClient = aiClient;
+    this.transitionEngine = new TransitionEngine();
     this.sessionRepo = sessionRepo || new InterviewSessionRepository();
     this.turnRepo = turnRepo || new InterviewTurnRepository();
+    this.evalRepo = new InterviewEvaluationRepository();
+
   }
 
-  /** ------------------ AI Operations ------------------ */
+  async getTopicsForJob() {
+  try {
+    const candidateId = 1; // In real scenario, get this from auth context or session
+    const data = await redisClient.get(`job:${candidateId}:step1`);
 
-  async createContextFromKeywords(keywords) {
-    if (!keywords || keywords.length === 0) {
-      throw new Error("Keywords are required");
+    if (!data) {
+      console.warn("No job step1 found for user:", candidateId);
+      return ["general"];
     }
-    return await this.aiClient.generateContext(keywords);
+
+    const jobData = JSON.parse(data);
+
+    const techStack = jobData.techStack || [];
+    const domains = jobData.domains || [];
+
+    const topics = [...techStack, ...domains]
+      .map((t) => String(t).trim())
+      .filter(Boolean);
+
+    return topics.length ? topics : ["general"];
+  } catch (err) {
+    console.error("getTopicsForJob error:", err.message);
+    return ["general"];
   }
+}
 
-  async convertToInterviewStyle(question) {
-    if (!question) {
-      throw new Error("Question is required");
-    }
-    return await this.aiClient.convertQuestion(question);
-  }
 
-  /** ------------------ Session Operations ------------------ */
-
-  async createSession({ candidateId, jobId, initialState = {} }) {
-    const session = await this.sessionRepo.create({
-      candidateId,
-      jobId,
-      initialState,
-    });
-    return session;
-  }
-
-  async findSessionById(sessionId) {
-    return await this.sessionRepo.findById(sessionId);
-  }
-
-  async updateSessionState(sessionId, newState) {
-    const session = await this.sessionRepo.updateState(
-      sessionId,
-      new InterviewState(newState)
-    );
-    if (!session) throw new Error("Session not found");
-    return session;
-  }
-
-  async endSession(sessionId) {
-    const session = await this.sessionRepo.endSession(sessionId);
-    if (!session) throw new Error("Session not found");
-    return session;
-  }
-
-  async getAllSessions() {
-    return await this.sessionRepo.all();
-  }
-
-  /** ------------------ Turn Operations ------------------ */
-
-  async addInterviewTurn(sessionId, { question, answer, evaluation }) {
-    const session = await this.sessionRepo.findById(sessionId);
-    if (!session) throw new Error("Session not found");
-
-    const turn = await this.turnRepo.create({
-      sessionId,
-      question,
-      idealAnswer: answer,
-      evaluation,
-      createdAt: new Date(),
-    });
-
-    return turn;
-  }
-
-  async getSessionTurns(sessionId) {
-    return await this.turnRepo.findBySessionId(sessionId);
-  }
 
   /* =====================================================
-     1️⃣ START INTERVIEW
+     START INTERVIEW
   ===================================================== */
-
   async startInterview({ candidateId, jobId, candidateType }) {
-    const initialState = new InterviewState({
-      phase: "rapport",
-      candidateType,
-      topicsCovered: [],
-      currentTopic: null,
-      depthLevel: 1,
-      lastResponseQuality: null,
-      stuckCount: 0,
-    });
+    try {
+      // ✅ Validate inputs
+      if (!candidateId || !jobId) {
+        throw new Error("candidateId and jobId are required");
+      }
 
-    const session = await this.sessionRepo.create({
-      candidateId,
-      jobId,
-      initialState,
-    });
-
-    return {
-      session,
-      greeting: "Welcome! Let's begin the interview.",
-    };
-  }
-
-  /* =====================================================
-     2️⃣ RUN FULL INTERVIEW LOOP
-  ===================================================== */
-
-  async runInterview({
-    candidateId,
-    jobId,
-    candidateType,
-    keywords,
-    availableTopics,
-    getCandidateAnswer,   // async (question) => answer
-    evaluateAnswer,       // async (question, answer) => evaluation
-    generateQuestion,     // async ({ context, topic, difficulty }) => rawQuestion
-  }) {
-    /* ---------- START ---------- */
-
-    const { session } = await this.startInterview({
-      candidateId,
-      jobId,
-      candidateType,
-    });
-
-    const sessionId = session.id;
-    let state = new InterviewState(session.state);
-
-    // Set first topic
-    state.currentTopic = availableTopics[0];
-    await this.sessionRepo.updateState(sessionId, state);
-
-    let safetyCounter = 0;
-
-    /* ---------- LOOP ---------- */
-
-    while (state.phase !== "close" && safetyCounter < 50) {
-      safetyCounter++;
-
-      /* 1️⃣ Generate Context */
-      const context =
-        await this.createContextFromKeywords(keywords);
-
-      /* 2️⃣ Decide Difficulty */
-      const difficulty =
-        state.depthLevel <= 1
-          ? "easy"
-          : state.depthLevel === 2
-          ? "medium"
-          : "hard";
-
-      /* 3️⃣ Generate Technical Question */
-      const rawQuestion = await generateQuestion({
-        context,
-        topic: state.currentTopic,
-        difficulty,
-        action: this.transitionEngine.decideNextAction(state),
+      const state = new InterviewState({
+        phase: "rapport",
+        candidateType: candidateType || "generic",
+        topicsCovered: [],
+        currentTopic: "Binary Search Tree in DSA", // or randomize
+        depthLevel: 1,
+        lastResponseQuality: null,
+        stuckCount: 0,
+        lastAction: null,
+        currentTurnId: null,
       });
 
-      /* 4️⃣ Convert to Conversational Style */
-      const conversationalQuestion =
-        await this.convertToInterviewStyle(rawQuestion);
+      // ✅ Create session in Redis
+      const session = await this.sessionRepo.create({
+        candidateId,
+        jobId,
+        initialState: state,
+        topicsListed: await this.getTopicsForJob(),
+      });
+      console.log("all tpoics in session repo " + JSON.stringify(session.topicsListed));
 
-      /* 5️⃣ Get Candidate Response */
-      const candidateAnswer =
-        await getCandidateAnswer(conversationalQuestion);
-
-      /* 6️⃣ Evaluate Response */
-      const evaluation =
-        await evaluateAnswer(
-          conversationalQuestion,
-          candidateAnswer
-        );
-
-      /* 7️⃣ Count Turns in Current Phase */
-      const turns =
-        await this.turnRepo.findBySessionId(sessionId);
-
-      const totalTurnsInPhase = turns.filter(
-        (t) => t.phase === state.phase
-      ).length;
-
-      /* 8️⃣ Apply Transition Engine */
-      const { updatedState } =
-        this.transitionEngine.apply({
+      console.log("Session created:", session.id);
+      await this.evalRepo.initSession(session.id);
+      // ✅ Generate first question and create first turn
+      let conversationalQuestion;
+      try {
+        conversationalQuestion = await this.generateNextQuestion({
+          sessionId: session.id,
           state,
-          evaluation,
-          totalTurnsInPhase,
-          availableTopics,
         });
+      } catch (err) {
+        console.error("Error generating first question:", err.message);
+        // Fallback question
+        conversationalQuestion =
+          "Tell me about your experience with database design.";
+      }
 
-      state = updatedState;
+      // ✅ Persist updated state (now includes currentTurnId from generateNextQuestion)
+      await this.sessionRepo.updateState(session.id, state);
 
-      /* 9️⃣ Save Turn */
-      await this.turnRepo.create({
-        sessionId,
+      return {
+        sessionId: session.id,
+        greeting: "Welcome! Let's begin the interview.",
         question: conversationalQuestion,
+        phase: state.phase,
+      };
+    } catch (err) {
+      console.error("startInterview error:", err.message);
+      throw err;
+    }
+  }
+
+  /* =====================================================
+     SUBMIT ANSWER
+  ===================================================== */
+  async submitAnswer({ sessionId, candidateAnswer }) {
+    try {
+      // ✅ Validate inputs
+      if (!sessionId || !candidateAnswer) {
+        throw new Error("sessionId and candidateAnswer are required");
+      }
+
+      // ✅ Fetch session
+      const session = await this.sessionRepo.findById(sessionId);
+      if (!session) throw new Error("Session not found");
+
+      const state = new InterviewState(session.state);
+
+      // ✅ Get current turn (with fallback)
+      let turn = null;
+
+      if (state.currentTurnId) {
+        turn = await this.turnRepo.findById(state.currentTurnId);
+      }
+
+      // Fallback: get latest turn
+      if (!turn) {
+        console.warn(
+          "state.currentTurnId not found, falling back to latest turn"
+        );
+        turn = await this.turnRepo.findLatestBySessionId(sessionId);
+      }
+
+      if (!turn) {
+        throw new Error("No active turn found for this session");
+      }
+
+      console.log("Processing answer for turn:", turn.id);
+
+      // ✅ Get all turns to calculate turn index
+      const turns = await this.turnRepo.findBySessionId(sessionId);
+      const turnIndex = Math.max(0, turns.length - 1);
+
+      // ✅ Evaluate answer using AIClient
+      const evaluation = await this.aiClient.evaluateAnswer({
+        interview_id: sessionId,
+        question_id: turn.id,
+        domain: turn.topic || state.currentTopic || "technical",
+        question: turn.question,
+        answer: candidateAnswer,
+        ideal_answer: turn.idealAnswer || "",
+        turn_index: turnIndex,
+      });
+      console.log("In flow Service current state " + JSON.stringify(state));
+      console.log("Done with Evaluation received:", evaluation);
+
+      // ✅ Update turn with answer + evaluation
+      await this.evalRepo.appendQuestion(sessionId, {
+        questionId: turn.id,
+        question: turn.question,
+        idealAnswer: turn.idealAnswer,
         candidateAnswer,
-        evaluation,
+        response_quality: evaluation.response_quality,
+        question_score: evaluation.question_score,
+        dimensions: evaluation.delta || {},   // if available
+        notes: evaluation.notes || [],
+        feedback: evaluation.feedback || "",
+        topic: turn.topic,
+        phase: turn.phase,
+        depthLevel: turn.depthLevel,
+        timestamp: new Date().toISOString(),
+      });
+
+      console.log("Turn updated with evaluation:", evaluation.response_quality);
+
+      // ✅ Update state with quality feedback
+      state.lastResponseQuality = evaluation.response_quality || "ok";
+      // state.lastAction = "received_answer";
+
+      // ✅ Calculate turns in current phase
+      const totalTurnsInPhase = turns.filter((t) => t.phase === state.phase)
+        .length;
+
+      // ✅ Apply transition logic
+      const { updatedState } = this.transitionEngine.apply({
+        state,
+        evaluation: { quality: state.lastResponseQuality },
+        totalTurnsInPhase,
+        availableTopics: [],
+      });
+
+      console.log("State transitioned to phase:", updatedState.phase);
+
+      // ✅ Persist updated state
+      await this.sessionRepo.updateState(sessionId, updatedState);
+
+      // ✅ Check if interview should close
+      if (updatedState.phase === "close") {
+        console.log("Interview transitioning to close phase");
+        const report = await this.generateFinalReport(sessionId);
+        await this.sessionRepo.endSession(sessionId);
+
+        return {
+          done: true,
+          report,
+          message: "Thank you for participating in this interview!",
+        };
+      }
+
+      // ✅ Generate next question
+      let nextQuestion;
+      try {
+        nextQuestion = await this.generateNextQuestion({
+          sessionId,
+          state: updatedState,
+        });
+      } catch (err) {
+        console.error("Error generating next question:", err.message);
+        // Fallback question
+        nextQuestion = `Let's continue. Tell me more about ${updatedState.currentTopic}`;
+      }
+
+      // ✅ Persist final state
+      await this.sessionRepo.updateState(sessionId, updatedState);
+
+      return {
+        done: false,
+        question: nextQuestion,
+        phase: updatedState.phase,
+      };
+    } catch (err) {
+      console.error("submitAnswer error:", err.message);
+      throw err;
+    }
+  }
+
+  /* =====================================================
+     GENERATE NEXT QUESTION
+  ===================================================== */
+  async generateNextQuestion({ sessionId, state }) {
+    try {
+      // ✅ Validate inputs
+      if (!state) throw new Error("State is required");
+
+      console.log("Generating next question for topic:", state.currentTopic);
+
+      // ✅ Decide context based on last action
+      let context = "general";
+
+      if (
+        state.lastAction === "probe_deeper" ||
+        state.lastAction === "simplify_or_hint"
+      ) {
+        // Reuse previous ideal answer for context
+        const prevTurn = state.currentTurnId
+          ? await this.turnRepo.findById(state.currentTurnId)
+          : null;
+
+        context = prevTurn?.idealAnswer || state.currentTopic || "general";
+      } else {
+        // Generate fresh context from AI
+        try {
+          context = await this.aiClient.generateContext(state.currentTopic);
+        } catch (err) {
+          console.warn("Error generating context, using topic:", err.message);
+          context = state.currentTopic || "general";
+        }
+      }
+
+      // ✅ Generate Q&A
+      const qna = await this.aiClient.generateQuestion({
+        context,
+        difficulty: this._getDifficultyString(state.depthLevel),
+      });
+
+      if (!qna || !qna.question) {
+        throw new Error("AIClient returned invalid Q&A");
+      }
+      console.log(context);
+      console.log(qna);
+      console.log("Q&A generated:", qna.question.substring(0, 50));
+
+      // ✅ Convert to conversational
+      const conversational = await this.aiClient.convertQuestion(qna.question);
+
+      // ✅ Create new turn in Redis
+      const newTurn = await this.turnRepo.create({
+        sessionId,
+        question: qna.question,
+        idealAnswer: qna.ideal_answer,
+        candidateAnswer: null,
+        evaluation: null,
         topic: state.currentTopic,
         phase: state.phase,
         depthLevel: state.depthLevel,
-        createdAt: new Date(),
       });
 
-      /* 🔟 Persist Updated State */
-      await this.sessionRepo.updateState(sessionId, state);
+      console.log("New turn created:", newTurn.id);
+
+      // ✅ Update state to point to new turn
+      state.currentTurnId = newTurn.id;
+      state.lastAction = "asked_question";
+
+      return conversational;
+    } catch (err) {
+      console.error("generateNextQuestion error:", err.message);
+      // Return a safe fallback question
+      return `Tell me about ${state?.currentTopic || "your experience"}`;
     }
+  }
 
-    /* ---------- CLOSE ---------- */
+  async getDetailedReport(req, res) {
+    const { sessionId } = req.params;
+    const data = await this.flowService.evalRepo.getBySessionId(sessionId);
 
-    return await this.closeInterview(sessionId);
+    return res.json({
+      success: true,
+      data,
+    });
+  }
+  /* =====================================================
+     GENERATE FINAL REPORT
+  ===================================================== */
+  async generateFinalReport(sessionId) {
+    try {
+      // ✅ Fetch all turns for this session
+      const turns = await this.turnRepo.findBySessionId(sessionId);
+
+      if (!turns || turns.length === 0) {
+        return {
+          totalQuestions: 0,
+          strongAnswers: 0,
+          okAnswers: 0,
+          weakAnswers: 0,
+          overallRating: "No Data",
+          message: "No questions were asked",
+        };
+      }
+
+      const totalQuestions = turns.length;
+
+      // ✅ Count responses by quality (use response_quality from evaluator)
+      const strongAnswers = turns.filter(
+        (t) => t.evaluation?.response_quality === "strong"
+      ).length;
+      const okAnswers = turns.filter(
+        (t) => t.evaluation?.response_quality === "ok"
+      ).length;
+      const weakAnswers = turns.filter(
+        (t) => t.evaluation?.response_quality === "weak"
+      ).length;
+
+      // ✅ Calculate score
+      const score = strongAnswers * 2 + okAnswers;
+
+      // ✅ Determine rating
+      let overallRating = "Average";
+      if (score >= totalQuestions * 1.5) {
+        overallRating = "Excellent";
+      } else if (score >= totalQuestions) {
+        overallRating = "Good";
+      } else if (weakAnswers > strongAnswers) {
+        overallRating = "Needs Improvement";
+      }
+
+      console.log("Final report:", {
+        totalQuestions,
+        overallRating,
+        strongAnswers,
+        okAnswers,
+        weakAnswers,
+      });
+
+      return {
+        totalQuestions,
+        strongAnswers,
+        okAnswers,
+        weakAnswers,
+        overallRating,
+        score,
+        message: `Interview completed: ${overallRating}`,
+      };
+    } catch (err) {
+      console.error("generateFinalReport error:", err.message);
+      return {
+        totalQuestions: 0,
+        strongAnswers: 0,
+        okAnswers: 0,
+        weakAnswers: 0,
+        overallRating: "Error",
+        message: `Error generating report: ${err.message}`,
+      };
+    }
   }
 
   /* =====================================================
-     3️⃣ CLOSE INTERVIEW
+     HELPER: Convert depth level to difficulty string
   ===================================================== */
-
-  async closeInterview(sessionId) {
-    const session =
-      await this.sessionRepo.findById(sessionId);
-
-    if (!session) {
-      throw new Error("Session not found");
-    }
-
-    await this.sessionRepo.endSession(sessionId);
-
-    const turns =
-      await this.turnRepo.findBySessionId(sessionId);
-
-    const report = this.generateFinalReport(turns);
-
-    return {
-      message:
-        "Thank you for participating in the interview. We will get back to you soon.",
-      report,
-    };
+  _getDifficultyString(depthLevel) {
+    if (depthLevel === 1) return "easy";
+    if (depthLevel === 2) return "medium";
+    if (depthLevel >= 3) return "hard";
+    return "easy";
   }
 
   /* =====================================================
-     REPORT GENERATION
+     BONUS: Get session progress
   ===================================================== */
+  async getSessionProgress(sessionId) {
+    try {
+      const session = await this.sessionRepo.findById(sessionId);
+      if (!session) throw new Error("Session not found");
 
-  generateFinalReport(turns) {
-    const totalQuestions = turns.length;
+      const turns = await this.turnRepo.findBySessionId(sessionId);
 
-    const strongAnswers = turns.filter(
-      (t) => t.evaluation?.quality === "strong"
-    ).length;
+      const answeredTurns = turns.filter((t) => t.candidateAnswer).length;
+      const totalTurns = turns.length;
 
-    const weakAnswers = turns.filter(
-      (t) => t.evaluation?.quality === "weak"
-    ).length;
-
-    const okAnswers = turns.filter(
-      (t) => t.evaluation?.quality === "ok"
-    ).length;
-
-    const score =
-      strongAnswers * 2 + okAnswers * 1;
-
-    let overallRating = "Average";
-
-    if (score >= totalQuestions * 1.5)
-      overallRating = "Excellent";
-    else if (score >= totalQuestions)
-      overallRating = "Good";
-    else if (weakAnswers > strongAnswers)
-      overallRating = "Needs Improvement";
-
-    return {
-      totalQuestions,
-      strongAnswers,
-      okAnswers,
-      weakAnswers,
-      overallRating,
-    };
+      return {
+        sessionId,
+        phase: session.state.phase,
+        totalQuestions: totalTurns,
+        answeredQuestions: answeredTurns,
+        currentTopic: session.state.currentTopic,
+        progress: totalTurns > 0 ? (answeredTurns / totalTurns) * 100 : 0,
+      };
+    } catch (err) {
+      console.error("getSessionProgress error:", err.message);
+      throw err;
+    }
   }
-
 }
