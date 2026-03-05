@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { motion as Motion } from 'framer-motion'
+import { motion as Motion } from 'framer-motion';
 import { FiVideo, FiVideoOff, FiMic, FiMicOff } from "react-icons/fi";
+import { useNavigate } from 'react-router-dom';
 import MeetingButton from "./MeetingButton";
 
 const MeetPreJoin = () => {
@@ -8,12 +9,8 @@ const MeetPreJoin = () => {
     const [micOn, setMicOn] = useState(false);
     const [stream, setStream] = useState(null);
     const videoRef = useRef(null);
-    
-    const handleClick = (e) => {
-        navigate('/Meet')
-    };
-    
-    // Handle camera + mic stream
+    const navigate = useNavigate();
+
     useEffect(() => {
         const getMedia = async () => {
             try {
@@ -23,14 +20,12 @@ const MeetPreJoin = () => {
                         audio: micOn,
                     });
                     setStream(mediaStream);
-
                     if (videoRef.current) {
                         videoRef.current.srcObject = mediaStream;
-                        videoRef.current.muted = true; // prevent echo
+                        videoRef.current.muted = true;
                         await videoRef.current.play();
                     }
                 } else {
-                    // Stop all tracks if both camera and mic are off
                     if (stream) {
                         stream.getTracks().forEach((track) => track.stop());
                         setStream(null);
@@ -42,11 +37,9 @@ const MeetPreJoin = () => {
                 setMicOn(false);
             }
         };
-
         getMedia();
     }, [cameraOn, micOn]);
 
-    // Enable/disable audio track dynamically
     useEffect(() => {
         if (stream) {
             stream.getAudioTracks().forEach((track) => {
@@ -55,9 +48,20 @@ const MeetPreJoin = () => {
         }
     }, [micOn, stream]);
 
+    const handleClick = () => {
+        if (stream) {
+            stream.getTracks().forEach((track) => track.stop());
+        }
+        navigate('/Meet', {
+            state: {
+                isMuted: !micOn,
+                isVideoOff: !cameraOn
+            }
+        });
+    };
+
     return (
         <div className="flex h-screen w-full bg-[#D1DED3] items-center justify-center p-4">
-            {/* Left: Video box */}
             <div className="w-2/3 h-3/4 bg-black flex items-center justify-center rounded-lg overflow-hidden">
                 {cameraOn ? (
                     <video
@@ -65,7 +69,7 @@ const MeetPreJoin = () => {
                         autoPlay
                         muted
                         className="w-full h-full object-cover"
-                        style={{ transform: "scaleX(-1)" }} // mirrored preview like Meet
+                        style={{ transform: "scaleX(-1)" }}
                     />
                 ) : (
                     <div className="text-white text-center text-lg">
@@ -74,9 +78,7 @@ const MeetPreJoin = () => {
                 )}
             </div>
 
-            {/* Right: Controls */}
             <div className="w-1/3 h-3/4 flex flex-col items-center justify-center space-y-6 ml-6">
-                {/* Camera Button */}
                 <button
                     onClick={() => setCameraOn((prev) => !prev)}
                     className="w-20 h-20 rounded-full flex items-center justify-center text-white text-4xl transition-all duration-300 hover:scale-110 active:scale-95"
@@ -88,7 +90,6 @@ const MeetPreJoin = () => {
                     {cameraOn ? <FiVideo /> : <FiVideoOff />}
                 </button>
 
-                {/* Mic Button */}
                 <button
                     onClick={() => setMicOn((prev) => !prev)}
                     className="w-20 h-20 rounded-full flex items-center justify-center text-white text-4xl transition-all duration-300 hover:scale-110 active:scale-95"
@@ -100,14 +101,7 @@ const MeetPreJoin = () => {
                     {micOn ? <FiMic /> : <FiMicOff />}
                 </button>
 
-                {/* Join Now Button */}
-                <MeetingButton
-                    onConnected={(pc) => {
-                        console.log("PeerConnection established:", pc);
-                        // You can store the pc if needed in state for future use
-                    }}
-                />
-
+                <MeetingButton/>
             </div>
         </div>
     );

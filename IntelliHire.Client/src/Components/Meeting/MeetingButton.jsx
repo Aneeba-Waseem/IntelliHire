@@ -1,106 +1,116 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-const MeetingButton = ({ onConnected }) => {
+const MeetingButton = ({ sessionId = "test123", onConnected }) => {
   const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
   const navigate = useNavigate();
-
-  // 🔴 Persistent audio element reference
   const remoteAudioRef = useRef(null);
+  const pcRef = useRef(null);
+  const wsRef = useRef(null);
 
   const joinMeeting = async () => {
     setLoading(true);
-
     try {
-      // 1. Get microphone access
+      // 1️⃣ Get mic
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("[JOIN] Got mic:", stream.getTracks().map(t => t.kind));
 
-      // 2. Create PeerConnection
+      // 2️⃣ Create PeerConnection
       const pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
       });
+      pcRef.current = pc;
 
-      pc.oniceconnectionstatechange = () => {
-        console.log("ICE:", pc.iceConnectionState);
-        if (pc.iceConnectionState === "connected") {
-          console.log("[WebRTC] Connected");
-        }
-      };
+      // 3️⃣ Send mic to server
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+      pc.addTransceiver("audio", { direction: "sendrecv" }); // receive TTS
 
-      // 🔴 IMPORTANT: Request to receive server audio (TTS)
-      pc.addTransceiver("audio", { direction: "sendrecv" });
-
-      // 3. Send mic to server (STT)
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-      // 🔴 Handle server audio
+      // 4️⃣ Handle remote audio
       pc.ontrack = (event) => {
-        console.log("[WebRTC] Remote track received:", event.track.kind);
-
         if (event.track.kind === "audio") {
           const remoteStream = new MediaStream();
           remoteStream.addTrack(event.track);
-
           if (remoteAudioRef.current) {
             remoteAudioRef.current.srcObject = remoteStream;
-
-            remoteAudioRef.current
-              .play()
-              .then(() => console.log("Audio playing"))
-              .catch((e) => console.log("Autoplay blocked:", e));
-          } else {
-            console.log("Remote audio element not ready");
+            remoteAudioRef.current.play().catch(() => console.log("Autoplay blocked"));
           }
+        }
+      };      
+
+      // 6️⃣ Connect WebSocket
+      const ws = new WebSocket(`ws://localhost:8001/api/webrtc/ws/${sessionId}`);
+      wsRef.current = ws;
+
+      ws.onopen = async () => {
+        console.log("[WS] Connected, sending offer...");
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        ws.send(JSON.stringify({ type: "offer", sdp: offer.sdp }));
+      };
+
+      // 5️⃣ Handle ICE candidates
+      pc.onicecandidate = (event) => {
+        if (
+          event.candidate &&
+          wsRef.current &&
+          wsRef.current.readyState === WebSocket.OPEN
+        ) {
+          wsRef.current.send(JSON.stringify({
+            type: "ice",
+            candidate: event.candidate
+          }));
         }
       };
 
-      // 4. Create offer
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+      ws.onmessage = async (msg) => {
+        const data = JSON.parse(msg.data);
 
+        if (data.type === "answer") {
+          await pc.setRemoteDescription({ type: "answer", sdp: data.sdp });
+          setConnected(true);
+          if (onConnected) onConnected(pc);
+          navigate("/Meet");
+        }
 
-      console.log("===== OFFER SDP =====");
-      console.log(offer.sdp);
+        else if (data.type === "ice") {
+          try {
+            await pc.addIceCandidate(data.candidate);
+          } catch (e) {
+            console.warn("Error adding ICE candidate:", e);
+          }
+        }
 
-      // 5. Send to backend
-      const response = await fetch("http://localhost:8001/api/webrtc/offer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          session_id: "test123",
-          sdp: offer.sdp,
-          type: offer.type
-        })
-      });
+        else if (data.type === "transcript") {
+          console.log("STT:", data.text);
+        }
 
-      if (!response.ok) {
-        throw new Error(`Offer failed: ${response.status}`);
-      }
+        else if (data.type === "tts_status") {
+          console.log("TTS streaming:", data.status);
+        }
+      };
 
-      // 6. Finalize connection
-      const answer = await response.json();
-      await pc.setRemoteDescription(new RTCSessionDescription(answer));
-
-      setConnected(true);
-      if (onConnected) onConnected(pc);
-
-      // Navigate AFTER connection is ready
-      navigate("/Meet");
+      ws.onclose = () => console.log("[WS] Closed");
+      ws.onerror = (e) => console.error("[WS] Error", e);
 
     } catch (err) {
       console.error("Join failed:", err);
-      setConnected(false);
     } finally {
       setLoading(false);
     }
   };
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pcRef.current) pcRef.current.close();
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, []);
+
   return (
     <>
-      {/* 🔴 Hidden audio element for TTS */}
-      <audio ref={remoteAudioRef} autoPlay playsInline />
-
+      <audio ref={remoteAudioRef} autoPlay playsInline hidden />
       <button
         onClick={joinMeeting}
         disabled={loading || connected}

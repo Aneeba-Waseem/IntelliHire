@@ -6,6 +6,7 @@ import jobDescriptionRoutes from "./routes/jobDescriptionRoutes.js";
 import listRoutes from "./routes/listRoutes.js";
 import jobCacheRoutes from "./routes/jobCache.js";
 import flowRoutes from "./routes/flowRoutes.js";
+import interviewEmail from "./routes/interviewEmail.js";
 
 const app = express();
 
@@ -22,5 +23,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/interview", interviewRoutes);
 app.use("/api/lists", listRoutes);
 app.use("/api/job-description", jobDescriptionRoutes);
+app.use("/api/interview-email", interviewEmail);
 
 export default app;

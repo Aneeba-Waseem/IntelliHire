@@ -21,7 +21,7 @@ npm install lucide-react recharts
 npm install @fortawesome/react-fontawesome @fortawesome/free-regular-svg-icons @fortawesome/free-solid-svg-icons
 npm install @react-spring/web
 npm install recharts
-
+npm install react-hot-toast
 
 #for backend
 npm install dotenv
@@ -33,6 +33,7 @@ npm install pg pg-hstore
 npm install node-fetch
 npm install nodemailer
 npm install ioredis
+npm i @react-email/render nodemailer
 
 #frontend -> backend 
 npm install cors

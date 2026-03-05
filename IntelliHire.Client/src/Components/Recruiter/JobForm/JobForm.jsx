@@ -5,6 +5,8 @@ import Step3Schedule from "./Step3Schedule";
 
 export default function JobForm() {
   const [step, setStep] = useState(1);
+  const [isOpen, setIsOpen] = useState(true);
+  
   const [formData, setFormData] = useState({
     jobRole: "",
     domains: [],
@@ -16,11 +18,13 @@ export default function JobForm() {
 
   const handleNext = () => setStep((prev) => Math.min(prev + 1, 3));
   const handleBack = () => setStep((prev) => Math.max(prev - 1, 1));
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Job Data Submitted:", formData);
-  };
+  const handleSubmit = (interviews) => {
+  console.log("Job Data Submitted:", formData);
+  console.log("Scheduled Interviews:", interviews);
+  setIsOpen(false);   // ← CLOSE MODAL
+};
+if (!isOpen) return null;
+  
 
   return (
     <div className="p-8">

@@ -29,9 +29,11 @@ import FlowService from "./services/FlowService.js";
 import InterviewController from "./controllers/InterviewController.js";
 import FlowController from "./controllers/flowController.js";
 import createFlowRoutes from "./routes/flowRoutes.js";
+
 // --------------------
 // Config & Middleware
 // --------------------
+dotenv.config();
 const PORT = process.env.PORT || 8000;
 
 app.use(

@@ -1,9 +1,8 @@
 import asyncio
 from dataclasses import dataclass
 from typing import Dict, Optional
-
 from aiortc import RTCPeerConnection
-
+from .tts.tts_track import QueueAudioTrack
 
 @dataclass
 class LiveSession:
@@ -11,12 +10,11 @@ class LiveSession:
     pc: RTCPeerConnection
     stt_queue: asyncio.Queue
     tts_queue: asyncio.Queue
+    tts_audio_track: QueueAudioTrack
+    tts_track_attached: bool = False
     closed: bool = False
-
-    # flags to prevent duplicates
     deepgram_started: bool = False
     track_handler_added: bool = False
-
 
 class SessionManager:
     def __init__(self):
@@ -30,12 +28,15 @@ class SessionManager:
                 return sess
 
             pc = pc_factory()
+            tts_queue = asyncio.Queue(maxsize=800)
+            tts_audio_track = QueueAudioTrack(tts_queue)
+
             sess = LiveSession(
                 session_id=session_id,
                 pc=pc,
                 stt_queue=asyncio.Queue(maxsize=400),
-                tts_queue=asyncio.Queue(maxsize=800),
-                closed=False,
+                tts_queue=tts_queue,
+                tts_audio_track=tts_audio_track
             )
             self._sessions[session_id] = sess
             return sess
@@ -51,18 +52,20 @@ class SessionManager:
                 return False
             sess.closed = True
 
-        try:
-            await sess.pc.close()
-        except Exception:
-            pass
-
-        # unblock outbound track
+        # Unblock queues
         try:
             sess.tts_queue.put_nowait(None)
+            sess.stt_queue.put_nowait(None)
         except Exception:
             pass
 
-        return True
+        # Close PeerConnection safely
+        try:
+            if sess.pc and sess.pc.connectionState != "closed":
+                await sess.pc.close()
+        except Exception as e:
+            print("Error closing PC:", e)
 
+        return True
 
 session_manager = SessionManager()

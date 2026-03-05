@@ -3,8 +3,12 @@ from av.audio.resampler import AudioResampler
 import asyncio
 
 async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
+    """
+    Read WebRTC audio, resample to 16kHz mono, push to STT queue.
+    """
     print("🎧 Initializing resampler (48k → 16k)")
     resampler = AudioResampler(format="s16", layout="mono", rate=16000)
+
     try:
         while True:
             frame = await track.recv()

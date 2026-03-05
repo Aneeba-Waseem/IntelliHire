@@ -16,6 +16,10 @@ import VerificationNotice from "./Components/Auth/VerificationNotice";
 import ScheduledInterviews from "./Components/Recruiter/ScheduledInterview";
 import { ModalProvider } from "./Components/Recruiter/JobForm/ModalContext";
 
+
+
+import { Toaster } from "react-hot-toast";
+
 function App() {
   useAuthRefresh(); // refresh token every 14 min
 
@@ -26,7 +30,32 @@ function App() {
   const Meeting = location.pathname === "/Meet";
   const userVerification = location.pathname === "/verify-notice"
   return (
-    <ModalProvider>
+    <>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: "#29445D",
+            color: "#fff",
+            borderRadius: "10px",
+            padding: "12px 16px",
+          },
+          success: {
+            iconTheme: {
+              primary: "#4CAF50",
+              secondary: "#fff",
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: "#F44336",
+              secondary: "#fff",
+            },
+          },
+        }}
+      />
+       <ModalProvider>
       <div>
         {/* Conditionally render Navbar */}
         {LandingNavBar && <Navbar />}
@@ -48,9 +77,10 @@ function App() {
         {!auth && !Meeting && !userVerification && <Footer />}
       </div>
     </ModalProvider>
-
+    </>
   );
 }
+
 
 export default App;
 // #29445D #D1DED3 #9CBFAC #719D99 #45767C

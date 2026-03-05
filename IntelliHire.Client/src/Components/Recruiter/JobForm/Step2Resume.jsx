@@ -176,16 +176,16 @@ export default function Step2Resume({ handleNext, handleBack }) {
       if (pollingInterval) clearInterval(pollingInterval);
     };
   }, [pollingInterval]);
-const handleShortlistChange = async (resumeId, checked) => {
-  setSelectedIds(prev => {
-    const copy = new Set(prev);
-    if (checked) copy.add(resumeId);
-    else copy.delete(resumeId);
-    return copy;
-  });
+  const handleShortlistChange = async (resumeId, checked) => {
+    setSelectedIds(prev => {
+      const copy = new Set(prev);
+      if (checked) copy.add(resumeId);
+      else copy.delete(resumeId);
+      return copy;
+    });
 
-  await updateShortlistAPI(batchId, resumeId, checked);
-};
+    await updateShortlistAPI(batchId, resumeId, checked);
+  };
 
 
 
@@ -240,52 +240,51 @@ const handleShortlistChange = async (resumeId, checked) => {
       {isParsing && (
         <div className="mb-4 text-blue-600 font-semibold">Processing resumes... Please wait.</div>
       )}
-{profiles.map(p => {
-  const isChecked =
-    selectedIds.has(p.resume_id) || p.matching?.is_shortlisted;
+      {profiles.map(p => {
+        const isChecked =
+          selectedIds.has(p.resume_id) || p.matching?.is_shortlisted;
 
-  return (
-    <div
-      key={p.resume_id}
-      className={`flex items-center justify-between mt-5 p-4 mb-3 rounded-lg border transition hover:shadow-sm
-        ${
-          isChecked
-            ? "bg-[#E6F2EC] border-[#29445D]"
-            : "bg-white border-gray-300"
-        }
+        return (
+          <div
+            key={p.resume_id}
+            className={`flex items-center justify-between mt-5 p-4 mb-3 rounded-lg border transition hover:shadow-sm
+        ${isChecked
+                ? "bg-[#E6F2EC] border-[#29445D]"
+                : "bg-white border-gray-300"
+              }
       `}
-    >
-      {/* Left: Checkbox + Info */}
-      <div className="flex items-center gap-4">
-        <input
-          type="checkbox"
-          className="w-5 h-5 cursor-pointer accent-[#29445D]"
-          checked={isChecked}
-          onChange={(e) =>
-            handleShortlistChange(p.resume_id, e.target.checked)
-          }
-        />
+          >
+            {/* Left: Checkbox + Info */}
+            <div className="flex items-center gap-4">
+              <input
+                type="checkbox"
+                className="w-5 h-5 cursor-pointer accent-[#29445D]"
+                checked={isChecked}
+                onChange={(e) =>
+                  handleShortlistChange(p.resume_id, e.target.checked)
+                }
+              />
 
-        <div className="flex flex-col">
-          <span className="font-semibold text-lg text-[#29445D]">
-            {p.parsed_resume?.name || "Unknown Candidate"}
-          </span>
-          <span className="text-sm text-gray-500">
-            {p.parsed_resume?.qualification || ""}
-          </span>
-        </div>
-      </div>
+              <div className="flex flex-col">
+                <span className="font-semibold text-lg text-[#29445D]">
+                  {p.parsed_resume?.name || "Unknown Candidate"}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {p.parsed_resume?.qualification || ""}
+                </span>
+              </div>
+            </div>
 
-      {/* Right: Score */}
-      <div className="text-right">
-        <span className="text-sm text-gray-500">Match Score</span>
-        <div className="text-lg font-bold text-[#29445D]">
-          {p.matching?.score ?? "-"}
-        </div>
-      </div>
-    </div>
-  );
-})}
+            {/* Right: Score */}
+            <div className="text-right">
+              <span className="text-sm font-bold text-[#29445D]">Match Score</span>
+              <div className="text-lg font-bold text-[#29445D]">
+                {p.matching?.score ? (p.matching.score * 100).toFixed(2) : "-"}%
+              </div>
+            </div>
+          </div>
+        );
+      })}
 
 
       {profiles.length > 0 && (
