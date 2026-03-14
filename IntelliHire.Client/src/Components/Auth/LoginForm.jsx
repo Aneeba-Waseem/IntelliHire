@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../../features/auth/authThunks";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { scheduleTokenRefresh } from "../../api/authFetch";
+import axios from "axios";
 
 export default function LoginForm() {
   const dispatch = useDispatch();
@@ -20,15 +22,15 @@ export default function LoginForm() {
     e.preventDefault();
     const success = await dispatch(loginUser(formData));
     if (loginUser.fulfilled.match(success)) {
+      scheduleTokenRefresh();
 
       navigate('/userDashboard')
 
       const { accessToken, user } = success.payload;  // get user from payload
       localStorage.setItem("accessToken", accessToken);
+      axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
       console.log("✅ Login successful");
-      console.log("User ID:", user.id);
-
-      console.log("User ID:", user.uuid);
+      console.log("User ID:", user.userId);
       console.log("User Name:", user.fullName);
     }
   };

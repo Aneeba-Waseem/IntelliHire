@@ -12,6 +12,7 @@ import CommonPage from "./Components/CommonComponents/CommonPage";
 import MeetingPermissions from "./Components/Meeting/MeetingPermission";
 import Dashboard from "./Components/Dashboard/Dashboard";
 import Meet from "./Components/Meeting/Meet";
+import { SessionProvider } from "./Components/Meeting/sessionContext";
 import VerificationNotice from "./Components/Auth/VerificationNotice";
 import ScheduledInterviews from "./Components/Recruiter/ScheduledInterview";
 import { ModalProvider } from "./Components/Recruiter/JobForm/ModalContext";
@@ -56,6 +57,7 @@ function App() {
         }}
       />
        <ModalProvider>
+         <SessionProvider>
       <div>
         {/* Conditionally render Navbar */}
         {LandingNavBar && <Navbar />}
@@ -76,6 +78,7 @@ function App() {
         {/* Conditionally render Footer */}
         {!auth && !Meeting && !userVerification && <Footer />}
       </div>
+      </SessionProvider>
     </ModalProvider>
     </>
   );

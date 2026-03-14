@@ -1,8 +1,6 @@
 // frontend/api/JobApi.js
 
 import { loadAuthState } from "../features/auth/persistAuth";
-import { authFetch } from "./authFetch";
-
 const BASE_URL = "http://localhost:8000/api";
 
 /* =====================================================

@@ -54,7 +54,7 @@ async def connect_deepgram(audio_queue: asyncio.Queue, websocket, session_id: st
 
     async def send_to_deepgram():
         last_audio_time = asyncio.get_event_loop().time()
-        keep_alive_interval = 5  # seconds
+        keep_alive_interval = 2  # seconds
 
         while True:
             try:

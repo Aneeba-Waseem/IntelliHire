@@ -17,6 +17,7 @@ export const startInterview = async (token, candidateId = "cand_12345", jobId = 
 };
 
 export const submitAnswer = async (token, sessionId, answer) => {
+  console.log("in the submitAnswer function for sessionId:", token, "answer:", answer);
   const res = await fetch(`${API_BASE}/answer`, {
     method: "POST",
     headers: {
