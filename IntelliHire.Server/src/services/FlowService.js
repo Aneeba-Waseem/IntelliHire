@@ -8,53 +8,55 @@ import { redisClient } from "../config/redisClient.js";
 import JobClient from "./JobClient.js";
 
 export default class FlowService {
-  constructor({ aiClient = new AIClient(), sessionRepo, turnRepo,jobClient = new JobClient() }) {
+  constructor({ aiClient = new AIClient(), sessionRepo, turnRepo, jobClient = new JobClient() }) {
     this.aiClient = aiClient;
     this.transitionEngine = new TransitionEngine();
     this.sessionRepo = sessionRepo || new InterviewSessionRepository();
     this.turnRepo = turnRepo || new InterviewTurnRepository();
     this.evalRepo = new InterviewEvaluationRepository();
-    this.jobClient = jobClient; 
+    this.jobClient = jobClient;
   }
-async getTopicsForJob(token) {
-  try {
-    const jobData = await this.jobClient.getJobStep1(token);
+  async getTopicsForJob(token) {
+    try {
+      const jobData = await this.jobClient.getJobStep1(token);
 
-    if (!jobData || Object.keys(jobData).length === 0) {
-      console.warn("No job step1 found");
+      if (!jobData || Object.keys(jobData).length === 0) {
+        console.warn("No job step1 found");
+        return ["general"];
+      }
+
+      const techStack = jobData.techStack || [];
+      const domains = jobData.domains || [];
+
+      const topics = [...techStack, ...domains]
+        .map(t => String(t).trim())
+        .filter(Boolean);
+
+      return topics.length ? topics : ["general"];
+    } catch (err) {
+      console.error("getTopicsForJob error:", err.message);
       return ["general"];
     }
-
-    const techStack = jobData.techStack || [];
-    const domains = jobData.domains || [];
-
-    const topics = [...techStack, ...domains]
-      .map(t => String(t).trim())
-      .filter(Boolean);
-
-    return topics.length ? topics : ["general"];
-  } catch (err) {
-    console.error("getTopicsForJob error:", err.message);
-    return ["general"];
   }
-}
 
 
   /* =====================================================
      START INTERVIEW
   ===================================================== */
-  async startInterview({ candidateId, jobId, candidateType , token}) {
+  async startInterview({ candidateId, jobId, candidateType, token }) {
     try {
       // ✅ Validate inputs
       if (!candidateId || !jobId) {
         throw new Error("candidateId and jobId are required");
       }
 
+
+      // 1️⃣ Create initial state first
       const state = new InterviewState({
         phase: "rapport",
         candidateType: candidateType || "generic",
         topicsCovered: [],
-        currentTopic: "Binary Search Tree in DSA", // or randomize
+        currentTopic: null, // temporary, will set after topics fetched
         depthLevel: 1,
         lastResponseQuality: null,
         stuckCount: 0,
@@ -62,14 +64,19 @@ async getTopicsForJob(token) {
         currentTurnId: null,
       });
 
-      // ✅ Create session in Redis
+      // 2️⃣ Get topics
+      const topics = await this.getTopicsForJob(token);
+      state.currentTopic = topics[0]; // set first topic
+
+      // 3️⃣ Create session with proper state
       const session = await this.sessionRepo.create({
         candidateId,
         jobId,
         initialState: state,
-        topicsListed: await this.getTopicsForJob(token),
+        topicsListed: topics,
       });
-      console.log("all tpoics in session repo " + JSON.stringify(session.topicsListed));
+
+
 
       console.log("Session created:", session.id);
       await this.evalRepo.initSession(session.id);
