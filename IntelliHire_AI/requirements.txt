@@ -30,6 +30,7 @@ fastapi
 uvicorn 
 av
 aiohttp_cors
+pydub
 # caching resumes
 redis
 python-multipart

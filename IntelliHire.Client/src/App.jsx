@@ -16,7 +16,7 @@ import { SessionProvider } from "./Components/Meeting/sessionContext";
 import VerificationNotice from "./Components/Auth/VerificationNotice";
 import ScheduledInterviews from "./Components/Recruiter/ScheduledInterview";
 import { ModalProvider } from "./Components/Recruiter/JobForm/ModalContext";
-
+// import WebSocketTest from "./Components/Meeting/WebSocketConnectivityTest"; 
 
 
 import { Toaster } from "react-hot-toast";
@@ -74,6 +74,7 @@ function App() {
           <Route path="/Meet" element={<Meet />} />
           <Route path="/verify-notice" element={<VerificationNotice />} />
           <Route path="/ScheduledInterview" element={<ScheduledInterviews />} />
+          {/* <Route path="/WebTest" element={<WebSocketTest/>} /> */}
         </Routes>
         {/* Conditionally render Footer */}
         {!auth && !Meeting && !userVerification && <Footer />}

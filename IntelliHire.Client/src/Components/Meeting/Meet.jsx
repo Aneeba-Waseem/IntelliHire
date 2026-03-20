@@ -13,12 +13,14 @@ export default function Meet() {
   const pc = webrtcStore.pc;
   const ws = webrtcStore.ws;
   const stream = webrtcStore.stream;
+  const remoteAudioStream = webrtcStore.remoteAudioStream;
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [question, setQuestion] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [interviewSessionId, setInterviewSessionId] = useState();
+  const [audioStatus, setAudioStatus] = useState("⏳ Initializing...");
 
   const interviewSessionIdRef = useRef();
 
@@ -26,23 +28,119 @@ export default function Meet() {
     interviewSessionIdRef.current = interviewSessionId;
   }, [interviewSessionId]);
 
-  // ---------- HANDLE REMOTE AUDIO TRACK ----------
+  // ---------- SETUP REMOTE AUDIO ----------
   useEffect(() => {
-    if (!pc || !remoteAudioRef.current) return;
+    if (!remoteAudioRef.current) return;
 
-    const remoteStream = new MediaStream();
-    remoteAudioRef.current.srcObject = remoteStream;
+    console.log("\n" + "=".repeat(70));
+    console.log("🎵 MEET: SETTING UP REMOTE AUDIO");
+    console.log("=".repeat(70));
 
-    pc.ontrack = (event) => {
-      if (event.track.kind === "audio") {
-        console.log("🎧 Remote audio track received");
-        remoteStream.addTrack(event.track);
-        remoteAudioRef.current.play().catch(() => {
-          console.warn("Autoplay blocked, click 'Enable Audio' button");
+    // If we have the remote stream from MeetingButton, use it
+    if (remoteAudioStream) {
+      console.log("✅ Remote audio stream available from MeetingButton");
+      console.log("  Stream ID:", remoteAudioStream.id);
+      console.log("  Audio tracks:", remoteAudioStream.getAudioTracks().length);
+
+      remoteAudioRef.current.srcObject = remoteAudioStream;
+      setAudioStatus("✅ Stream connected (from MeetingButton)");
+
+      console.log("▶️ Attempting to play audio...");
+
+      remoteAudioRef.current
+        .play()
+        .then(() => {
+          console.log("\n" + "✅".repeat(25));
+          console.log("✅ AUDIO PLAYBACK STARTED ✅");
+          console.log("✅".repeat(25) + "\n");
+          setAudioStatus("✅✅✅ AUDIO PLAYING 🎉");
+        })
+        .catch((err) => {
+          console.error("❌ Playback error:", err.name, err.message);
+          setAudioStatus(`❌ ${err.name}: ${err.message}`);
+
+          // Retry
+          console.log("🔄 Retrying...");
+          setTimeout(() => {
+            remoteAudioRef.current?.play().catch((e) => {
+              console.error("❌ Retry failed:", e.message);
+            });
+          }, 1000);
         });
+    } else {
+      console.log("⚠️ No remote audio stream in webrtcStore");
+      console.log("Setting up ontrack handler as fallback...");
+      setAudioStatus("⏳ Waiting for audio track...");
+
+      // Fallback: attach ontrack handler in Meet if not set up in MeetingButton
+      if (pc) {
+        pc.ontrack = (event) => {
+          console.log("\n🎉 pc.ontrack fired (fallback handler)");
+          console.log("Track:", {
+            kind: event.track.kind,
+            enabled: event.track.enabled,
+            streams: event.streams.length,
+          });
+
+          if (event.track.kind === "audio" && event.streams.length > 0) {
+            const audioStream = event.streams[0];
+            console.log("✅ Audio stream:", audioStream.id);
+
+            remoteAudioRef.current.srcObject = audioStream;
+            setAudioStatus("✅ Stream connected (from pc.ontrack)");
+
+            remoteAudioRef.current
+              .play()
+              .then(() => {
+                console.log("✅ AUDIO PLAYBACK STARTED");
+                setAudioStatus("✅✅✅ AUDIO PLAYING 🎉");
+              })
+              .catch((err) => {
+                console.error("❌ Play error:", err.message);
+                setAudioStatus(`❌ ${err.message}`);
+              });
+          }
+        };
       }
+    }
+
+    // Setup audio element event listeners
+    const audioEl = remoteAudioRef.current;
+
+    const handlePlay = () => {
+      console.log("✅ Audio play event");
     };
-  }, [pc]);
+
+    const handlePause = () => {
+      console.log("⏸️ Audio pause event");
+    };
+
+    const handleCanPlay = () => {
+      console.log("✅ Audio canplay event");
+    };
+
+    const handleLoadedMetadata = () => {
+      console.log("✅ Audio loadedmetadata event");
+    };
+
+    const handleError = (e) => {
+      console.error("❌ Audio error:", e);
+    };
+
+    audioEl.addEventListener("play", handlePlay);
+    audioEl.addEventListener("pause", handlePause);
+    audioEl.addEventListener("canplay", handleCanPlay);
+    audioEl.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audioEl.addEventListener("error", handleError);
+
+    return () => {
+      audioEl.removeEventListener("play", handlePlay);
+      audioEl.removeEventListener("pause", handlePause);
+      audioEl.removeEventListener("canplay", handleCanPlay);
+      audioEl.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audioEl.removeEventListener("error", handleError);
+    };
+  }, [remoteAudioStream, pc]);
 
   // ---------- LOCAL VIDEO ----------
   useEffect(() => {
@@ -118,6 +216,7 @@ export default function Meet() {
   // ---------- SUBMIT ANSWER ----------
   const submitAnswer = async (answer) => {
     try {
+
       const token = localStorage.getItem("accessToken");
 
       const res = await fetch("http://localhost:8000/api/flow/answer", {
@@ -128,7 +227,7 @@ export default function Meet() {
         },
         body: JSON.stringify({
           answer,
-          interviewSessionId: interviewSessionIdRef.current,
+          sessionId: interviewSessionIdRef.current,
         }),
       });
 
@@ -146,6 +245,7 @@ export default function Meet() {
     if (!pc || !stream) {
       navigate("/");
     } else {
+      console.log("✅ Meet component mounted");
       startInterview();
     }
   }, []);
@@ -175,8 +275,16 @@ export default function Meet() {
     webrtcStore.pc = null;
     webrtcStore.ws = null;
     webrtcStore.stream = null;
+    webrtcStore.remoteAudioStream = null;
 
     navigate("/");
+  };
+
+  const manualPlay = () => {
+    console.log("▶️ Manual play clicked");
+    remoteAudioRef.current?.play().catch((err) => {
+      console.error("❌ Play failed:", err);
+    });
   };
 
   return (
@@ -206,37 +314,55 @@ export default function Meet() {
         </div>
 
         {isListening && (
-          <div className="bg-yellow-100 p-2 rounded-lg mt-2 text-center">
+          <div className="bg-yellow-100 p-2 rounded-lg mt-2 text-center font-semibold">
             Listening to your answer...
           </div>
         )}
 
+        {/* AUDIO STATUS */}
+        <div className="bg-blue-100 border-2 border-blue-500 p-3 rounded-lg mt-3 text-center font-bold text-blue-900 text-lg">
+          {audioStatus}
+        </div>
+
         <div className="flex justify-center gap-6 mt-4">
-          <button onClick={toggleMute} className="p-4 bg-white rounded-xl">
+          <button
+            onClick={toggleMute}
+            className="p-4 bg-white rounded-xl hover:bg-gray-100 transition"
+          >
             {isMuted ? <MicOff /> : <Mic />}
           </button>
 
-          <button onClick={toggleVideo} className="p-4 bg-white rounded-xl">
+          <button
+            onClick={toggleVideo}
+            className="p-4 bg-white rounded-xl hover:bg-gray-100 transition"
+          >
             {isVideoOff ? <VideoOff /> : <Video />}
           </button>
 
           <button
             onClick={endCall}
-            className="p-4 bg-red-500 text-white rounded-xl"
+            className="p-4 bg-red-500 text-white rounded-xl hover:bg-red-600 transition"
           >
             <Phone />
           </button>
         </div>
 
-        <button
-          onClick={() => remoteAudioRef.current?.play()}
-          className="mt-4 bg-blue-500 text-white p-2 rounded"
+        {/* DEBUG BUTTONS */}
+        {/* <button
+          onClick={manualPlay}
+          className="mt-4 w-full bg-blue-500 text-white p-3 rounded-xl font-semibold hover:bg-blue-600 transition"
         >
-          Enable Audio
-        </button>
+          ▶️ Manual Play Audio
+        </button> */}
       </div>
 
-      <audio ref={remoteAudioRef} autoPlay playsInline />
+      {/* AUDIO ELEMENT */}
+      <audio
+        ref={remoteAudioRef}
+        autoPlay
+        playsInline
+        style={{ display: "none" }}
+      />
     </div>
   );
 }

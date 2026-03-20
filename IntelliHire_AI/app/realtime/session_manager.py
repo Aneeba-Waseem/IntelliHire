@@ -3,6 +3,9 @@ from dataclasses import dataclass
 from typing import Dict, Optional
 from aiortc import RTCPeerConnection
 from .tts.tts_track import QueueAudioTrack
+import logging
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class LiveSession:
@@ -28,17 +31,18 @@ class SessionManager:
                 return sess
 
             pc = pc_factory()
-            tts_queue = asyncio.Queue(maxsize=800)
+            tts_queue = asyncio.Queue(maxsize=800000)
             tts_audio_track = QueueAudioTrack(tts_queue)
 
             sess = LiveSession(
                 session_id=session_id,
                 pc=pc,
-                stt_queue=asyncio.Queue(maxsize=400),
+                stt_queue=asyncio.Queue(maxsize=900000),
                 tts_queue=tts_queue,
                 tts_audio_track=tts_audio_track
             )
             self._sessions[session_id] = sess
+            logger.info(f"Created new session: {session_id}")
             return sess
 
     async def get(self, session_id: str) -> Optional[LiveSession]:
@@ -51,20 +55,23 @@ class SessionManager:
             if not sess or sess.closed:
                 return False
             sess.closed = True
+            logger.info(f"Closing session: {session_id}")
 
         # Unblock queues
         try:
             sess.tts_queue.put_nowait(None)
             sess.stt_queue.put_nowait(None)
-        except Exception:
-            pass
+            logger.info(f"Sent end-of-stream signals for session: {session_id}")
+        except Exception as e:
+            logger.error(f"Error sending end-of-stream for {session_id}: {e}")
 
         # Close PeerConnection safely
         try:
             if sess.pc and sess.pc.connectionState != "closed":
                 await sess.pc.close()
+                logger.info(f"Closed PeerConnection for session: {session_id}")
         except Exception as e:
-            print("Error closing PC:", e)
+            logger.error(f"Error closing PeerConnection for {session_id}: {e}")
 
         return True
 
