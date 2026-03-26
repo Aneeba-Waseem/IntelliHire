@@ -1,11 +1,25 @@
+"""
+Modified deepgram_client.py
+
+Integrates TranscriptCollector to collect complete utterances using Deepgram's VAD.
+Instead of streaming transcripts immediately, waits for speech_final=true and 
+collects the complete answer before sending to interview flow.
+
+Key Changes:
+- Uses TranscriptCollector instead of immediate streaming
+- Respects Deepgram's speech_final flag for utterance completion
+- Sends complete answers instead of fragments
+- Implements proper VAD finalization
+"""
+
 import asyncio
 import json
 import websockets
 import os
 import httpx
-import numpy as np
 import logging
 from dotenv import load_dotenv
+from app.realtime.STT.TranscriptCollectorService import TranscriptCollector
 
 logger = logging.getLogger(__name__)
 
@@ -14,51 +28,39 @@ load_dotenv()
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 NODE_TRANSCRIPT_URL = os.getenv("NODE_TRANSCRIPT_URL", "")
 
-# ⭐ CRITICAL: Deepgram STT expects 16kHz mono linear16 PCM
+# ⭐ UPDATED: VAD-enabled Deepgram configuration
+# The key difference: endpointing=300 triggers speech_final detection
 DEEPGRAM_WS_URL = (
     "wss://api.deepgram.com/v1/listen"
     "?encoding=linear16"
     "&sample_rate=16000"
     "&channels=1"
-    "&interim_results=true"
     "&punctuate=true"
-    "&model=nova-3"
+    "&model=nova-2"
+    "&interim_results=true"
+    "&endpointing=300"  # ⭐ VAD: End utterance after 300ms of silence
+    "&smart_format=true"
 )
 
-logger.info(f"📡 Deepgram STT Config:")
+logger.info(f"📡 Deepgram VAD Config:")
 logger.info(f"  Encoding: linear16 (16-bit PCM)")
 logger.info(f"  Sample rate: 16000 Hz")
 logger.info(f"  Channels: 1 (mono)")
+logger.info(f"  Endpointing: 300ms (VAD speech finalization)")
 logger.info(f"  URL: {DEEPGRAM_WS_URL}")
-
-
-def generate_silence(duration_sec=0.5, sample_rate=16000):
-    """
-    Generate linear16 PCM silence bytes for Deepgram keep-alive.
-    
-    Args:
-        duration_sec: Duration of silence in seconds
-        sample_rate: Sample rate in Hz (default 16000)
-    
-    Returns:
-        bytes: PCM silence
-    """
-    num_samples = int(duration_sec * sample_rate)
-    silence = np.zeros(num_samples, dtype=np.int16)
-    logger.debug(f"🔇 Generated {num_samples} silence samples ({len(silence.tobytes())} bytes)")
-    return silence.tobytes()
 
 
 async def send_to_node(session_id: str, text: str):
     """
     Send transcript to Node.js webhook for processing.
+    (Optional - can be disabled)
     """
     if not NODE_TRANSCRIPT_URL:
         logger.debug("⚠️ NODE_TRANSCRIPT_URL not set, skipping webhook")
         return
     
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with httpx.AsyncClient(timeout=100) as client:
             response = await client.post(
                 NODE_TRANSCRIPT_URL,
                 json={"session_id": session_id, "text": text}
@@ -68,32 +70,62 @@ async def send_to_node(session_id: str, text: str):
         logger.error(f"❌ Node webhook error: {e}")
 
 
-async def connect_deepgram(stt_queue: asyncio.Queue, websocket, session_id: str):
+async def connect_deepgram(
+    stt_queue: asyncio.Queue, 
+    websocket, 
+    session_id: str,
+    transcript_collector: TranscriptCollector = None
+):
     """
-    Connect to Deepgram STT, stream audio from queue, handle responses.
+    Connect to Deepgram STT with VAD-based transcript collection.
     
-    This maintains a bidirectional WebSocket connection:
-    - SEND: Audio chunks from the STT queue (48kHz → 16kHz resampled)
-    - RECEIVE: Transcript responses from Deepgram
+    ⭐ NEW BEHAVIOR:
+    - Receives audio chunks from WebRTC via stt_queue
+    - Streams to Deepgram for STT processing
+    - Uses TranscriptCollector to buffer transcripts
+    - Sends complete utterances (speech_final=true) to client
+    - Only sends to /api/flow/answer when utterance is complete
     
-    ⭐ CRITICAL: This function spawns two background tasks!
+    Args:
+        stt_queue: Queue of PCM audio chunks from WebRTC
+        websocket: Client WebSocket connection
+        session_id: Interview session ID
+        transcript_collector: Optional custom collector (for testing)
+    
+    Returns:
+        deepgram_ws: WebSocket connection to Deepgram (or None on error)
     """
     
     logger.info(f"🔗 [STT] Connecting to Deepgram for session {session_id}...")
+    logger.info(f"    Using VAD endpointing=300ms for speech detection")
     
     deepgram_ws = None
+    
+    # Create or use provided TranscriptCollector
+    if transcript_collector is None:
+        transcript_collector = TranscriptCollector(
+            on_complete=lambda text: logger.info(f"✅ [COLLECTOR] Complete: {text[:50]}..."),
+            on_interim=lambda text: logger.debug(f"🟡 [COLLECTOR] Interim: {text[:50]}..."),
+            max_silence_ms=2000,  # Wait 2s after final for additional chunks
+        )
+    
     try:
-        # Verify API key exists
         if not DEEPGRAM_API_KEY:
             raise ValueError("DEEPGRAM_API_KEY environment variable not set!")
         
-        # Connect to Deepgram with proper error handling
+        logger.info(f"🔑 [STT] API Key present: {DEEPGRAM_API_KEY[:20]}...")
+        logger.info(f"🔗 [STT] Connecting to: {DEEPGRAM_WS_URL}")
+        
+        # Connect to Deepgram with proper configuration
         deepgram_ws = await websockets.connect(
             DEEPGRAM_WS_URL,
             additional_headers={"Authorization": f"Token {DEEPGRAM_API_KEY}"},
-            open_timeout=10,
+            open_timeout=30,
+            ping_interval=30,
+            ping_timeout=3600,
         )
-        logger.info(f"✅ [STT] Deepgram WebSocket connected for session {session_id}")
+        
+        logger.info(f"✅ [STT] Deepgram connected for session {session_id}")
         
     except ValueError as e:
         logger.critical(f"❌ [STT] Configuration error: {e}")
@@ -118,157 +150,180 @@ async def connect_deepgram(stt_queue: asyncio.Queue, websocket, session_id: str)
         return None
     
     except Exception as e:
-        logger.critical(f"❌ [STT] Unexpected error connecting to Deepgram: {e}", exc_info=True)
+        logger.critical(f"❌ [STT] Unexpected error: {e}", exc_info=True)
         try:
-            await websocket.send_json({
-                "type": "error",
-                "error": f"STT error: {str(e)}"
-            })
-        except Exception as send_err:
-            logger.error(f"Error sending error message to client: {send_err}")
+            await websocket.send_json({"type": "error", "error": str(e)})
+        except Exception:
+            pass
         return None
 
-    # Task 1: Send audio to Deepgram
+    # Task 1: Send audio from queue to Deepgram
     async def send_to_deepgram():
-        """
-        Read audio chunks from queue and send to Deepgram.
-        Maintains keep-alive by sending silence if queue is empty.
-        """
+        """Stream audio chunks from WebRTC to Deepgram"""
         logger.info(f"📤 [STT] Send task started for {session_id}")
         
-        last_audio_time = asyncio.get_event_loop().time()
-        keep_alive_interval = 2.0  # Send silence every 2 seconds if no audio
         chunks_sent = 0
         bytes_sent = 0
         
         try:
             while True:
                 try:
-                    # Wait for audio chunk with timeout
-                    chunk = await asyncio.wait_for(stt_queue.get(), timeout=1.0)
+                    chunk = await stt_queue.get()
                     
-                    # None signals end of stream
                     if chunk is None:
-                        logger.info(f"✅ [STT] End-of-stream signal received for {session_id}")
+                        logger.info(f"✅ [STT] End-of-stream signal received")
+                        try:
+                            await deepgram_ws.send(json.dumps({"type": "CloseStream"}))
+                            logger.info(f"📤 [STT] Sent CloseStream to Deepgram")
+                        except Exception as e:
+                            logger.debug(f"CloseStream send error: {e}")
                         break
                     
-                    # Send audio to Deepgram
                     await deepgram_ws.send(chunk)
                     chunks_sent += 1
                     bytes_sent += len(chunk)
-                    last_audio_time = asyncio.get_event_loop().time()
                     
-                    logger.debug(f"  📤 Chunk {chunks_sent}: {len(chunk)} bytes sent to Deepgram")
+                    if chunks_sent % 20 == 0:
+                        logger.debug(f"  [{session_id}] {chunks_sent} chunks sent ({bytes_sent} bytes)")
                 
-                except asyncio.TimeoutError:
-                    # No audio in queue - send silence to keep connection alive
-                    current_time = asyncio.get_event_loop().time()
-                    if current_time - last_audio_time > keep_alive_interval:
-                        silence = generate_silence(duration_sec=0.5, sample_rate=16000)
-                        try:
-                            await deepgram_ws.send(silence)
-                            logger.debug(f"🔇 Keep-alive silence sent ({len(silence)} bytes)")
-                            last_audio_time = current_time
-                        except websockets.exceptions.ConnectionClosed:
-                            logger.warning(f"⚠️ [STT] Connection closed while sending keep-alive")
-                            break
-                
-                except websockets.exceptions.ConnectionClosed:
-                    logger.warning(f"⚠️ [STT] Deepgram connection closed during send")
+                except websockets.exceptions.ConnectionClosed as e:
+                    logger.error(f"❌ [STT] Deepgram closed: {e}")
                     break
-                
                 except Exception as e:
-                    logger.error(f"❌ [STT] Error in send_to_deepgram: {e}", exc_info=True)
+                    logger.error(f"❌ [STT] Send error: {e}")
                     break
         
         finally:
-            logger.info(f"🎤 [STT] Send task ended. Chunks: {chunks_sent}, Bytes: {bytes_sent}")
+            logger.info(f"📤 [STT] Send task ended: {chunks_sent} chunks, {bytes_sent} bytes")
             try:
                 if deepgram_ws:
                     await deepgram_ws.close()
-                    logger.info(f"🔌 [STT] Deepgram WebSocket closed for {session_id}")
             except Exception as e:
-                logger.warning(f"Error closing Deepgram WebSocket: {e}")
+                logger.warning(f"Error closing Deepgram: {e}")
 
-    # Task 2: Receive transcripts from Deepgram
+    # Task 2: Receive and process transcripts from Deepgram
     async def receive_from_deepgram():
         """
         Listen for transcript responses from Deepgram.
-        Sends final transcripts back to client and webhook.
+        
+        ⭐ KEY LOGIC:
+        - interim results (speech_final=false) → add to collector (on_interim called)
+        - final results (speech_final=true) → add to collector (on_complete called)
+        - on_complete → send complete utterance to client/webhook
         """
         logger.info(f"📥 [STT] Receive task started for {session_id}")
         
-        interim_buffer = ""
-        transcripts_received = 0
+        messages_received = 0
         final_transcripts = 0
         
         try:
             async for msg in deepgram_ws:
                 try:
                     data = json.loads(msg)
-                    transcripts_received += 1
+                    messages_received += 1
                     
-                    # Check if we have transcript data
+                    # ⭐ CHECK FOR ERRORS FIRST
+                    if "error" in data:
+                        logger.error(f"❌ [STT] Deepgram error: {data}")
+                        try:
+                            await websocket.send_json({
+                                "type": "error",
+                                "error": f"STT error: {data.get('error', {}).get('message', 'Unknown')}",
+                                "details": data.get('error')
+                            })
+                        except Exception as e:
+                            logger.error(f"Error sending error to client: {e}")
+                        continue
+                    
+                    # ⭐ PROCESS TRANSCRIPT
                     if "channel" in data and data["channel"].get("alternatives"):
                         alt = data["channel"]["alternatives"][0]
                         text = alt.get("transcript", "").strip()
                         confidence = alt.get("confidence", 0)
+                        is_final = data.get("is_final", False)
                         
-                        # Log interim results
-                        if not data.get("is_final"):
-                            logger.debug(f"  🟡 INTERIM [{session_id}]: {text}")
-                            interim_buffer = text
-                        
-                        # Process final results
-                        else:
-                            if text:
+                        if text:
+                            if not is_final:
+                                # 🟡 INTERIM: Add to collector (will call on_interim)
+                                logger.debug(f"  🟡 INTERIM [{session_id}]: {text}")
+                                await transcript_collector.add_chunk(
+                                    text, 
+                                    is_final=False, 
+                                    confidence=confidence
+                                )
+                            else:
+                                # 🟢 FINAL: Add to collector (will call on_complete)
+                                logger.info(f"  🟢 FINAL [{session_id}]: {text} (confidence: {confidence:.2f})")
                                 final_transcripts += 1
-                                logger.info(f"🟢 [STT] FINAL [{session_id}]: {text} (confidence: {confidence:.2f})")
                                 
-                                # Send to WebRTC client
-                                try:
-                                    await websocket.send_json({
-                                        "type": "transcript",
-                                        "text": text,
-                                        "confidence": confidence,
-                                        "session_id": session_id
-                                    })
-                                    logger.debug(f"  ✅ Transcript sent to client")
-                                except Exception as e:
-                                    logger.error(f"  ❌ Error sending transcript to client: {e}")
-                                
-                                # Send to Node webhook
-                                await send_to_node(session_id, text)
-                                
-                                # Clear interim buffer
-                                interim_buffer = ""
-                    
-                    # Log metadata responses
-                    elif "metadata" in data:
-                        logger.debug(f"📊 Deepgram metadata: {data['metadata']}")
+                                await transcript_collector.add_chunk(
+                                    text, 
+                                    is_final=True, 
+                                    confidence=confidence
+                                )
+                                # Note: on_complete callback will be triggered automatically
+                                # which sends the complete utterance to the client
                     
                     # Log other response types
+                    elif "metadata" in data:
+                        logger.debug(f"📊 Deepgram metadata received")
                     else:
                         logger.debug(f"📨 Deepgram response: {list(data.keys())}")
                 
                 except json.JSONDecodeError as e:
-                    logger.error(f"❌ JSON decode error in Deepgram response: {e}")
+                    logger.error(f"❌ JSON decode error: {e}")
                 except Exception as e:
-                    logger.error(f"❌ Error processing Deepgram message: {e}", exc_info=True)
+                    logger.error(f"❌ Error processing message: {e}", exc_info=True)
         
-        except websockets.exceptions.ConnectionClosed:
-            logger.info(f"🔌 [STT] Deepgram WebSocket closed during receive")
+        except websockets.exceptions.ConnectionClosed as e:
+            logger.info(f"🔌 [STT] Deepgram closed")
+            logger.info(f"    Code: {e.rcvd.code if e.rcvd else 'None'}")
+        except asyncio.CancelledError:
+            logger.info(f"[STT] Receive task cancelled")
         except Exception as e:
-            logger.error(f"❌ [STT] Error in receive_from_deepgram: {e}", exc_info=True)
+            logger.error(f"❌ [STT] Error: {e}", exc_info=True)
         
         finally:
-            logger.info(f"📊 [STT] Receive task ended. Received: {transcripts_received}, Final: {final_transcripts}")
+            # Force finalize any remaining transcript
+            await transcript_collector.force_finalize()
+            logger.info(
+                f"📊 [STT] Receive task ended:\n"
+                f"    Total messages: {messages_received}\n"
+                f"    Final transcripts: {final_transcripts}\n"
+                f"    Total utterances: {transcript_collector.get_utterance_count()}"
+            )
 
+    # ⭐ Setup callback to send complete utterances to client
+    async def on_complete_utterance(text: str):
+        """
+        Called when a complete utterance is ready (speech_final + timeout)
+        
+        This is where we send the complete answer to the client/interview flow
+        """
+        logger.info(f"✅ [CALLBACK] Complete utterance: '{text}'")
+        
+        try:
+            # Send complete transcript to client
+            await websocket.send_json({
+                "type": "transcript_complete",
+                "text": text,
+                "session_id": session_id
+            })
+            logger.info(f"  ✅ Sent complete transcript to client")
+        except Exception as e:
+            logger.error(f"  ❌ Error sending to client: {e}")
+        
+        # Optionally send to Node webhook
+        await send_to_node(session_id, text)
+    
+    # Attach completion callback to collector
+    transcript_collector.on_complete = on_complete_utterance
+    
     # Start both tasks
-    logger.info(f"🚀 [STT] Starting send/receive tasks for {session_id}")
+    logger.info(f"🚀 [STT] Starting Deepgram tasks for {session_id}")
     asyncio.create_task(send_to_deepgram())
     asyncio.create_task(receive_from_deepgram())
     
-    logger.info(f"✅ [STT] Deepgram tasks scheduled for {session_id}")
+    logger.info(f"✅ [STT] Tasks scheduled for {session_id}")
     
-    return deepgram_ws
+    return deepgram_ws, transcript_collector

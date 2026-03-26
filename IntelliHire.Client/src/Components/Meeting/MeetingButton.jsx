@@ -140,10 +140,22 @@ const MeetingButton = () => {
       console.log("✅ [7] ICE handler ready");
 
       // ════════════════════════════════════════════
-      // STEP 8: Setup WebSocket
+      // ⭐ STEP 8: CREATE SESSION ID & SETUP WEBSOCKET
       // ════════════════════════════════════════════
-      console.log("[8] Connecting WebSocket...");
+      console.log("[8] Creating session ID and connecting WebSocket...");
+      
+      // ⭐ CRITICAL: Create sessionId FIRST
       const sessionId = uuidv4();
+      console.log("📍 Session ID created:", sessionId);
+      
+      // ⭐ CRITICAL: Store in context IMMEDIATELY (before WebSocket)
+      setWebRtcSessionId(sessionId);
+      console.log("✅ Session ID stored in context");
+      
+      // ⭐ CRITICAL: Also store in webrtcStore for component access
+      webrtcStore.webRtcSessionId = sessionId;
+      console.log("✅ Session ID stored in webrtcStore");
+      
       const ws = new WebSocket(
         `ws://localhost:8001/api/webrtc/ws/${sessionId}`
       );
@@ -194,14 +206,15 @@ const MeetingButton = () => {
             });
             console.log("✅ [11] Remote description set");
 
-            // Store PC and WS
+            // ⭐ Store all connection data in webrtcStore (for state persistence)
             webrtcStore.pc = pc;
             webrtcStore.ws = ws;
             webrtcStore.stream = stream;
-            setWebRtcSessionId(sessionId);
+            webrtcStore.webRtcSessionId = sessionId; // ✅ Also here for consistency
 
             console.log("\n" + "🎬".repeat(25));
             console.log("🎬 NAVIGATING TO MEET PAGE 🎬");
+            console.log("🎬 Session ID:", sessionId);
             console.log("🎬".repeat(25) + "\n");
 
             // Clean up temp audio

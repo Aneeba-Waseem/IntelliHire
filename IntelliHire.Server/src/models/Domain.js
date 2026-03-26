@@ -22,9 +22,7 @@ const Domain = sequelize.define(
       },
     },
   },
-  {
-    tableName: "Domain",
-  }
+  { tableName: "Domain" }
 );
 
 JobDescription.hasMany(Domain, { foreignKey: "FK_JobDescription" });

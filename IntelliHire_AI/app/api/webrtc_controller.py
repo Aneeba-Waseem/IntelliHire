@@ -1,3 +1,15 @@
+"""
+Modified webrtc_router.py (FastAPI WebSocket endpoint)
+
+Integration with TranscriptCollector for VAD-based answer collection.
+
+Key Changes:
+- TranscriptCollector instance per session
+- Receives "transcript_complete" messages instead of streaming transcripts
+- Automatically submits complete answers to the interview flow
+- Manages answer state more clearly
+"""
+
 import json
 import asyncio
 import uuid
@@ -6,12 +18,17 @@ from aiortc import RTCPeerConnection, RTCSessionDescription
 from aiortc.sdp import candidate_from_sdp
 from ..realtime.session_manager import session_manager
 from ..realtime.tts.deepgram_stream import deepgram_pcm_stream
-from ..realtime.STT.deepgram_client import connect_deepgram
+from ..realtime.STT.deepgram_client import connect_deepgram  # Modified version
 from ..realtime.STT.deepgram_stream import stream_audio
+from ..realtime.STT.TranscriptCollectorService import TranscriptCollector  # NEW
 from logging import getLogger
+import httpx
 
 logger = getLogger(__name__)
 router = APIRouter()
+
+# ⭐ NEW: URL for submitting answers to Node.js interview flow
+INTERVIEW_FLOW_URL = "http://localhost:8000/api/flow/answer"
 
 
 def is_valid_token(token: str) -> bool:
@@ -26,7 +43,6 @@ async def run_tts(text: str, tts_queue: asyncio.Queue):
         async for pcm in deepgram_pcm_stream(text):
             logger.debug(f"[TTS] PCM chunk: {len(pcm)} bytes")
             try:
-                # Put with timeout to avoid blocking indefinitely
                 await asyncio.wait_for(tts_queue.put(pcm), timeout=2.0)
             except asyncio.TimeoutError:
                 logger.warning("[TTS] Queue full, dropping chunk")
@@ -41,21 +57,130 @@ async def run_tts(text: str, tts_queue: asyncio.Queue):
         logger.error(f"❌ [TTS] Deepgram TTS error: {e}", exc_info=True)
 
 
+async def submit_answer_to_flow(
+    session_id: str, 
+    answer_text: str, 
+    token: str,
+    websocket: WebSocket
+):
+    """
+    ⭐ NEW: Submit the complete answer to Node.js interview flow.
+    
+    This is called when TranscriptCollector has a complete utterance.
+    The answer is sent to /api/flow/answer which processes it and
+    generates the next question.
+    
+    Args:
+        session_id: Interview session ID
+        answer_text: Complete transcript text from Deepgram
+        token: Auth token for interview API
+        websocket: Client WebSocket connection
+    """
+    try:
+        logger.info(f"📤 [FLOW] Submitting answer to interview flow:")
+        logger.info(f"    Session: {session_id}")
+        logger.info(f"    Answer: {answer_text[:100]}...")
+        
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(
+                INTERVIEW_FLOW_URL,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {token}",
+                },
+                json={
+                    "sessionId": session_id,
+                    "answer": answer_text,
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                logger.info(f"✅ [FLOW] Answer submitted successfully")
+                logger.info(f"    Response: {data.get('data', {})}")
+                
+                # Check if interview is done
+                if data.get("data", {}).get("done"):
+                    logger.info("🎉 [FLOW] Interview completed!")
+                    report = data.get("data", {}).get("report")
+                    
+                    try:
+                        await websocket.send_json({
+                            "type": "interview_complete",
+                            "report": report,
+                            "message": data.get("data", {}).get("message")
+                        })
+                    except Exception as e:
+                        logger.error(f"Error sending completion to client: {e}")
+                else:
+                    # Next question available
+                    next_question = data.get("data", {}).get("question")
+                    next_phase = data.get("data", {}).get("phase")
+                    
+                    if next_question:
+                        try:
+                            await websocket.send_json({
+                                "type": "next_question",
+                                "text": next_question,
+                                "phase": next_phase
+                            })
+                            logger.info(f"  📨 Sent next question to client")
+                        except Exception as e:
+                            logger.error(f"Error sending next question: {e}")
+            else:
+                logger.error(f"❌ [FLOW] Answer submission failed: {response.status_code}")
+                logger.error(f"    Response: {response.text}")
+                
+                try:
+                    await websocket.send_json({
+                        "type": "error",
+                        "error": f"Failed to process answer (status {response.status_code})",
+                        "details": response.text[:200]
+                    })
+                except Exception as e:
+                    logger.error(f"Error sending error to client: {e}")
+    
+    except httpx.TimeoutException:
+        logger.error("❌ [FLOW] Answer submission timeout (30s)")
+        try:
+            await websocket.send_json({
+                "type": "error",
+                "error": "Interview flow server timeout"
+            })
+        except Exception as e:
+            logger.error(f"Error sending error to client: {e}")
+    
+    except Exception as e:
+        logger.error(f"❌ [FLOW] Answer submission error: {e}", exc_info=True)
+        try:
+            await websocket.send_json({
+                "type": "error",
+                "error": f"Failed to submit answer: {str(e)}"
+            })
+        except Exception as e:
+            logger.error(f"Error sending error to client: {e}")
+
+
 @router.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
     """
-    Main WebRTC + STT/TTS WebSocket endpoint.
+    Main WebRTC + STT/TTS WebSocket endpoint with VAD-based transcript handling.
     
-    Flow:
+    ⭐ MODIFIED FLOW:
     1. Accept connection
     2. Auth message (token validation)
-    3. Create/get session
+    3. Create/get session with TranscriptCollector
     4. Initialize TTS track
-    5. Setup WebRTC track handler (audio → STT)
+    5. Setup WebRTC track handler
     6. Setup ICE candidates
-    7. Start Deepgram STT
-    8. Message loop (offer/answer/ICE/TTS)
+    7. Start Deepgram STT with TranscriptCollector
+    8. Message loop (handles "transcript_complete" messages)
+    9. Auto-submit complete answers to interview flow
     """
+    
+    token = None  # Store token for interview API calls
+    transcript_collector = None
+    
     try:
         await websocket.accept()
         logger.info(f"✅ WebSocket accepted for session: {session_id}")
@@ -67,16 +192,14 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             logger.info("[1] Waiting for auth message...")
             
             first = await asyncio.wait_for(websocket.receive(), timeout=10.0)
-            logger.info(f"[1] Received message type: {first.get('type', 'unknown')}")
-
+            
             if "text" not in first:
-                logger.error("❌ [1] Expected text message, got bytes")
+                logger.error("❌ [1] Expected text message")
                 await websocket.close(code=1008, reason="Expected auth JSON")
                 return
 
             try:
                 data = json.loads(first["text"])
-                logger.info(f"[1] Parsed JSON: {data.get('type')}")
             except Exception as e:
                 logger.error(f"❌ [1] JSON parse error: {e}")
                 await websocket.close(code=1008, reason="Invalid JSON")
@@ -118,9 +241,21 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             logger.info("✅ [2] Session ready")
 
             # ─────────────────────────────────────────────
-            # Step 3: TTS Audio Track (already initialized in session_manager)
+            # Step 2.5: Create TranscriptCollector
             # ─────────────────────────────────────────────
-            logger.info("[3] TTS audio track already initialized")
+            logger.info("[2.5] Creating TranscriptCollector...")
+            
+            transcript_collector = TranscriptCollector(
+                on_complete=None,  # Will be set after Deepgram connects
+                on_interim=lambda text: logger.debug(f"🟡 [INTERIM] {text[:50]}..."),
+                max_silence_ms=2000
+            )
+            logger.info("✅ [2.5] TranscriptCollector ready")
+
+            # ─────────────────────────────────────────────
+            # Step 3: TTS Audio Track
+            # ─────────────────────────────────────────────
+            logger.info("[3] TTS audio track initialization")
 
             # ─────────────────────────────────────────────
             # Step 4: WebRTC track → STT
@@ -139,8 +274,6 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
                 sess.track_handler_added = True
                 logger.info("✅ [4] Track handler attached")
-            else:
-                logger.info("⚠️ [4] Track handler already attached")
 
             # ─────────────────────────────────────────────
             # Step 5: ICE candidates
@@ -165,23 +298,50 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             logger.info("✅ [5] ICE handler ready")
 
             # ─────────────────────────────────────────────
-            # Step 6: Start Deepgram STT
+            # Step 6: Start Deepgram STT with TranscriptCollector
             # ─────────────────────────────────────────────
-            logger.info("[6] Starting Deepgram STT...")
+            logger.info("[6] Starting Deepgram STT with TranscriptCollector...")
             
             if not sess.deepgram_started:
                 sess.deepgram_started = True
                 try:
-                    deepgram_ws = await connect_deepgram(
+                    deepgram_ws, returned_collector = await connect_deepgram(
                         sess.stt_queue, 
                         websocket, 
-                        session_id
+                        session_id,
+                        transcript_collector=transcript_collector
                     )
+                    
                     if deepgram_ws is None:
-                        # connect_deepgram already sent error to client
-                        logger.error(f"❌ [6] Deepgram connection returned None")
+                        logger.error(f"❌ [6] Deepgram connection failed")
                         await session_manager.close(session_id)
                         return
+                    
+                    # ⭐ NEW: Update collector to submit answers automatically
+                    async def on_complete_utterance(text: str):
+                        """Auto-submit complete utterance to interview flow"""
+                        logger.info(f"✅ [COLLECTOR] Complete: {text[:100]}...")
+                        
+                        # Notify client that we're processing
+                        try:
+                            await websocket.send_json({
+                                "type": "answer_received",
+                                "text": text,
+                                "status": "processing"
+                            })
+                        except Exception as e:
+                            logger.error(f"Error sending ACK to client: {e}")
+
+                        logger.info(f"session id of webrtc : {session_id}")
+                        # Submit to interview flow
+                        await submit_answer_to_flow(
+                            session_id=sess.interview_session_id,
+                            answer_text=text,
+                            token=token,
+                            websocket=websocket
+                        )
+                    
+                    transcript_collector.on_complete = on_complete_utterance
                     
                     logger.info("✅ [6] Deepgram STT started successfully")
                 except Exception as e:
@@ -206,10 +366,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             while True:
                 try:
                     logger.debug("[7] Waiting for next message...")
-                    message = await asyncio.wait_for(websocket.receive(), timeout=30.0)
-                    logger.debug(f"[7] Received message type: {message.get('type', 'unknown')}")
-
-                    # Ignore binary frames
+                    message = await asyncio.wait_for(websocket.receive(), timeout=90000.0)
+                    
                     if "bytes" in message:
                         logger.debug("[7] Ignoring binary frame")
                         continue
@@ -243,23 +401,22 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                             )
                             logger.info("[7-OFFER] Remote description set")
                         except Exception as e:
-                            logger.error(f"❌ [7-OFFER] Error setting remote description: {e}")
+                            logger.error(f"❌ [7-OFFER] Error: {e}")
                             continue
 
-                        # Attach TTS track BEFORE answer
                         if not sess.tts_track_attached:
                             try:
                                 pc.addTrack(sess.tts_audio_track)
                                 sess.tts_track_attached = True
                                 logger.info("🔊 [7-OFFER] TTS track attached")
                             except Exception as e:
-                                logger.error(f"❌ [7-OFFER] Error attaching TTS track: {e}")
+                                logger.error(f"❌ [7-OFFER] Error attaching TTS: {e}")
                                 continue
 
                         try:
                             answer = await pc.createAnswer()
                             await pc.setLocalDescription(answer)
-                            logger.info("[7-OFFER] Answer created and local description set")
+                            logger.info("[7-OFFER] Answer created")
                         except Exception as e:
                             logger.error(f"❌ [7-OFFER] Error creating answer: {e}")
                             continue
@@ -269,7 +426,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                 "type": "answer",
                                 "sdp": pc.localDescription.sdp
                             })
-                            logger.info("✅ [7-OFFER] Answer sent to client")
+                            logger.info("✅ [7-OFFER] Answer sent")
                         except Exception as e:
                             logger.error(f"❌ [7-OFFER] Error sending answer: {e}")
 
@@ -289,23 +446,40 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                 await pc.addIceCandidate(ice)
                                 logger.debug("[7-ICE] ICE candidate added")
                             except Exception as e:
-                                logger.error(f"❌ [7-ICE] Error adding ICE candidate: {e}")
+                                logger.error(f"❌ [7-ICE] Error: {e}")
 
-                    # ───────────────── TTS ─────────────────
+                    # INteview ID
+                    elif msg_type == "interview_session_id":
+                        sess.interview_session_id = data.get("interview_session_id")
+                        logger.info(f"✅ Stored interview_session_id")
+
+                    # ───────────────── TTS (Question) ─────────────────
                     elif msg_type in ("question", "tts"):
                         text = data.get("text", "").strip()
 
                         if text:
-                            logger.info(f"🗣️ [7-TTS] TTS request: {text[:50]}")
+                            logger.info(f"🗣️ [7-TTS] TTS request: {text[:50]}...")
                             asyncio.create_task(run_tts(text, sess.tts_queue))
                         else:
-                            logger.warning("[7-TTS] Empty text in TTS request")
+                            logger.warning("[7-TTS] Empty text in request")
+
+                    # ───────────────── LISTENING STATE (NEW) ─────────────────
+                    elif msg_type == "listening_started":
+                        logger.info("[7-LISTEN] Client started listening")
+                        # Client is waiting for speech
+                        # Collector will auto-submit when speech_final is received
+                    
+                    elif msg_type == "listening_stopped":
+                        logger.info("[7-LISTEN] Client stopped listening")
+                        # Force finalize any pending transcript
+                        if transcript_collector:
+                            await transcript_collector.force_finalize()
 
                     else:
                         logger.warning(f"[7] Unknown message type: {msg_type}")
 
                 except asyncio.TimeoutError:
-                    logger.warning("[7] Message receive timeout (30s) - checking connection...")
+                    logger.warning("[7] Message receive timeout - checking connection...")
                     continue
                 except WebSocketDisconnect:
                     logger.info(f"🔌 Client disconnected: {session_id}")
@@ -315,7 +489,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     break
 
         except asyncio.TimeoutError:
-            logger.error("❌ Auth message timeout (10s) - no auth received")
+            logger.error("❌ Auth message timeout")
             await websocket.close(code=1008, reason="Auth timeout")
         except WebSocketDisconnect:
             logger.info(f"🔌 Client disconnected during setup: {session_id}")
@@ -326,6 +500,13 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             except Exception:
                 pass
         finally:
+            # Force finalize collector if still open
+            if transcript_collector:
+                try:
+                    await transcript_collector.force_finalize()
+                except Exception as e:
+                    logger.warning(f"Error finalizing collector: {e}")
+            
             # Clean up session
             await session_manager.close(session_id)
             logger.info(f"🧹 Cleanup complete for session: {session_id}")

@@ -22,9 +22,7 @@ const TechStack = sequelize.define(
       },
     },
   },
-  {
-    tableName: "TechStack",
-  }
+  { tableName: "TechStack" }
 );
 
 JobDescription.hasMany(TechStack, { foreignKey: "FK_JobDescription" });

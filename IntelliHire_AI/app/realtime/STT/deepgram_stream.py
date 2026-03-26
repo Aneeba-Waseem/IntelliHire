@@ -13,7 +13,7 @@ async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
     This task runs for the lifetime of the audio track and handles:
     - Audio frame reception from WebRTC
     - Resampling from 48kHz to 16kHz mono PCM
-    - Queue management with backpressure handling
+    - Queue management (no aggressive dropping)
     
     Args:
         track: WebRTC audio track (MediaStreamTrack)
@@ -61,20 +61,31 @@ async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
                     pcm_bytes = pcm_array.astype('int16').tobytes()
                     total_samples += len(pcm_array)
                     
-                    # Put into STT queue with timeout to avoid hanging
+                    # ⭐ FIX: Longer timeout to avoid dropping frames
+                    # Queue might be temporarily full while Deepgram processes
+                    # But should recover quickly - don't give up too fast
                     try:
-                        # Use wait_for to timeout if queue is full and consumer is blocked
-                        await asyncio.wait_for(queue.put(pcm_bytes), timeout=2.0)
+                        # Wait up to 5 seconds for queue (much longer than 2 second before)
+                        await asyncio.wait_for(queue.put(pcm_bytes), timeout=5.0)
                         logger.debug(
                             f"  📤 Sent {len(pcm_array)} samples ({len(pcm_bytes)} bytes) to STT queue"
                         )
                     except asyncio.TimeoutError:
-                        # Queue is full - the consumer (Deepgram) is not keeping up
+                        # Queue is still full after 5 seconds - this is a real problem
+                        # But don't drop - try to put it anyway (blocking)
                         dropped_frames += 1
                         logger.warning(
-                            f"  ⚠️ STT queue full (timeout), dropping frame. "
-                            f"Total dropped: {dropped_frames}"
+                            f"  ⚠️ STT queue full (timeout). "
+                            f"Deepgram may be overwhelmed. Total dropped: {dropped_frames}"
                         )
+                        
+                        # Try putting without timeout (will block if needed)
+                        try:
+                            await queue.put(pcm_bytes)
+                            logger.debug(f"  ✅ Recovered - frame queued after blocking")
+                        except Exception as e:
+                            logger.error(f"  ❌ Failed to queue after timeout: {e}")
+                    
                     except asyncio.CancelledError:
                         logger.info("  🛑 Audio stream task cancelled")
                         raise

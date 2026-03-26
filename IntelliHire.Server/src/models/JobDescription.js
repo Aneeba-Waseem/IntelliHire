@@ -31,12 +31,9 @@ const JobDescription = sequelize.define(
       allowNull: true,
     },
   },
-  {
-    tableName: "JobDescription",
-  }
+  { tableName: "JobDescription" }
 );
 
-// Relationships
 User.hasMany(JobDescription, { foreignKey: "FK_Users" });
 JobDescription.belongsTo(User, { foreignKey: "FK_Users" });
 

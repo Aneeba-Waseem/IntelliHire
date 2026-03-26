@@ -41,13 +41,15 @@ export const refreshAccessToken = createAsyncThunk(
   "auth/refreshAccessToken",
   async (_, { getState, rejectWithValue }) => {
     try {
-
+      console.log("calling refresh");
       const res = await axios.post(`${API_URL}/refresh`, {
         accessToken: localStorage.getItem("accessToken"),
       });
-
+    axios.defaults.headers.common["Authorization"] = `Bearer ${data.accessToken}`;
+      console.log("refresh called: ", res);
       return res.data.accessToken;
     } catch (err) {
+      console.log("refresh called: ", err);
       return rejectWithValue(err.response?.data || { error: "Could not refresh token" });
     }
   }

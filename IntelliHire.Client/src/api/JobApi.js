@@ -8,7 +8,8 @@ const BASE_URL = "http://localhost:8000/api";
 ===================================================== */
 const getAuthHeaders = () => {
   const authState = loadAuthState();
-  const accessToken = authState?.accessToken;
+  const accessToken = authState?.auth.accessToken;
+  console.log(accessToken);
 
   return {
     "Content-Type": "application/json",
@@ -111,3 +112,5 @@ export const saveJobDescription = async (data) => {
     throw err;
   }
 };
+
+

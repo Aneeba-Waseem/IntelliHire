@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../../features/auth/authThunks";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { scheduleTokenRefresh } from "../../api/authFetch";
 import axios from "axios";
 
 export default function LoginForm() {
@@ -21,17 +20,20 @@ export default function LoginForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const success = await dispatch(loginUser(formData));
+    
     if (loginUser.fulfilled.match(success)) {
-      scheduleTokenRefresh();
-
-      navigate('/userDashboard')
-
-      const { accessToken, user } = success.payload;  // get user from payload
+      const { accessToken, user } = success.payload;
+      
+      // Store token in localStorage
       localStorage.setItem("accessToken", accessToken);
       axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+      
       console.log("✅ Login successful");
       console.log("User ID:", user.userId);
       console.log("User Name:", user.fullName);
+      
+      // Navigate - Redux will update, which triggers useAuthRefresh in App.jsx
+      navigate('/userDashboard');
     }
   };
 
@@ -41,7 +43,7 @@ export default function LoginForm() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.06, // fields appear fluidly
+        staggerChildren: 0.06,
       },
     },
   };
@@ -55,7 +57,7 @@ export default function LoginForm() {
       scale: 1,
       transition: {
         duration: 0.4,
-        ease: [0.25, 0.46, 0.45, 0.94], // smooth easing
+        ease: [0.25, 0.46, 0.45, 0.94],
       },
     },
   };
@@ -69,11 +71,10 @@ export default function LoginForm() {
       scale: 1,
       transition: {
         duration: 0.5,
-        ease: [0.25, 0.46, 0.45, 0.94], // smooth ease-out
+        ease: [0.25, 0.46, 0.45, 0.94],
       },
     },
   };
-
 
   return (
     <motion.form
@@ -146,7 +147,6 @@ export default function LoginForm() {
     focus:border-transparent
   "
           />
-
         </div>
       </motion.div>
 
@@ -163,10 +163,10 @@ export default function LoginForm() {
       <motion.button
         type="submit"
         disabled={loading}
-        variants={buttonVariants} // only for mount
-        whileHover={{ scale: 1.03, boxShadow: "0px 8px 20px rgba(0,0,0,0.15)" }} // hover
-        whileTap={{ scale: 0.97 }} // tap
-        transition={{ type: "spring", stiffness: 200, damping: 18 }} // hover spring
+        variants={buttonVariants}
+        whileHover={{ scale: 1.03, boxShadow: "0px 8px 20px rgba(0,0,0,0.15)" }}
+        whileTap={{ scale: 0.97 }}
+        transition={{ type: "spring", stiffness: 200, damping: 18 }}
         className="
         w-full text-white py-3 rounded-lg font-semibold
         bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
@@ -176,7 +176,6 @@ export default function LoginForm() {
       >
         {loading ? "Signing In..." : "Sign In"}
       </motion.button>
-
     </motion.form>
   );
 }

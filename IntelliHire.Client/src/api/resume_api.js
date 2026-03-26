@@ -77,3 +77,5 @@ export const updateShortlistAPI = async (batchId, resumeId, isShortlisted) => {
 
   return res.json();
 };
+
+

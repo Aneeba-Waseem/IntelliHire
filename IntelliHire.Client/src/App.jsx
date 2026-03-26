@@ -2,7 +2,7 @@ import React from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import AuthPage from "./Components/Auth/AuthPage";
-import useAuthRefresh from "./hooks/useAuthRefresh";
+import useAuthRefresh from "./Hooks/useAuthRefresh";
 import HeroSection from "./Components/LandingPage/HeroSection";
 import Navbar from "./Components/LandingPage/Navbar";
 import Footer from "./Components/LandingPage/Footer";
@@ -18,11 +18,16 @@ import ScheduledInterviews from "./Components/Recruiter/ScheduledInterview";
 import { ModalProvider } from "./Components/Recruiter/JobForm/ModalContext";
 // import WebSocketTest from "./Components/Meeting/WebSocketConnectivityTest"; 
 
-
+  
+  // Pass Redux token to the hook - it will only schedule when token exists
 import { Toaster } from "react-hot-toast";
+import { useSelector } from "react-redux";
 
 function App() {
-  useAuthRefresh(); // refresh token every 14 min
+  const accessToken = useSelector((state) => state.auth.accessToken);
+  useAuthRefresh(accessToken);
+
+  // useAuthRefresh(); // refresh token every 14 min
 
   const location = useLocation();
   // Pages where we don't want Navbar and Footer
