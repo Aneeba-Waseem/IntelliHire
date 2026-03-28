@@ -1,33 +1,34 @@
 """
-Modified webrtc_router.py (FastAPI WebSocket endpoint)
+Fixed webrtc_router.py (FastAPI WebSocket endpoint)
 
 Integration with TranscriptCollector for VAD-based answer collection.
 
 Key Changes:
-- TranscriptCollector instance per session
-- Receives "transcript_complete" messages instead of streaming transcripts
-- Automatically submits complete answers to the interview flow
-- Manages answer state more clearly
+- ⭐ PROPER ICE CANDIDATE HANDLING (queue candidates before connection)
+- ⭐ CONNECTION STATE MONITORING (detect failures early)
+- ⭐ AUTOMATIC ANSWER SUBMISSION (via TranscriptCollector callback)
+- Better error handling and logging
+- Proper resource cleanup
 """
 
 import json
 import asyncio
 import uuid
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from aiortc import RTCPeerConnection, RTCSessionDescription
+from aiortc import RTCPeerConnection, RTCSessionDescription, RTCIceCandidate
 from aiortc.sdp import candidate_from_sdp
 from ..realtime.session_manager import session_manager
 from ..realtime.tts.deepgram_stream import deepgram_pcm_stream
-from ..realtime.STT.deepgram_client import connect_deepgram  # Modified version
+from ..realtime.STT.deepgram_client import connect_deepgram
 from ..realtime.STT.deepgram_stream import stream_audio
-from ..realtime.STT.TranscriptCollectorService import TranscriptCollector  # NEW
+from ..realtime.STT.TranscriptCollectorService import TranscriptCollector
 from logging import getLogger
 import httpx
 
 logger = getLogger(__name__)
 router = APIRouter()
 
-# ⭐ NEW: URL for submitting answers to Node.js interview flow
+# ⭐ URL for submitting answers to Node.js interview flow
 INTERVIEW_FLOW_URL = "http://localhost:8000/api/flow/answer"
 
 
@@ -64,7 +65,7 @@ async def submit_answer_to_flow(
     websocket: WebSocket
 ):
     """
-    ⭐ NEW: Submit the complete answer to Node.js interview flow.
+    ⭐ Submit the complete answer to Node.js interview flow.
     
     This is called when TranscriptCollector has a complete utterance.
     The answer is sent to /api/flow/answer which processes it and
@@ -166,20 +167,22 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
     """
     Main WebRTC + STT/TTS WebSocket endpoint with VAD-based transcript handling.
     
-    ⭐ MODIFIED FLOW:
+    ⭐ FIXED FLOW:
     1. Accept connection
     2. Auth message (token validation)
     3. Create/get session with TranscriptCollector
     4. Initialize TTS track
-    5. Setup WebRTC track handler
-    6. Setup ICE candidates
-    7. Start Deepgram STT with TranscriptCollector
-    8. Message loop (handles "transcript_complete" messages)
-    9. Auto-submit complete answers to interview flow
+    5. Setup ICE candidate handler (BEFORE offer)
+    6. Setup connection state monitoring
+    7. Setup track handler
+    8. Start Deepgram STT with TranscriptCollector
+    9. Message loop (handles offer/answer/ICE/TTS)
+    10. Auto-submit complete answers to interview flow
     """
     
-    token = None  # Store token for interview API calls
+    token = None
     transcript_collector = None
+    pc = None
     
     try:
         await websocket.accept()
@@ -253,14 +256,101 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             logger.info("✅ [2.5] TranscriptCollector ready")
 
             # ─────────────────────────────────────────────
-            # Step 3: TTS Audio Track
+            # ⭐ Step 3: Setup Connection State Monitoring
             # ─────────────────────────────────────────────
-            logger.info("[3] TTS audio track initialization")
+            logger.info("[3] Setting up connection state monitoring...")
+            
+            @pc.on("connectionstatechange")
+            async def on_connectionstatechange():
+                state = pc.connectionState
+                logger.info(f"📊 [PC] Peer connection state: {state}")
+                
+                if state == "connected" or state == "completed":
+                    logger.info("✅ [PC] PEER CONNECTION ESTABLISHED - RTP should flow")
+                elif state == "failed":
+                    logger.error("❌ [PC] PEER CONNECTION FAILED - RTP will not flow!")
+                    try:
+                        await websocket.send_json({
+                            "type": "error",
+                            "error": "Peer connection failed",
+                            "state": state
+                        })
+                    except Exception as e:
+                        logger.error(f"Error sending error to client: {e}")
+                elif state == "disconnected":
+                    logger.warning("⚠️ [PC] Peer connection disconnected")
+            
+            @pc.on("iceconnectionstatechange")
+            async def on_iceconnectionstatechange():
+                state = pc.iceConnectionState
+                logger.info(f"❄️ [ICE] ICE connection state: {state}")
+                
+                if state == "connected" or state == "completed":
+                    logger.info("✅ [ICE] ICE CONNECTION ESTABLISHED - Audio path ready")
+                elif state == "failed":
+                    logger.error("❌ [ICE] ICE CONNECTION FAILED - NO AUDIO WILL FLOW!")
+                    try:
+                        await websocket.send_json({
+                            "type": "error",
+                            "error": "ICE connection failed",
+                            "state": state
+                        })
+                    except Exception as e:
+                        logger.error(f"Error sending error to client: {e}")
+                elif state == "disconnected":
+                    logger.warning("⚠️ [ICE] ICE connection disconnected (may reconnect)")
+            
+            @pc.on("icegatheringstatechange")
+            async def on_icegatheringstatechange():
+                state = pc.iceGatheringState
+                logger.debug(f"🔄 [ICE] ICE gathering state: {state}")
+            
+            logger.info("✅ [3] Connection state monitoring enabled")
 
             # ─────────────────────────────────────────────
-            # Step 4: WebRTC track → STT
+            # ⭐ Step 4: Setup ICE Candidate Handler EARLY
             # ─────────────────────────────────────────────
-            logger.info("[4] Setting up track handler...")
+            logger.info("[4] Setting up ICE candidate handler...")
+            
+            ice_candidate_queue = []
+            ice_candidates_sent = False
+
+            @pc.on("icecandidate")
+            async def on_icecandidate(candidate):
+                """
+                ⭐ CRITICAL: Send ICE candidates to client
+                Queue if WebSocket not ready, send immediately if it is
+                """
+                if candidate:
+                    candidate_info = {
+                        "candidate": candidate.to_sdp(),
+                        "sdpMid": candidate.sdpMid,
+                        "sdpMLineIndex": candidate.sdpMLineIndex,
+                    }
+                    
+                    ice_candidate_queue.append(candidate_info)
+                    logger.debug(f"📍 [ICE] Candidate queued: {candidate.to_sdp()[:60]}...")
+                    
+                    # If WebSocket is ready, send immediately
+                    if websocket and websocket.client_state.value == 1:  # CONNECTED
+                        try:
+                            await websocket.send_json({
+                                "type": "ice",
+                                "candidate": candidate_info,
+                            })
+                            logger.debug(f"  ✅ [ICE] Candidate sent immediately")
+                        except Exception as e:
+                            logger.error(f"❌ [ICE] Send error: {e}")
+                else:
+                    # ICE gathering complete
+                    logger.info(f"✅ [ICE] ICE gathering complete ({len(ice_candidate_queue)} candidates)")
+
+            logger.info("✅ [4] ICE candidate handler ready")
+
+            # ─────────────────────────────────────────────
+            # Step 5: Track Handler
+            # ─────────────────────────────────────────────
+            logger.info("[5] Setting up track handler...")
             
             if not sess.track_handler_added:
 
@@ -273,29 +363,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         )
 
                 sess.track_handler_added = True
-                logger.info("✅ [4] Track handler attached")
-
-            # ─────────────────────────────────────────────
-            # Step 5: ICE candidates
-            # ─────────────────────────────────────────────
-            logger.info("[5] Setting up ICE handler...")
-            
-            @pc.on("icecandidate")
-            async def on_icecandidate(candidate):
-                if candidate:
-                    try:
-                        await websocket.send_json({
-                            "type": "ice",
-                            "candidate": {
-                                "candidate": candidate.to_sdp(),
-                                "sdpMid": candidate.sdpMid,
-                                "sdpMLineIndex": candidate.sdpMLineIndex,
-                            },
-                        })
-                    except Exception as e:
-                        logger.error(f"❌ [5] ICE send error: {e}")
-
-            logger.info("✅ [5] ICE handler ready")
+                logger.info("✅ [5] Track handler attached")
 
             # ─────────────────────────────────────────────
             # Step 6: Start Deepgram STT with TranscriptCollector
@@ -320,7 +388,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     # ⭐ NEW: Update collector to submit answers automatically
                     async def on_complete_utterance(text: str):
                         """Auto-submit complete utterance to interview flow"""
-                        logger.info(f"✅ [COLLECTOR] Complete: {text[:100]}...")
+                        logger.info(f"✅ [COLLECTOR] Complete utterance: {text[:100]}...")
                         
                         # Notify client that we're processing
                         try:
@@ -332,7 +400,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         except Exception as e:
                             logger.error(f"Error sending ACK to client: {e}")
 
-                        logger.info(f"session id of webrtc : {session_id}")
+                        logger.info(f"📍 Interview session ID: {sess.interview_session_id}")
+                        
                         # Submit to interview flow
                         await submit_answer_to_flow(
                             session_id=sess.interview_session_id,
@@ -400,6 +469,20 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                 )
                             )
                             logger.info("[7-OFFER] Remote description set")
+                            
+                            # ⭐ CRITICAL: Flush queued ICE candidates now
+                            logger.info(f"[7-OFFER] Flushing {len(ice_candidate_queue)} queued ICE candidates...")
+                            for candidate_info in ice_candidate_queue:
+                                try:
+                                    await websocket.send_json({
+                                        "type": "ice",
+                                        "candidate": candidate_info,
+                                    })
+                                except Exception as e:
+                                    logger.error(f"❌ [ICE] Flush error: {e}")
+                            ice_candidates_sent = True
+                            logger.info(f"✅ [7-OFFER] All queued candidates flushed")
+                        
                         except Exception as e:
                             logger.error(f"❌ [7-OFFER] Error: {e}")
                             continue
@@ -444,14 +527,14 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                 ice.sdpMLineIndex = candidate.get("sdpMLineIndex")
 
                                 await pc.addIceCandidate(ice)
-                                logger.debug("[7-ICE] ICE candidate added")
+                                logger.debug("✅ [7-ICE] Client ICE candidate added")
                             except Exception as e:
                                 logger.error(f"❌ [7-ICE] Error: {e}")
 
-                    # INteview ID
+                    # ───────────────── Interview ID ─────────────────
                     elif msg_type == "interview_session_id":
                         sess.interview_session_id = data.get("interview_session_id")
-                        logger.info(f"✅ Stored interview_session_id")
+                        logger.info(f"✅ [7-SESSION] Interview session ID stored: {sess.interview_session_id}")
 
                     # ───────────────── TTS (Question) ─────────────────
                     elif msg_type in ("question", "tts"):
@@ -463,11 +546,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         else:
                             logger.warning("[7-TTS] Empty text in request")
 
-                    # ───────────────── LISTENING STATE (NEW) ─────────────────
+                    # ───────────────── LISTENING STATE ─────────────────
                     elif msg_type == "listening_started":
                         logger.info("[7-LISTEN] Client started listening")
-                        # Client is waiting for speech
-                        # Collector will auto-submit when speech_final is received
                     
                     elif msg_type == "listening_stopped":
                         logger.info("[7-LISTEN] Client stopped listening")
@@ -500,16 +581,30 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             except Exception:
                 pass
         finally:
+            # ─────────────────────────────────────────────
+            # Cleanup
+            # ─────────────────────────────────────────────
+            logger.info(f"🧹 [CLEANUP] Starting cleanup for session: {session_id}")
+            
             # Force finalize collector if still open
             if transcript_collector:
                 try:
                     await transcript_collector.force_finalize()
+                    logger.info(f"  ✅ Transcript collector finalized")
                 except Exception as e:
-                    logger.warning(f"Error finalizing collector: {e}")
+                    logger.warning(f"  ⚠️ Error finalizing collector: {e}")
+            
+            # Close peer connection
+            if pc:
+                try:
+                    await pc.close()
+                    logger.info(f"  ✅ Peer connection closed")
+                except Exception as e:
+                    logger.warning(f"  ⚠️ Error closing peer connection: {e}")
             
             # Clean up session
             await session_manager.close(session_id)
-            logger.info(f"🧹 Cleanup complete for session: {session_id}")
+            logger.info(f"✅ [CLEANUP] Complete for session: {session_id}")
 
     except Exception as e:
         logger.error(f"❌ Error accepting websocket: {e}", exc_info=True)
