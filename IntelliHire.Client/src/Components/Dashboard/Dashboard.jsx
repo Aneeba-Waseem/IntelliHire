@@ -7,35 +7,41 @@ import DashBoardCard from "./DashBoardCard";
 import DashBoardScheduled from "./DashboardScheduled";
 import DashBoardCompleted from "./DashboardCompleted";
 import { useSelector } from "react-redux";
-
-// Staggered container for smooth cascading effect
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.2,
-      ease: "easeOut",
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
-};
+import { useEffect, useState } from "react";
+import { getDashboardData } from "../../api/dashboard";
 
 const Dashboard = () => {
-  const scheduled = [
-    { name: "Completed", value: 10 },
-    { name: "Pending", value: 10 },
-    { name: "Cancelled", value: 10 },
-  ];
+ 
+  const [dashboardData, setDashboardData] = useState(null);
+  const token = useSelector(state => state.auth.accessToken);
+  console.log("token from selector",token)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await getDashboardData();
+        console.log("here")
+        console.log("Dashboard data:", data);
+        setDashboardData(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
-  const completedValue = 50; // percentage filled
-  const completedCount = 10;
-  const user = useSelector (state => state.auth.user);
+    if (token) fetchData();
+  }, [token]);
 
+   const interviews = dashboardData?.interviews || [];
+
+  const scheduledInterviews = interviews.filter(i => !i.isCompleted);
+  const completedInterviews = interviews.filter(i => i.isCompleted);
+
+  const scheduled = dashboardData?.scheduledData || [];
+  const completedValue = dashboardData?.completedPercentage || 0;
+  const completedCount = dashboardData?.completed || 0;
+  const user = useSelector(state => state.auth.user);
+  const chartData = [
+  { name: "Scheduled", value: scheduledInterviews.length },
+];
 
   return (
     <div className="bg-[#D1DED3] w-full min-h-screen flex flex-row ">
@@ -66,8 +72,8 @@ const Dashboard = () => {
         <div className="flex flex-col lg:flex-row mt-10 mb-15 justify-center items-center gap-6 h-auto lg:h-[200px] w-full">
           <DashBoardCard
             title="Scheduled"
-            value={20}
-            chartData={scheduled}
+            value={scheduledInterviews?.length}
+            chartData={chartData}
             chartSize={160}
           />
 
@@ -82,8 +88,8 @@ const Dashboard = () => {
 
         {/* Remaining Dashboard Sections */}
         <div className="flex flex-col gap-7 w-full">
-          <DashBoardScheduled />
-          <DashBoardCompleted />
+          <DashBoardScheduled data={dashboardData} />
+          <DashBoardCompleted data={dashboardData} />
         </div>
       </div>
     </div>

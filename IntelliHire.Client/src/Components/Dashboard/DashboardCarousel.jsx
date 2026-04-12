@@ -15,7 +15,18 @@ import {
   faFileLines,
 } from "@fortawesome/free-regular-svg-icons";
 
-export default function DashboardCarousel({ title, icon, data }) {
+export default function DashboardCarousel({ data }) {
+  const formatTime = (time) => {
+  if (!time) return "";
+
+  const [hour, minute] = time.split(":");
+  const h = parseInt(hour);
+
+  const ampm = h >= 12 ? "PM" : "AM";
+  const formattedHour = h % 12 || 12;
+
+  return `${formattedHour}:${minute} ${ampm}`;
+};
   return (
     <Carousel
       opts={{
@@ -63,18 +74,40 @@ export default function DashboardCarousel({ title, icon, data }) {
                 <hr className="border-t border-[#719D99] my-2" />
 
                 {/* Schedule Info */}
+                {/* Schedule Info */}
                 <div className="space-y-2">
-                  <div className="flex items-center gap-3 text-[#29445D] text-lg">
-                    <FontAwesomeIcon icon={faCalendarDays} />
-                    <span>{item.date}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-[#29445D] text-lg">
-                    <FontAwesomeIcon icon={faClock} />
-                    <span>{item.time}</span>
-                  </div>
+
+                  {/* Candidate */}
                   <div className="flex items-center gap-3 text-[#29445D] text-lg">
                     <FontAwesomeIcon icon={faUser} />
-                    <span>{item.interviewer}</span>
+                    <span>{item.Candidate}</span>
+                  </div>
+
+                  {/* Date */}
+                  <div className="flex items-center gap-3 text-[#29445D] text-lg">
+                    <FontAwesomeIcon icon={faCalendarDays} />
+                    <span>
+                      {new Date(item.date).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+
+                  {/* Time + Duration (clean pill style) */}
+                  <div className="flex items-center gap-3 text-[#29445D] text-lg">
+                    <FontAwesomeIcon icon={faClock} />
+
+                    <span className="flex items-center gap-2">
+                      <span className="px-2 py-1 bg-[#DDE8E2] rounded-md text-md font-medium">
+                        {formatTime(item.time)}
+                      </span>
+
+                      <span className="text-[#45767C] text-md">
+                        • {item.duration} min
+                      </span>
+                    </span>
                   </div>
                 </div>
               </CardContent>

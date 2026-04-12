@@ -36,7 +36,6 @@ const authSlice = createSlice({
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
-        state.refreshToken = action.payload.refreshToken; // add this line
         state.accessToken = action.payload.accessToken;
         state.error = null;
       })
@@ -54,8 +53,6 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;
         state.accessToken = action.payload.accessToken;
-          state.refreshToken = action.payload.refreshToken;
-
         state.error = null;
       })
       .addCase(loginUser.rejected, (state, action) => {

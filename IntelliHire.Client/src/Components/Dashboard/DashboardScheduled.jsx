@@ -3,15 +3,47 @@ import ScheduledPieChart from "./ScheduledPieChart";
 import DashboardCarousel from "./DashboardCarousel";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalendarCheck } from "@fortawesome/free-regular-svg-icons";
-import { scheduledInterviews } from "./Data";
+// import { scheduledInterviews } from "./Data";
 import { motion, useInView } from "framer-motion";
+const COLORS = [
+  "#5A8F7B",
+  "#16A085",
+  "#F4C542",
+  "#E44D3A",
+  "#4C9FBD",
+  "#2C3E91",
+  "#9B59B6",
+  
+];
+export default function DashBoardScheduled({ data }) {
+  const interviews = data?.interviews || [];
 
-export default function DashBoardScheduled() {
-  const chartData = [
-    { name: "Completed", value: 25, label: "25% LOREM" },
-    { name: "Pending", value: 12.5, label: "12.5% LOREM" },
-    { name: "Cancelled", value: 62.5, label: "62.5% LOREM" },
-  ];
+  const scheduledInterviews = interviews.filter(i => !i.isCompleted);
+  // const completedInterviews = interviews.filter(i => i.isCompleted);
+  const roleMap = {};
+
+  scheduledInterviews.forEach((i) => {
+    const role = i.JobDescription?.JobRole || i.role; // adjust based on your API
+    if (!role) return;
+
+    if (!roleMap[role]) {
+      roleMap[role] = 0;
+    }
+
+    roleMap[role]++;
+  });
+
+  const chartData = Object.keys(roleMap).map((role) => ({
+    name: role,
+    value: roleMap[role],
+  }));
+  const total = scheduledInterviews.length;
+
+  const getPercent = (value) => {
+    if (!total) return 0;
+    return ((value / total) * 100).toFixed(1);
+  };
+  console.log(" in dashboard scheduled", total)
 
   // Ref for in-view detection
   const ref = useRef(null);
@@ -20,10 +52,10 @@ export default function DashBoardScheduled() {
   // Variants
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
-      transition: { staggerChildren: 0.2, duration: 0.6, ease: "easeOut" } 
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { staggerChildren: 0.2, duration: 0.6, ease: "easeOut" }
     },
   };
 
@@ -46,7 +78,7 @@ export default function DashBoardScheduled() {
       animate={isInView ? "visible" : "hidden"} // animate only when in view
     >
       {/* Left Section (Chart) */}
-      <motion.div 
+      <motion.div
         className="w-full lg:w-[50%] xl:w-[40%] flex flex-col justify-center items-center"
         variants={itemVariants}
       >
@@ -76,31 +108,25 @@ export default function DashBoardScheduled() {
               outerRadius={90}
             />
             <motion.span className="absolute text-4xl text-[#29445D] font-bold" variants={numberVariants}>
-              20
+              {total}
             </motion.span>
           </motion.div>
 
-          {/* Percentage Labels */}
-          <motion.div className="sm:flex flex-col gap-4 w-full sm:w-[45%] text-left text-sm text-[#29445D] leading-snug" variants={itemVariants}>
-            <motion.div variants={itemVariants}>
-              <span className="text-[#E44D3A] font-bold block mb-1">25% LOREM</span>
-              <p className="text-xs opacity-70">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-              </p>
-            </motion.div>
-            <motion.div variants={itemVariants}>
-              <span className="text-[#F4C542] font-bold block mb-1">12.5% LOREM</span>
-              <p className="text-xs opacity-70">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-              </p>
-            </motion.div>
-            <motion.div variants={itemVariants}>
-              <span className="text-[#5A8F7B] font-bold block mb-1">62.5% LOREM</span>
-              <p className="text-xs opacity-70">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-              </p>
-            </motion.div>
+          <motion.div className="sm:flex flex-col gap-4 w-full sm:w-[45%] text-left text-sm text-[#29445D] leading-snug">
+            {chartData.map((item, index) => (
+              <motion.div key={index} variants={itemVariants}>
+                <span style={{ color: COLORS[index % COLORS.length] }} className="text-lg  block mb-1">
+                  {getPercent(item.value)}% {item.name}
+                </span>
+
+                <p className="text-sm opacity-70">
+                  {item.value} interviews
+                </p>
+              </motion.div>
+            ))}
           </motion.div>
+
+
         </motion.div>
       </motion.div>
 
@@ -110,8 +136,6 @@ export default function DashBoardScheduled() {
       {/* Right Section (Carousel) */}
       <motion.div className="w-full lg:w-[40%] xl:w-[50%] py-5 flex flex-col justify-between rounded-2xl" variants={itemVariants}>
         <DashboardCarousel
-          title="Scheduled Interviews"
-          icon="fa-regular fa-calendar-check"
           data={scheduledInterviews}
         />
 

@@ -17,10 +17,10 @@ import { loadAuthState } from "../../features/auth/persistAuth";
 
 export default function Meet() {
   const navigate = useNavigate();
-  
+
   // ⭐ Try to get sessionId from context first
   const { webRtcSessionId: contextSessionId } = useSession();
-  
+
   // ⭐ Fallback to store if context is empty
   const storeSessionId = webrtcStore.webRtcSessionId;
   const webRtcSessionId = contextSessionId || storeSessionId;
@@ -174,9 +174,9 @@ export default function Meet() {
   };
   const getToken = () => {
     const authState = loadAuthState();
-    const accessToken = authState?.auth.accessToken;
+    const accessToken = authState?.accessToken;
     console.log(accessToken);
-  
+
     return accessToken;
   };
   // ---------- START INTERVIEW ----------
@@ -202,10 +202,10 @@ export default function Meet() {
       console.log("✅ Interview started");
       console.log("   Interview Session ID:", data.sessionId);
       console.log("   WebRTC Session ID:", webRtcSessionId);
-      
+
       // Send interview session ID to backend
       sendInterviewSessionIdToBackend(data.sessionId);
-      
+
       setQuestion(data.question);
 
       // Send question via WebSocket (TTS)
@@ -223,6 +223,14 @@ export default function Meet() {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: "question", text }));
       console.log("📨 Sent question for TTS:", text);
+    }
+  };
+
+  // Send question via WebSocket (TTS)
+  const sendAuthViaWebSocket = (token) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: "auth", token }));
+      console.log("📨 Sent authentication request :", token);
     }
   };
 
@@ -268,6 +276,7 @@ export default function Meet() {
 
             // Start listening for next answer
             startListening();
+            sendAuthViaWebSocket(getToken());
           }
 
           // Handle interview completion

@@ -10,13 +10,27 @@ import Interview from "../models/Interview.js";
 import { redisClient as redis } from "../config/redisClient.js";
 import { sendInterviewEmails } from "../routes/interviewEmail.js";
 
+//to get data from cache of JD , resume and final timings of interview.
 export const finalizeHiring = async (req, res) => {
-    const {batchId, interviews } = req.body;
+    const { batchId, interviews } = req.body;
     const userId = req.user.AutoId; // comes from authMiddleware
     console.log("user ki id ", userId);
-    console.log("interviews" , interviews)
+    console.log("interviews", interviews)
     // ✅ Use the Sequelize instance directly
     const t = await sequelize.transaction();
+    const normalizeTechStack = (tech) => {
+        if (!tech) return [];
+
+        // already array
+        if (Array.isArray(tech)) return tech;
+
+        // if string → convert to array
+        if (typeof tech === "string") {
+            return tech.split(",").map(t => t.trim());
+        }
+
+        return [];
+    };
 
     try {
         const step1 = JSON.parse(await redis.get(`job:${userId}:step1`));
@@ -67,7 +81,13 @@ export const finalizeHiring = async (req, res) => {
                 await Experience.create({ FK_Resume: resume.id, title: exp.title, organization: exp.organization || exp.company, description: exp.description }, { transaction: t });
             }
             for (let p of r.projects || []) {
-                await Project.create({ FK_Resume: resume.id, name: p.name, description: p.description, tech_stack: p.tech_stack, link: p.link }, { transaction: t });
+                await Project.create({
+                    FK_Resume: resume.id,
+                    name: p.name,
+                    description: p.description,
+                    tech_stack: normalizeTechStack(p.tech_stack), // ✅ FIX
+                    link: p.link
+                }, { transaction: t });
             }
         }
 
@@ -84,4 +104,5 @@ export const finalizeHiring = async (req, res) => {
         console.error(err);
         res.status(500).json({ error: "Failed to save data" });
     }
+
 };

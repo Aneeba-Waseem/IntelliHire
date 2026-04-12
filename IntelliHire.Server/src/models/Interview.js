@@ -37,3 +37,29 @@ const Interview = sequelize.define(
 );
 
 export default Interview;
+
+
+Interview.belongsTo(JobDescription, {
+  foreignKey: "FK_JobDescription",
+});
+
+JobDescription.hasMany(Interview, {
+  foreignKey: "FK_JobDescription",
+});
+
+// ✅ ADD THIS
+Interview.belongsTo(Resume, {
+  foreignKey: "FK_Resume",
+});
+
+Resume.hasMany(Interview, {
+  foreignKey: "FK_Resume",
+});
+
+Interview.belongsTo(User, {
+  foreignKey: "FK_Users",
+});
+
+User.hasMany(Interview, {
+  foreignKey: "FK_Users",
+});

@@ -1,5 +1,5 @@
 """
-Modified deepgram_client.py 
+Modified deepgram_client.py - FIXED VERSION
 
 Removed call to non-existent get_utterance_count() method.
 Added the missing method to TranscriptCollectorService.
@@ -8,8 +8,6 @@ Key fix:
 - In receive_from_deepgram() finally block, removed the call to 
   transcript_collector.get_utterance_count() which doesn't exist
 - This was causing task failures after each question
-- Fixed: session_id was not defined in connect_deepgram_stt_only scope
-- Fixed: websocket.send_json usage now guarded with proper type check
 """
 
 import asyncio
@@ -38,8 +36,7 @@ DEEPGRAM_WS_URL = (
     "&punctuate=true"
     "&model=nova-3"
     "&interim_results=true"
-    "&endpointing=500"   # ← was 300, increase slightly for stability
-    "&utterance_end_ms=1000"  # ← ADD THIS: forces utterance end after 1s silence
+    "&endpointing=300"  # VAD: End utterance after 300ms of silence
     "&smart_format=true"
     "&keep_alive=true"
 )
@@ -73,11 +70,11 @@ async def send_to_node(session_id: str, text: str):
 
 
 async def connect_deepgram_stt_only(
-    stt_queue: asyncio.Queue,
-    websocket,
-    session_id: str = "",
+    stt_queue: asyncio.Queue, 
+    websocket, 
+    session_id: str,
     transcript_collector: TranscriptCollector = None,
-    session_ctx=None
+    session_ctx = None
 ):
     """
     Connect to Deepgram STT with VAD-based transcript collection.
@@ -91,7 +88,7 @@ async def connect_deepgram_stt_only(
     
     Args:
         stt_queue: Queue of PCM audio chunks from WebRTC
-        websocket: Client WebSocket connection (FastAPI WebSocket object)
+        websocket: Client WebSocket connection
         session_id: Interview session ID
         transcript_collector: Optional custom collector (for testing)
         session_ctx: SessionContext for task tracking (optional, per-question sessions)
@@ -100,7 +97,7 @@ async def connect_deepgram_stt_only(
         Tuple: (deepgram_ws, transcript_collector) or (None, None) on error
     """
     
-    logger.info(f"🔗 [STT] Connecting to Deepgram for session {session_id} ...")
+    logger.info(f"🔗 [STT] Connecting to Deepgram for session {session_id}...")
     logger.info(f"    Using VAD endpointing=300ms for speech detection")
     logger.info(f"    Session context: {session_ctx is not None}")
     
@@ -111,7 +108,7 @@ async def connect_deepgram_stt_only(
         transcript_collector = TranscriptCollector(
             on_complete=lambda text: logger.info(f"✅ [COLLECTOR] Complete: {text[:50]}..."),
             on_interim=lambda text: logger.debug(f"🟡 [COLLECTOR] Interim: {text[:50]}..."),
-            max_silence_ms=60000,  # Wait 20s after final for additional chunks
+            max_silence_ms=20000,  # Wait 2s after final for additional chunks
         )
     
     try:
@@ -161,7 +158,7 @@ async def connect_deepgram_stt_only(
         except Exception:
             pass
         return None, None
-    
+
     # Task 1: Send audio from queue to Deepgram
     async def send_to_deepgram():
         """Stream audio chunks from WebRTC to Deepgram"""
@@ -189,7 +186,7 @@ async def connect_deepgram_stt_only(
                     bytes_sent += len(chunk)
                     
                     if chunks_sent % 20 == 0:
-                        logger.debug(f"  [📤] {chunks_sent} chunks sent ({bytes_sent} bytes)")
+                        logger.debug(f"  [{session_id}] {chunks_sent} chunks sent ({bytes_sent} bytes)")
                 
                 except websockets.exceptions.ConnectionClosed as e:
                     logger.error(f"❌ [STT] Deepgram closed: {e}")
@@ -252,8 +249,8 @@ async def connect_deepgram_stt_only(
                                 # 🟡 INTERIM: Add to collector (will call on_interim)
                                 logger.debug(f"  🟡 INTERIM [{session_id}]: {text}")
                                 await transcript_collector.add_chunk(
-                                    text,
-                                    is_final=False,
+                                    text, 
+                                    is_final=False, 
                                     confidence=confidence
                                 )
                             else:
@@ -262,8 +259,8 @@ async def connect_deepgram_stt_only(
                                 final_transcripts += 1
                                 
                                 await transcript_collector.add_chunk(
-                                    text,
-                                    is_final=True,
+                                    text, 
+                                    is_final=True, 
                                     confidence=confidence
                                 )
                                 # Note: on_complete callback will be triggered automatically

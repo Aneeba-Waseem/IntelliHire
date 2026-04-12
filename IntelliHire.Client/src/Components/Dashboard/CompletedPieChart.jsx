@@ -36,7 +36,7 @@ export default function CompletedPieChart({
 
       {/* Centered Text */}
       <div className="absolute inset-0 flex flex-col justify-center items-center">
-        <span className="text-[#29445D] font-bold text-xl">{value}%</span>
+        <span className="text-[#29445D] font-bold text-xl">{value.toFixed(1)}%</span>
         {showCount && (
           <span className="text-[#45767C] text-sm">completed</span>
         )}

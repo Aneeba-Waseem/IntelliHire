@@ -12,7 +12,7 @@ const Project = sequelize.define(
     },
     name: DataTypes.STRING,
     description: DataTypes.TEXT,
-    tech_stack: DataTypes.STRING,
+    tech_stack: DataTypes.JSON,
     link: DataTypes.STRING,
   },
   { tableName: "Project" }

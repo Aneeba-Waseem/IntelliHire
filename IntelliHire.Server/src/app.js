@@ -8,6 +8,8 @@ import jobCacheRoutes from "./routes/jobCache.js";
 import flowRoutes from "./routes/flowRoutes.js";
 import interviewEmail from "./routes/interviewEmail.js";
 import  finalizeHiring  from "./routes/finalizeHiring.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+
 const app = express();
 
 app.use(cors({
@@ -25,5 +27,6 @@ app.use("/api/lists", listRoutes);
 app.use("/api/job-description", jobDescriptionRoutes);
 app.use("/api/interview-email", interviewEmail);
 app.use("/api/finalizeHiring", finalizeHiring);
+app.use("/api/dashboard", dashboardRoutes);
 
 export default app;

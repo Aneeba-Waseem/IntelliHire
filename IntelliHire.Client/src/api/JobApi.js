@@ -8,7 +8,7 @@ const BASE_URL = "http://localhost:8000/api";
 ===================================================== */
 const getAuthHeaders = () => {
   const authState = loadAuthState();
-  const accessToken = authState?.auth.accessToken;
+  const accessToken = authState?.accessToken;
   console.log(accessToken);
 
   return {
