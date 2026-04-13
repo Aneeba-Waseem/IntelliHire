@@ -9,7 +9,7 @@ import flowRoutes from "./routes/flowRoutes.js";
 import interviewEmail from "./routes/interviewEmail.js";
 import  finalizeHiring  from "./routes/finalizeHiring.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
-
+import resumeRoutes from "./routes/resumeRoutes.js"
 const app = express();
 
 app.use(cors({
@@ -28,5 +28,6 @@ app.use("/api/job-description", jobDescriptionRoutes);
 app.use("/api/interview-email", interviewEmail);
 app.use("/api/finalizeHiring", finalizeHiring);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/resume", resumeRoutes);
 
 export default app;

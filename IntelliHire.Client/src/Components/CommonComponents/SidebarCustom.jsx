@@ -44,7 +44,7 @@ const SidebarCustom = () => {
         <i className={`fa-solid fa-circle-plus ${iconBase}`}></i>
       </button>
       <NavItem to="/ScheduledInterview" icon="fa-calendar-check" regular />
-      <NavItem to="/completed" icon="fa-circle-check" />
+      <NavItem to="/CompletedInterview" icon="fa-circle-check" />
       <NavItem to="/profile" icon="fa-user" regular />
 
       {/* Add Button — opens modal */}

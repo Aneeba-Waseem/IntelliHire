@@ -1,5 +1,5 @@
 // frontend/api/JobApi.js
-
+import axios from "axios";
 import { loadAuthState } from "../features/auth/persistAuth";
 const BASE_URL = "http://localhost:8000/api";
 
@@ -114,3 +114,40 @@ export const saveJobDescription = async (data) => {
 };
 
 
+
+export const getJobDescription = async (id) => {
+  const authState = loadAuthState();
+  const token = authState?.accessToken;
+  console.log("Token in getDashboardData:", token);
+
+  const res = await axios.get(`${BASE_URL}/job-description/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.data;
+};
+
+// src/api/JobApi.js
+export const getJobInterviewStats = async (jobId) => {
+  try {
+    const authState = loadAuthState();
+    const token = authState?.accessToken;
+    console.log("Token in getDashboardData:", token);
+
+    const res = await axios.get(
+      `${BASE_URL}/job-description/job/${jobId}/interviews`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error("Error fetching job interview stats:", err);
+    throw err;
+  }
+};

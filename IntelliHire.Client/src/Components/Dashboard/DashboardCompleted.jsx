@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalendarCheck } from "@fortawesome/free-regular-svg-icons";
 // import { scheduledInterviews } from "./Data";
 import { motion, useInView } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 const COLORS = [
     "#5A8F7B",
     "#F4C542",
@@ -16,6 +17,7 @@ const COLORS = [
     "#16A085"
 ];
 export default function DashBoardCompleted({ data }) {
+    const navigate = useNavigate();
     console.log("dashboard completed data", data?.completedPercentage, data?.completed)
     const completedValue = data?.completedPercentage || 0;
     const completedCount = data?.completed || 0;
@@ -144,7 +146,10 @@ export default function DashBoardCompleted({ data }) {
 
                 {/* View All */}
                 <motion.div className="flex justify-end mt-4" variants={itemVariants}>
-                    <button className="text-[#29445D] text-lg hover:underline">
+                    <button className="text-[#29445D] text-lg hover:underline"
+                    onClick={() => navigate("/CompletedInterview")}
+                    style={{cursor: "pointer"}}
+                    >
                         VIEW ALL &gt;&gt;
                     </button>
                 </motion.div>

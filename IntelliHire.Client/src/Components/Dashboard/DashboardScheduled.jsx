@@ -5,6 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalendarCheck } from "@fortawesome/free-regular-svg-icons";
 // import { scheduledInterviews } from "./Data";
 import { motion, useInView } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { Pointer } from "lucide-react";
 const COLORS = [
   "#5A8F7B",
   "#16A085",
@@ -16,6 +18,8 @@ const COLORS = [
   
 ];
 export default function DashBoardScheduled({ data }) {
+    const navigate = useNavigate();
+
   const interviews = data?.interviews || [];
 
   const scheduledInterviews = interviews.filter(i => !i.isCompleted);
@@ -37,6 +41,7 @@ export default function DashBoardScheduled({ data }) {
     name: role,
     value: roleMap[role],
   }));
+  console.log("chart data in dashboard scheduled", chartData  )
   const total = scheduledInterviews.length;
 
   const getPercent = (value) => {
@@ -141,7 +146,10 @@ export default function DashBoardScheduled({ data }) {
 
         {/* View All */}
         <motion.div className="flex justify-end mt-4" variants={itemVariants}>
-          <button className="text-[#29445D] text-lg hover:underline">
+          <button className="text-[#29445D] text-lg hover:underline"
+            style={{cursor: "pointer"}}
+            onClick={() => navigate("/ScheduledInterview")}
+            >
             VIEW ALL &gt;&gt;
           </button>
         </motion.div>

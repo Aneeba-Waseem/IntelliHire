@@ -6,11 +6,14 @@ const COLORS = ["#5A8F7B", "#F4C542", "#E44D3A","#4C9FBD", "#2C3E91"]; // Comple
 
 export default function ScheduledPieChart({
   chartData,
-  size = 140,       // chart size
+  size = chartData.length,       // chart size
   innerRadius = 50, // inner hole radius
   outerRadius = 70, // outer boundary
   paddingAngle = 2  // gap between segments
-}) {
+}) 
+{
+  console.log("rendering scheduled pie chart with data", chartData)
+
   return (
     <PieChart width={size} height={size}>
       <Pie

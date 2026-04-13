@@ -1,340 +1,656 @@
 """
-Modified deepgram_client.py - FIXED VERSION
+DeepgramManager - Per-Question STT Session Factory
 
-Removed call to non-existent get_utterance_count() method.
-Added the missing method to TranscriptCollectorService.
+Handles all Deepgram STT connection lifecycle.
+NOT a persistent connection - creates fresh sessions per question.
 
-Key fix:
-- In receive_from_deepgram() finally block, removed the call to 
-  transcript_collector.get_utterance_count() which doesn't exist
-- This was causing task failures after each question
+Key responsibilities:
+1. Create new Deepgram WebSocket connections on demand
+2. Validate connection health
+3. Handle reconnection logic
+4. Provide clean error messages
+5. Track active sessions for debugging
+
+One instance per backend service.
+Creates new Deepgram connections per question, destroys after answer collected.
+
+✅ IMPROVEMENTS:
+- Better error recovery with exponential backoff
+- Automatic cleanup of stale sessions
+- Enhanced logging with context
+- Session timeout detection
+- Connection health monitoring
+- Thread-safe active session tracking
 """
 
 import asyncio
-import json
 import websockets
-import os
-import httpx
+import json
 import logging
-from dotenv import load_dotenv
-from .TranscriptCollectorService import TranscriptCollector
+from typing import Optional, Tuple, Dict, List
+from dataclasses import dataclass, field
+from enum import Enum
+import time
+from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
-load_dotenv()
 
-DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
-NODE_TRANSCRIPT_URL = os.getenv("NODE_TRANSCRIPT_URL", "")
-
-# UPDATED: VAD-enabled Deepgram configuration
-# The key difference: endpointing=300 triggers speech_final detection
-DEEPGRAM_WS_URL = (
-    "wss://api.deepgram.com/v1/listen"
-    "?encoding=linear16"
-    "&sample_rate=16000"
-    "&channels=1"
-    "&punctuate=true"
-    "&model=nova-3"
-    "&interim_results=true"
-    "&endpointing=300"  # VAD: End utterance after 300ms of silence
-    "&smart_format=true"
-    "&keep_alive=true"
-)
-
-logger.info(f"📡 Deepgram VAD Config:")
-logger.info(f"  Encoding: linear16 (16-bit PCM)")
-logger.info(f"  Sample rate: 16000 Hz")
-logger.info(f"  Channels: 1 (mono)")
-logger.info(f"  Endpointing: 300ms (VAD speech finalization)")
-logger.info(f"  URL: {DEEPGRAM_WS_URL}")
+class DeepgramConnectionState(Enum):
+    """Track Deepgram connection state."""
+    IDLE = "idle"
+    CONNECTING = "connecting"
+    CONNECTED = "connected"
+    CLOSED = "closed"
+    FAILED = "failed"
 
 
-async def send_to_node(session_id: str, text: str):
+@dataclass
+class DeepgramConfig:
+    """Configuration for Deepgram STT."""
+    api_key: str
+    ws_url: str = (
+        "wss://api.deepgram.com/v1/listen"
+        "?encoding=linear16"
+        "&sample_rate=16000"
+        "&channels=1"
+        "&punctuate=true"
+        "&model=nova-3"
+        "&interim_results=true"
+        "&endpointing=300"
+        "&smart_format=true"
+        "&keep_alive=true"
+    )
+    connection_timeout: float = 120.0
+    ping_interval: int = 30
+    ping_timeout: int = 3600
+    # ✅ NEW: Configurable session parameters
+    max_session_duration: float = 600.0  # 10 minutes max per question
+    idle_timeout: float = 120.0  # 2 minutes of inactivity = timeout
+    max_retries: int = 3
+    retry_backoff: float = 1.0  # seconds, multiplied exponentially
+
+
+class DeepgramConnectionError(Exception):
+    """Custom exception for Deepgram connection failures."""
+    pass
+
+
+class DeepgramSessionTimeout(Exception):
+    """Exception for session timeout."""
+    pass
+
+
+class DeepgramSession:
     """
-    Send transcript to Node.js webhook for processing.
-    (Optional - can be disabled)
-    """
-    if not NODE_TRANSCRIPT_URL:
-        logger.debug("⚠️ NODE_TRANSCRIPT_URL not set, skipping webhook")
-        return
+    Represents a single Deepgram STT session for ONE question.
     
-    try:
-        async with httpx.AsyncClient(timeout=100) as client:
-            response = await client.post(
-                NODE_TRANSCRIPT_URL,
-                json={"session_id": session_id, "text": text}
+    Lifecycle:
+    - Created fresh for each question
+    - Audio streamed in via send()
+    - Transcripts received via recv()
+    - Closed explicitly when question ends
+    
+    ✅ IMPROVEMENTS:
+    - Timeout detection (idle and absolute)
+    - Better state tracking
+    - Automatic cleanup
+    - Enhanced diagnostics
+    """
+
+    def __init__(self, session_id: str, question_num: int, config: DeepgramConfig):
+        self.session_id = session_id
+        self.question_num = question_num
+        self.config = config
+        self.ws = None
+        self.state = DeepgramConnectionState.IDLE
+        self.created_at = time.time()
+        self.last_activity = time.time()
+        self.messages_sent = 0
+        self.messages_received = 0
+        self.final_transcript = None
+        self.is_final = False
+        # ✅ NEW: Track connection health
+        self.connection_errors = 0
+        self.last_error = None
+        self.closed_remotely = False
+
+    async def connect(self, retry_count: int = 0) -> bool:
+        """
+        Connect to Deepgram with automatic retry logic.
+        
+        Args:
+            retry_count: Internal retry counter (do not set manually)
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        if self.state in (DeepgramConnectionState.CONNECTING, DeepgramConnectionState.CONNECTED):
+            logger.warning(
+                f"⚠️ [Q{self.question_num}] Already connecting/connected"
             )
-            logger.info(f"✅ Sent transcript to Node: {response.status_code}")
-    except Exception as e:
-        logger.error(f"❌ Node webhook error: {e}")
+            return self.state == DeepgramConnectionState.CONNECTED
+
+        self.state = DeepgramConnectionState.CONNECTING
+        logger.info(f"🔗 [Q{self.question_num}] Connecting to Deepgram STT...")
+        logger.info(f"   URL: {self.config.ws_url[:80]}...")
+
+        try:
+            if not self.config.api_key:
+                raise DeepgramConnectionError("DEEPGRAM_API_KEY not set")
+
+            self.ws = await asyncio.wait_for(
+                websockets.connect(
+                    self.config.ws_url,
+                    additional_headers={"Authorization": f"Token {self.config.api_key}"},
+                    open_timeout=self.config.connection_timeout,
+                    ping_interval=self.config.ping_interval,
+                    ping_timeout=self.config.ping_timeout,
+                ),
+                timeout=self.config.connection_timeout,
+            )
+
+            self.state = DeepgramConnectionState.CONNECTED
+            self.last_activity = time.time()
+            self.connection_errors = 0
+            logger.info(f"✅ [Q{self.question_num}] Deepgram connected (attempt {retry_count + 1})")
+            return True
+
+        except asyncio.TimeoutError:
+            self.state = DeepgramConnectionState.FAILED
+            self.connection_errors += 1
+            self.last_error = f"Connection timeout ({self.config.connection_timeout}s)"
+            
+            logger.error(
+                f"❌ [Q{self.question_num}] Connection timeout "
+                f"({self.config.connection_timeout}s, attempt {retry_count + 1})"
+            )
+            
+            # ✅ Retry logic with backoff
+            if retry_count < self.config.max_retries:
+                backoff = self.config.retry_backoff * (2 ** retry_count)
+                logger.info(
+                    f"🔄 [Q{self.question_num}] Retrying in {backoff:.1f}s "
+                    f"({retry_count + 1}/{self.config.max_retries})"
+                )
+                await asyncio.sleep(backoff)
+                return await self.connect(retry_count + 1)
+            
+            raise DeepgramConnectionError(
+                f"Deepgram connection timeout after {self.config.connection_timeout}s "
+                f"(failed {retry_count + 1} attempts)"
+            )
+
+        except websockets.exceptions.WebSocketException as e:
+            self.state = DeepgramConnectionState.FAILED
+            self.connection_errors += 1
+            self.last_error = f"WebSocket error: {str(e)}"
+            
+            logger.error(f"❌ [Q{self.question_num}] WebSocket error: {e}")
+            
+            # ✅ Retry on WebSocket errors
+            if retry_count < self.config.max_retries:
+                backoff = self.config.retry_backoff * (2 ** retry_count)
+                logger.info(
+                    f"🔄 [Q{self.question_num}] Retrying WebSocket after {backoff:.1f}s"
+                )
+                await asyncio.sleep(backoff)
+                return await self.connect(retry_count + 1)
+            
+            raise DeepgramConnectionError(f"WebSocket error: {str(e)}")
+
+        except Exception as e:
+            self.state = DeepgramConnectionState.FAILED
+            self.connection_errors += 1
+            self.last_error = f"Unexpected error: {str(e)}"
+            
+            logger.error(f"❌ [Q{self.question_num}] Unexpected error: {e}", exc_info=True)
+            raise DeepgramConnectionError(f"Connection error: {str(e)}")
+
+    async def send(self, data: bytes) -> bool:
+        """
+        Send PCM audio to Deepgram.
+        
+        Args:
+            data: PCM audio bytes (16-bit, mono, 16kHz)
+        
+        Returns:
+            True if successful, False if connection lost
+        """
+        if self.state != DeepgramConnectionState.CONNECTED:
+            logger.warning(
+                f"⚠️ [Q{self.question_num}] Cannot send: not connected "
+                f"(state: {self.state.value})"
+            )
+            return False
+
+        if not data:
+            return True
+
+        try:
+            await self.ws.send(data)
+            self.messages_sent += 1
+            self.last_activity = time.time()
+            
+            if self.messages_sent % 50 == 0:  # Log every 50 messages to avoid spam
+                logger.debug(
+                    f"📤 [Q{self.question_num}] Sent {len(data)} bytes "
+                    f"(total: {self.messages_sent})"
+                )
+            return True
+
+        except websockets.exceptions.ConnectionClosed as e:
+            self.state = DeepgramConnectionState.CLOSED
+            self.closed_remotely = True
+            logger.error(
+                f"❌ [Q{self.question_num}] Connection closed while sending: {e}"
+            )
+            return False
+
+        except Exception as e:
+            logger.error(f"❌ [Q{self.question_num}] Send error: {e}")
+            return False
+
+    async def send_close_stream(self) -> bool:
+        """
+        Send CloseStream message to Deepgram.
+        Signals end of audio input for this question.
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        if self.state != DeepgramConnectionState.CONNECTED:
+            logger.debug(f"⚠️ [Q{self.question_num}] Not sending CloseStream: not connected")
+            return False
+
+        try:
+            await self.ws.send(json.dumps({"type": "CloseStream"}))
+            logger.info(f"📤 [Q{self.question_num}] CloseStream sent")
+            return True
+
+        except Exception as e:
+            logger.warning(f"⚠️ [Q{self.question_num}] Error sending CloseStream: {e}")
+            return False
+
+    async def recv(self, timeout: Optional[float] = None) -> Optional[dict]:
+        """
+        Receive transcript message from Deepgram with timeout.
+        
+        Args:
+            timeout: Override default idle timeout (seconds)
+        
+        Returns:
+            Parsed JSON from Deepgram, or None if connection closed
+        
+        Raises:
+            DeepgramConnectionError if message is malformed
+            DeepgramSessionTimeout if idle timeout exceeded
+        """
+        if self.state not in (
+            DeepgramConnectionState.CONNECTED,
+            DeepgramConnectionState.CLOSED,
+        ):
+            return None
+
+        try:
+            if not self.ws:
+                return None
+
+            # ✅ Check absolute session timeout
+            elapsed = time.time() - self.created_at
+            if elapsed > self.config.max_session_duration:
+                raise DeepgramSessionTimeout(
+                    f"Session exceeded max duration ({self.config.max_session_duration}s)"
+                )
+
+            # ✅ Check idle timeout
+            idle_time = time.time() - self.last_activity
+            check_timeout = timeout or self.config.idle_timeout
+            if idle_time > check_timeout:
+                raise DeepgramSessionTimeout(
+                    f"Session idle for {idle_time:.1f}s (max: {check_timeout}s)"
+                )
+
+            msg = await self.ws.recv()
+            self.messages_received += 1
+            self.last_activity = time.time()
+
+            try:
+                data = json.loads(msg)
+                
+                # ✅ Track final transcript
+                if data.get("is_final"):
+                    self.is_final = True
+                    if "result" in data and data["result"].get("results"):
+                        transcript = data["result"]["results"][0].get("alternatives", [{}])[0].get("transcript", "")
+                        if transcript:
+                            self.final_transcript = transcript
+                            logger.info(
+                                f"🎯 [Q{self.question_num}] Final transcript: {transcript[:100]}..."
+                            )
+                
+                logger.debug(
+                    f"📥 [Q{self.question_num}] Received {list(data.keys())} "
+                    f"(total: {self.messages_received})"
+                )
+                return data
+
+            except json.JSONDecodeError as e:
+                logger.error(
+                    f"❌ [Q{self.question_num}] JSON decode error: {e}"
+                )
+                raise DeepgramConnectionError(f"Invalid JSON from Deepgram: {e}")
+
+        except websockets.exceptions.ConnectionClosed as e:
+            if self.state != DeepgramConnectionState.CLOSED:
+                self.state = DeepgramConnectionState.CLOSED
+                self.closed_remotely = True
+                logger.info(
+                    f"🔌 [Q{self.question_num}] Deepgram closed "
+                    f"(code: {e.rcvd.code if e.rcvd else 'unknown'}, "
+                    f"reason: {e.rcvd.reason if e.rcvd else 'unknown'})"
+                )
+            return None
+
+        except DeepgramSessionTimeout as e:
+            logger.error(f"⏱️ [Q{self.question_num}] Session timeout: {e}")
+            raise
+
+        except asyncio.CancelledError:
+            logger.debug(f"[Q{self.question_num}] Recv cancelled")
+            raise
+
+        except Exception as e:
+            logger.error(f"❌ [Q{self.question_num}] Recv error: {e}", exc_info=True)
+            raise
+
+    async def close(self) -> None:
+        """Close the Deepgram connection and log final stats."""
+        if self.state == DeepgramConnectionState.CLOSED:
+            logger.debug(f"[Q{self.question_num}] Already closed")
+            return
+
+        logger.info(f"🛑 [Q{self.question_num}] Closing Deepgram connection")
+
+        if self.ws:
+            try:
+                await self.ws.close()
+                logger.debug(f"✅ [Q{self.question_num}] WebSocket closed")
+            except Exception as e:
+                logger.warning(f"⚠️ [Q{self.question_num}] Error closing WebSocket: {e}")
+
+        self.state = DeepgramConnectionState.CLOSED
+        elapsed = time.time() - self.created_at
+        logger.info(
+            f"✅ [Q{self.question_num}] Deepgram session closed\n"
+            f"    Duration: {elapsed:.1f}s\n"
+            f"    Sent: {self.messages_sent} messages\n"
+            f"    Received: {self.messages_received} messages\n"
+            f"    Final transcript: {self.final_transcript or '(none)'}\n"
+            f"    Closed remotely: {self.closed_remotely}"
+        )
+
+    def is_healthy(self) -> bool:
+        """Check if session is healthy."""
+        if self.state != DeepgramConnectionState.CONNECTED:
+            return False
+        
+        # Check idle timeout
+        idle_time = time.time() - self.last_activity
+        if idle_time > self.config.idle_timeout:
+            return False
+        
+        # Check absolute timeout
+        elapsed = time.time() - self.created_at
+        if elapsed > self.config.max_session_duration:
+            return False
+        
+        return True
+
+    def get_status(self) -> dict:
+        """Return current session status."""
+        elapsed = time.time() - self.created_at
+        idle_time = time.time() - self.last_activity
+
+        return {
+            "question_num": self.question_num,
+            "state": self.state.value,
+            "elapsed_sec": round(elapsed, 1),
+            "idle_sec": round(idle_time, 1),
+            "messages_sent": self.messages_sent,
+            "messages_received": self.messages_received,
+            "is_healthy": self.is_healthy(),
+            "final_transcript": self.final_transcript or "(pending)",
+            "connection_errors": self.connection_errors,
+            "last_error": self.last_error,
+        }
+
+    @asynccontextmanager
+    async def managed_connection(self):
+        """
+        ✅ NEW: Async context manager for automatic cleanup.
+        
+        Usage:
+            async with session.managed_connection():
+                await session.send(audio_data)
+                msg = await session.recv()
+        """
+        try:
+            if not await self.connect():
+                raise DeepgramConnectionError("Failed to connect")
+            yield self
+        finally:
+            await self.close()
 
 
-async def connect_deepgram_stt_only(
-    stt_queue: asyncio.Queue, 
-    websocket, 
-    session_id: str,
-    transcript_collector: TranscriptCollector = None,
-    session_ctx = None
-):
+class DeepgramManager:
     """
-    Connect to Deepgram STT with VAD-based transcript collection.
+    Factory for creating and managing Deepgram STT sessions.
     
-    BEHAVIOR:
-    - Receives audio chunks from WebRTC via stt_queue
-    - Streams to Deepgram for STT processing
-    - Uses TranscriptCollector to buffer transcripts
-    - Sends complete utterances (speech_final=true) to client
-    - Only sends to /api/flow/answer when utterance is complete
+    One instance per backend service.
+    Creates fresh sessions on demand, no persistent connections.
+    
+    ✅ IMPROVEMENTS:
+    - Thread-safe session tracking
+    - Automatic stale session cleanup
+    - Health monitoring
+    - Better error recovery
+    
+    Usage:
+        manager = DeepgramManager(api_key="...")
+        
+        # For each question:
+        session = await manager.create_session(session_id, question_num)
+        async with session.managed_connection():
+            await session.send(pcm_bytes)
+            transcript = await session.recv()
+    """
+
+    def __init__(self, api_key: str, config: Optional[DeepgramConfig] = None):
+        self.api_key = api_key
+        self.config = config or DeepgramConfig(api_key=api_key)
+        self.active_sessions: Dict[int, DeepgramSession] = {}
+        self._session_lock = asyncio.Lock()
+        self.total_sessions_created = 0
+        self.total_sessions_closed = 0
+        logger.info("✅ DeepgramManager initialized")
+        logger.info(f"   API key: {api_key[:20]}...")
+        logger.info(f"   Max session duration: {self.config.max_session_duration}s")
+        logger.info(f"   Idle timeout: {self.config.idle_timeout}s")
+
+    async def create_session(
+        self, session_id: str, question_num: int
+    ) -> DeepgramSession:
+        """
+        Create a new Deepgram session for a question.
+        
+        Args:
+            session_id: Interview session ID
+            question_num: Question number
+        
+        Returns:
+            DeepgramSession (not yet connected)
+        """
+        async with self._session_lock:
+            logger.info(f"📋 Creating Deepgram session for Q{question_num}")
+
+            session = DeepgramSession(session_id, question_num, self.config)
+            self.active_sessions[question_num] = session
+            self.total_sessions_created += 1
+            
+            logger.debug(
+                f"   Active sessions: {len(self.active_sessions)} "
+                f"(total created: {self.total_sessions_created})"
+            )
+            return session
+
+    async def close_session(self, question_num: int) -> None:
+        """
+        Close a Deepgram session and remove from active tracking.
+        
+        Args:
+            question_num: Question number
+        """
+        async with self._session_lock:
+            if question_num not in self.active_sessions:
+                logger.debug(f"⚠️ Session for Q{question_num} not found")
+                return
+
+            session = self.active_sessions.pop(question_num)
+            await session.close()
+            self.total_sessions_closed += 1
+            logger.debug(f"   Active sessions now: {len(self.active_sessions)}")
+
+    def get_session(self, question_num: int) -> Optional[DeepgramSession]:
+        """
+        Get an active session by question number.
+        
+        Returns:
+            DeepgramSession or None if not found
+        """
+        return self.active_sessions.get(question_num)
+
+    def list_active_sessions(self) -> List[dict]:
+        """Return list of all active sessions with status."""
+        return [
+            session.get_status() for session in self.active_sessions.values()
+        ]
+
+    async def cleanup_stale_sessions(self) -> int:
+        """
+        ✅ NEW: Close unhealthy sessions.
+        Useful for periodic maintenance.
+        
+        Returns:
+            Number of sessions closed
+        """
+        async with self._session_lock:
+            stale_sessions = [
+                q_num for q_num, session in self.active_sessions.items()
+                if not session.is_healthy()
+            ]
+            
+            for q_num in stale_sessions:
+                logger.warning(f"🧹 Closing stale session for Q{q_num}")
+                try:
+                    await self.active_sessions[q_num].close()
+                    self.active_sessions.pop(q_num)
+                    self.total_sessions_closed += 1
+                except Exception as e:
+                    logger.warning(f"⚠️ Error closing Q{q_num}: {e}")
+            
+            if stale_sessions:
+                logger.info(f"✅ Cleaned up {len(stale_sessions)} stale sessions")
+            
+            return len(stale_sessions)
+
+    async def close_all_sessions(self) -> None:
+        """
+        Close all active sessions (emergency cleanup).
+        Useful on session timeout or error recovery.
+        """
+        async with self._session_lock:
+            if not self.active_sessions:
+                logger.debug("No active sessions to close")
+                return
+
+            logger.warning(
+                f"🧹 Closing all {len(self.active_sessions)} Deepgram sessions"
+            )
+
+            for question_num in list(self.active_sessions.keys()):
+                try:
+                    await self.active_sessions[question_num].close()
+                    self.total_sessions_closed += 1
+                except Exception as e:
+                    logger.warning(
+                        f"⚠️ Error closing Q{question_num}: {e}"
+                    )
+
+            self.active_sessions.clear()
+            logger.info("✅ All Deepgram sessions closed")
+
+    def get_health_status(self) -> dict:
+        """Return comprehensive health status."""
+        return {
+            "active_sessions": len(self.active_sessions),
+            "total_created": self.total_sessions_created,
+            "total_closed": self.total_sessions_closed,
+            "sessions": self.list_active_sessions(),
+        }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GLOBAL SINGLETON
+# ─────────────────────────────────────────────────────────────────────────────
+
+_manager_instance: Optional[DeepgramManager] = None
+
+
+def init_deepgram_manager(api_key: str, config: Optional[DeepgramConfig] = None) -> DeepgramManager:
+    """
+    Initialize the global DeepgramManager instance.
+    Call once on app startup.
     
     Args:
-        stt_queue: Queue of PCM audio chunks from WebRTC
-        websocket: Client WebSocket connection
-        session_id: Interview session ID
-        transcript_collector: Optional custom collector (for testing)
-        session_ctx: SessionContext for task tracking (optional, per-question sessions)
+        api_key: Deepgram API key
+        config: Optional custom config
     
     Returns:
-        Tuple: (deepgram_ws, transcript_collector) or (None, None) on error
+        The initialized manager
+    
+    Example:
+        from fastapi import FastAPI
+        
+        app = FastAPI()
+        
+        @app.on_event("startup")
+        async def startup():
+            init_deepgram_manager(api_key=os.getenv("DEEPGRAM_API_KEY"))
+        
+        @app.on_event("shutdown")
+        async def shutdown():
+            manager = get_deepgram_manager()
+            await manager.close_all_sessions()
     """
+    global _manager_instance
+    _manager_instance = DeepgramManager(api_key, config)
+    return _manager_instance
+
+
+def get_deepgram_manager() -> DeepgramManager:
+    """
+    Get the global DeepgramManager instance.
     
-    logger.info(f"🔗 [STT] Connecting to Deepgram for session {session_id}...")
-    logger.info(f"    Using VAD endpointing=300ms for speech detection")
-    logger.info(f"    Session context: {session_ctx is not None}")
+    Returns:
+        The manager (must be initialized first with init_deepgram_manager)
     
-    deepgram_ws = None
-    
-    # Create or use provided TranscriptCollector
-    if transcript_collector is None:
-        transcript_collector = TranscriptCollector(
-            on_complete=lambda text: logger.info(f"✅ [COLLECTOR] Complete: {text[:50]}..."),
-            on_interim=lambda text: logger.debug(f"🟡 [COLLECTOR] Interim: {text[:50]}..."),
-            max_silence_ms=20000,  # Wait 2s after final for additional chunks
+    Raises:
+        RuntimeError if not initialized
+    """
+    if _manager_instance is None:
+        raise RuntimeError(
+            "DeepgramManager not initialized. "
+            "Call init_deepgram_manager() on app startup."
         )
-    
-    try:
-        if not DEEPGRAM_API_KEY:
-            raise ValueError("DEEPGRAM_API_KEY environment variable not set!")
-        
-        logger.info(f"🔑 [STT] API Key present: {DEEPGRAM_API_KEY[:20]}...")
-        logger.info(f"🔗 [STT] Connecting to: {DEEPGRAM_WS_URL}")
-        
-        # Connect to Deepgram with proper configuration
-        deepgram_ws = await websockets.connect(
-            DEEPGRAM_WS_URL,
-            additional_headers={"Authorization": f"Token {DEEPGRAM_API_KEY}"},
-            open_timeout=30,
-            ping_interval=30,
-            ping_timeout=3600,
-        )
-        
-        logger.info(f"✅ [STT] Deepgram connected for session {session_id}")
-        
-    except ValueError as e:
-        logger.critical(f"❌ [STT] Configuration error: {e}")
-        try:
-            await websocket.send_json({
-                "type": "error",
-                "error": "STT service not configured"
-            })
-        except Exception as send_err:
-            logger.error(f"Error sending error message to client: {send_err}")
-        return None, None
-    
-    except websockets.exceptions.WebSocketException as e:
-        logger.critical(f"❌ [STT] Deepgram WebSocket connection failed: {e}")
-        try:
-            await websocket.send_json({
-                "type": "error",
-                "error": f"STT connection failed: {str(e)}"
-            })
-        except Exception as send_err:
-            logger.error(f"Error sending error message to client: {send_err}")
-        return None, None
-    
-    except Exception as e:
-        logger.critical(f"❌ [STT] Unexpected error: {e}", exc_info=True)
-        try:
-            await websocket.send_json({"type": "error", "error": str(e)})
-        except Exception:
-            pass
-        return None, None
-
-    # Task 1: Send audio from queue to Deepgram
-    async def send_to_deepgram():
-        """Stream audio chunks from WebRTC to Deepgram"""
-        logger.info(f"📤 [STT] Send task started for {session_id}")
-        
-        chunks_sent = 0
-        bytes_sent = 0
-        
-        try:
-            while True:
-                try:
-                    chunk = await stt_queue.get()
-                    
-                    if chunk is None:
-                        logger.info(f"✅ [STT] End-of-stream signal received")
-                        try:
-                            await deepgram_ws.send(json.dumps({"type": "CloseStream"}))
-                            logger.info(f"📤 [STT] Sent CloseStream to Deepgram")
-                        except Exception as e:
-                            logger.debug(f"CloseStream send error: {e}")
-                        break
-                    
-                    await deepgram_ws.send(chunk)
-                    chunks_sent += 1
-                    bytes_sent += len(chunk)
-                    
-                    if chunks_sent % 20 == 0:
-                        logger.debug(f"  [{session_id}] {chunks_sent} chunks sent ({bytes_sent} bytes)")
-                
-                except websockets.exceptions.ConnectionClosed as e:
-                    logger.error(f"❌ [STT] Deepgram closed: {e}")
-                    break
-                except Exception as e:
-                    logger.error(f"❌ [STT] Send error: {e}")
-                    break
-        
-        finally:
-            logger.info(f"📤 [STT] Send task ended: {chunks_sent} chunks, {bytes_sent} bytes")
-            try:
-                if deepgram_ws:
-                    await deepgram_ws.close()
-            except Exception as e:
-                logger.warning(f"Error closing Deepgram: {e}")
-
-    # Task 2: Receive and process transcripts from Deepgram
-    async def receive_from_deepgram():
-        """
-        Listen for transcript responses from Deepgram.
-        
-        ⭐ KEY LOGIC:
-        - interim results (speech_final=false) → add to collector (on_interim called)
-        - final results (speech_final=true) → add to collector (on_complete called)
-        - on_complete → send complete utterance to client/webhook
-        """
-        logger.info(f"📥 [STT] Receive task started for {session_id}")
-        
-        messages_received = 0
-        final_transcripts = 0
-        
-        try:
-            async for msg in deepgram_ws:
-                try:
-                    data = json.loads(msg)
-                    messages_received += 1
-                    
-                    # ⭐ CHECK FOR ERRORS FIRST
-                    if "error" in data:
-                        logger.error(f"❌ [STT] Deepgram error: {data}")
-                        try:
-                            await websocket.send_json({
-                                "type": "error",
-                                "error": f"STT error: {data.get('error', {}).get('message', 'Unknown')}",
-                                "details": data.get('error')
-                            })
-                        except Exception as e:
-                            logger.error(f"Error sending error to client: {e}")
-                        continue
-                    
-                    # ⭐ PROCESS TRANSCRIPT
-                    if "channel" in data and data["channel"].get("alternatives"):
-                        alt = data["channel"]["alternatives"][0]
-                        text = alt.get("transcript", "").strip()
-                        confidence = alt.get("confidence", 0)
-                        is_final = data.get("is_final", False)
-                        
-                        if text:
-                            if not is_final:
-                                # 🟡 INTERIM: Add to collector (will call on_interim)
-                                logger.debug(f"  🟡 INTERIM [{session_id}]: {text}")
-                                await transcript_collector.add_chunk(
-                                    text, 
-                                    is_final=False, 
-                                    confidence=confidence
-                                )
-                            else:
-                                # 🟢 FINAL: Add to collector (will call on_complete)
-                                logger.info(f"  🟢 FINAL [{session_id}]: {text} (confidence: {confidence:.2f})")
-                                final_transcripts += 1
-                                
-                                await transcript_collector.add_chunk(
-                                    text, 
-                                    is_final=True, 
-                                    confidence=confidence
-                                )
-                                # Note: on_complete callback will be triggered automatically
-                                # which sends the complete utterance to the client
-                    
-                    # Log other response types
-                    elif "metadata" in data:
-                        logger.debug(f"📊 Deepgram metadata received")
-                    else:
-                        logger.debug(f"📨 Deepgram response: {list(data.keys())}")
-                
-                except json.JSONDecodeError as e:
-                    logger.error(f"❌ JSON decode error: {e}")
-                except Exception as e:
-                    logger.error(f"❌ Error processing message: {e}", exc_info=True)
-        
-        except websockets.exceptions.ConnectionClosed as e:
-            logger.info(f"🔌 [STT] Deepgram closed")
-            logger.info(f"    Code: {e.rcvd.code if e.rcvd else 'None'}")
-        except asyncio.CancelledError:
-            logger.info(f"[STT] Receive task cancelled")
-        except Exception as e:
-            logger.error(f"❌ [STT] Error: {e}", exc_info=True)
-        
-        finally:
-            # Force finalize any remaining transcript
-            await transcript_collector.force_finalize()
-            # ✅ FIXED: Removed call to non-existent get_utterance_count()
-            logger.info(
-                f"📊 [STT] Receive task ended:\n"
-                f"    Total messages: {messages_received}\n"
-                f"    Final transcripts: {final_transcripts}"
-            )
-
-    # ⭐ Setup callback to send complete utterances to client
-    async def on_complete_utterance(text: str):
-        """
-        Called when a complete utterance is ready (speech_final + timeout)
-        
-        This is where we send the complete answer to the client/interview flow
-        """
-        logger.info(f"✅ [CALLBACK] Complete utterance: '{text}'")
-        
-        try:
-            # Send complete transcript to client
-            await websocket.send_json({
-                "type": "transcript_complete",
-                "text": text,
-                "session_id": session_id
-            })
-            logger.info(f"  ✅ Sent complete transcript to client")
-        except Exception as e:
-            logger.error(f"  ❌ Error sending to client: {e}")
-        
-        # Optionally send to Node webhook
-        await send_to_node(session_id, text)
-    
-    # Attach completion callback to collector
-    transcript_collector.on_complete = on_complete_utterance
-    
-    # ⭐ Start both tasks - use session_ctx if provided, otherwise create standalone
-    logger.info(f"🚀 [STT] Starting Deepgram tasks for {session_id}")
-    
-    if session_ctx:
-        # Per-question session with task tracking
-        logger.info(f"  Using SessionContext for task tracking")
-        session_ctx.create_task(send_to_deepgram(), name=f"stt-send-{session_id}")
-        session_ctx.create_task(receive_from_deepgram(), name=f"stt-recv-{session_id}")
-    else:
-        # Standalone tasks (fallback)
-        logger.info(f"  No SessionContext - creating standalone tasks")
-        asyncio.create_task(send_to_deepgram())
-        asyncio.create_task(receive_from_deepgram())
-    
-    logger.info(f"✅ [STT] Tasks scheduled for {session_id}")
-    
-    return deepgram_ws, transcript_collector
+    return _manager_instance

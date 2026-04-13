@@ -5,13 +5,34 @@ import ScheduledPieChart from "./ScheduledPieChart";
 import CompletedPieChart from "./CompletedPieChart";
 import { motion, useInView } from "framer-motion";
 
-export default function DashBoardCard({ title, value, chartData, count, chartSize }) {
+export default function DashBoardCard({ title, value, data, chartData, count, chartSize }) {
   const isScheduled = title === "Scheduled";
-
+  console
   // Ref for in-view detection
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const interviews = data?.interviews || [];
 
+  const scheduledInterviews = interviews.filter(i => !i.isCompleted);
+  // const completedInterviews = interviews.filter(i => i.isCompleted);
+  const roleMap = {};
+
+  scheduledInterviews.forEach((i) => {
+    const role = i.JobDescription?.JobRole || i.role; // adjust based on your API
+    if (!role) return;
+
+    if (!roleMap[role]) {
+      roleMap[role] = 0;
+    }
+
+    roleMap[role]++;
+  });
+
+  const chartData1 = Object.keys(roleMap).map((role) => ({
+    name: role,
+    value: roleMap[role],
+  }));
+  console.log("chart data in dashboard card lii", chartData1  )
   // Animation variants
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -65,7 +86,7 @@ export default function DashBoardCard({ title, value, chartData, count, chartSiz
       {/* For small screens: Chart */}
       <div className="flex sm:hidden justify-center items-center w-[80px]">
         {isScheduled ? (
-          <ScheduledPieChart chartData={chartData} size={chartSize} />
+          <ScheduledPieChart chartData={chartData1} size={chartData1.length} />
         ) : (
           <CompletedPieChart value={value} count={count} size={chartSize} />
         )}
@@ -85,7 +106,7 @@ export default function DashBoardCard({ title, value, chartData, count, chartSiz
           variants={numberVariants}
         >
           {isScheduled ? value : count}
-        </motion.span>
+        </motion.span> 
         <motion.span
           className="text-xl sm:text-2xl tracking-wider text-[#29445D] uppercase"
           variants={textVariants}
@@ -97,7 +118,7 @@ export default function DashBoardCard({ title, value, chartData, count, chartSiz
       {/* Right Chart */}
       <div className="hidden sm:flex justify-center items-center w-[100px]">
         {isScheduled ? (
-          <ScheduledPieChart chartData={chartData} size={chartSize} />
+          <ScheduledPieChart chartData={chartData1} size={chartSize} />
         ) : (
           <CompletedPieChart value={value} count={count} size={chartSize} />
         )}

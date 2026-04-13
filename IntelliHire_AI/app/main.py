@@ -1,3 +1,5 @@
+from logging import getLogger
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -11,7 +13,7 @@ from app.api import evaluator_routes as evaluator_router
 
 # New routers (WebRTC + TTS)
 from app.api.webrtc_controller import router as webrtc_router
-# from app.api.tts_controller import router as tts_router
+from app.realtime.STT.deepgram_manager import init_deepgram_manager, get_deepgram_manager
 
 from dotenv import load_dotenv
 import os
@@ -19,6 +21,7 @@ import os
 # Load env
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
+logger = getLogger(__name__)
 
 app = FastAPI(title="IntelliHire AI")
 
@@ -40,11 +43,17 @@ async def startup_event():
     print("🚀 Server starting...")
     qna_routes.load_model_once()
     print("✅ Server ready")
-
+    """Initialize Deepgram manager on app startup."""
+    api_key = os.getenv("DEEPGRAM_API_KEY")
+    if not api_key:
+        raise ValueError("DEEPGRAM_API_KEY environment variable not set")
+    
+    manager = init_deepgram_manager(api_key=api_key)
+    logger.info("✅ Deepgram manager initialized")
+    
 # ======================
 # Routers
 # ======================
-
 
 app.include_router(resume_router, prefix="/api/resumes")
 app.include_router(qna_router, prefix="/api/chatModel/qna")
@@ -57,3 +66,13 @@ app.include_router(webrtc_router, prefix="/api/webrtc")
 @app.get("/")
 async def root():
     return {"status": "IntelliHire AI running"}
+
+@app.on_event("shutdown")
+async def shutdown():
+    """Clean up all Deepgram sessions on app shutdown."""
+    try:
+        manager = get_deepgram_manager()
+        await manager.close_all_sessions()
+        logger.info("✅ All Deepgram sessions closed")
+    except RuntimeError:
+        logger.warning("⚠️ Deepgram manager was not initialized")

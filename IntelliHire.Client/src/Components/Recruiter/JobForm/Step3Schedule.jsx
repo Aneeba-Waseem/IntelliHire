@@ -143,6 +143,7 @@ export default function Step3Schedule({ handleBack, handleSubmit }) {
 
         <button
           onClick={submitSchedule}
+          style={{cursor: "pointer"}}
           disabled={isSending}
           className={`rounded-full px-8 py-2 font-medium border-2 border-[#29445D] transition-all duration-200 ${
             isSending

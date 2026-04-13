@@ -135,10 +135,11 @@ async def connect_deepgram_stt_only(
     except ValueError as e:
         logger.critical(f"❌ [STT] Configuration error: {e}")
         try:
-            await websocket.send_json({
-                "type": "error",
-                "error": "STT service not configured"
-            })
+            if websocket:
+                await websocket.send_json({
+                    "type": "error",
+                    "error": "STT service not configured"
+                })
         except Exception as send_err:
             logger.error(f"Error sending error message to client: {send_err}")
         return None, None
@@ -157,7 +158,8 @@ async def connect_deepgram_stt_only(
     except Exception as e:
         logger.critical(f"❌ [STT] Unexpected error: {e}", exc_info=True)
         try:
-            await websocket.send_json({"type": "error", "error": str(e)})
+            if websocket:
+                await websocket.send_json({"type": "error", "error": str(e)})
         except Exception:
             pass
         return None, None
@@ -231,18 +233,25 @@ async def connect_deepgram_stt_only(
                     if "error" in data:
                         logger.error(f"❌ [STT] Deepgram error: {data}")
                         try:
-                            await websocket.send_json({
-                                "type": "error",
-                                "error": f"STT error: {data.get('error', {}).get('message', 'Unknown')}",
-                                "details": data.get('error')
-                            })
+                            if websocket:
+                                await websocket.send_json({
+                                    "type": "error",
+                                    "error": f"STT error: {data.get('error', {}).get('message', 'Unknown')}",
+                                    "details": data.get('error')
+                                })
                         except Exception as e:
                             logger.error(f"Error sending error to client: {e}")
                         continue
                     
-                    # ⭐ PROCESS TRANSCRIPT
-                    if "channel" in data and data["channel"].get("alternatives"):
-                        alt = data["channel"]["alternatives"][0]
+                   # ⭐ PROCESS TRANSCRIPT
+                    channel = data.get("channel")
+
+                    # Handle Deepgram sending channel as list OR dict
+                    if isinstance(channel, list):
+                        channel = channel[0] if channel else {}
+
+                    if isinstance(channel, dict) and channel.get("alternatives"):
+                        alt = channel["alternatives"][0]
                         text = alt.get("transcript", "").strip()
                         confidence = alt.get("confidence", 0)
                         is_final = data.get("is_final", False)
@@ -258,7 +267,10 @@ async def connect_deepgram_stt_only(
                                 )
                             else:
                                 # 🟢 FINAL: Add to collector (will call on_complete)
-                                logger.info(f"  🟢 FINAL [{session_id}]: {text} (confidence: {confidence:.2f})")
+                                logger.info(
+                                    f"  🟢 FINAL [{session_id}]: {text} "
+                                    f"(confidence: {confidence:.2f})"
+                                )
                                 final_transcripts += 1
                                 
                                 await transcript_collector.add_chunk(
@@ -266,8 +278,6 @@ async def connect_deepgram_stt_only(
                                     is_final=True,
                                     confidence=confidence
                                 )
-                                # Note: on_complete callback will be triggered automatically
-                                # which sends the complete utterance to the client
                     
                     # Log other response types
                     elif "metadata" in data:
@@ -308,13 +318,14 @@ async def connect_deepgram_stt_only(
         logger.info(f"✅ [CALLBACK] Complete utterance: '{text}'")
         
         try:
-            # Send complete transcript to client
-            await websocket.send_json({
-                "type": "transcript_complete",
-                "text": text,
-                "session_id": session_id
-            })
-            logger.info(f"  ✅ Sent complete transcript to client")
+            if websocket:
+                # Send complete transcript to client
+                await websocket.send_json({
+                    "type": "transcript_complete",
+                    "text": text,
+                    "session_id": session_id
+                })
+                logger.info(f"  ✅ Sent complete transcript to client")
         except Exception as e:
             logger.error(f"  ❌ Error sending to client: {e}")
         

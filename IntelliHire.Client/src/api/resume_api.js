@@ -1,5 +1,8 @@
 // api/resume_api.js
 
+import axios from "axios";
+import { loadAuthState } from "../features/auth/persistAuth";
+
 const PYTHON_BASE = "http://localhost:8001";
 const NODE_BASE = "http://localhost:8000";
 
@@ -78,4 +81,25 @@ export const updateShortlistAPI = async (batchId, resumeId, isShortlisted) => {
   return res.json();
 };
 
+export const getCandidateProfile = async (resumeId) => {
+  try {
+    const authState = loadAuthState();
+    const token = authState?.accessToken;
 
+    console.log("Token in getCandidateProfile:", token);
+
+    const res = await axios.get(
+      `${NODE_BASE}/api/resume/${resumeId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return res.data;
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+};

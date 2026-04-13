@@ -1,21 +1,18 @@
 import React, { useRef, useState, useEffect } from "react";
-import ScheduledPieChart from "../Dashboard/ScheduledPieChart";
+import ScheduledPieChart from "../../Dashboard/ScheduledPieChart";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalendarCheck } from "@fortawesome/free-regular-svg-icons";
 import { motion, useInView } from "framer-motion";
-import SidebarCustom from "../CommonComponents/SidebarCustom";
+import SidebarCustom from "../../CommonComponents/SidebarCustom";
 import ScheduledBars from "./ScheduledBars";
 import ScheduledInterviewCard from "./ScheduledInterviewCard";
-import { getDashboardData } from "../../api/dashboard";
-import { useModal } from "./JobForm/ModalContext";
-import CandidateProfileModal from "./CandidateProfileModal";
+import { getDashboardData } from "../../../api/dashboard";
 
 const ScheduledInterviews = () => {
 
 
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
-    const { openModal } = useModal();
 
     const containerVariants = {
         hidden: { opacity: 0, y: 20 },
@@ -154,7 +151,7 @@ const handleViewProfile = (profile) => {
 
                         {/* RIGHT (Bars) */}
                         <motion.div
-                            className="mt-30 w-full lg:w-[50%] xl:w-[50%] flex justify-center"
+                            className="mt-30 w-full lg:w-[100%] xl:w-[50%] flex justify-center"
                             variants={itemVariants}
                         >
                             <ScheduledBars data={barData} />

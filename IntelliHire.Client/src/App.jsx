@@ -14,7 +14,7 @@ import Dashboard from "./Components/Dashboard/Dashboard";
 import Meet from "./Components/Meeting/Meet";
 import { SessionProvider } from "./Components/Meeting/sessionContext";
 import VerificationNotice from "./Components/Auth/VerificationNotice";
-import ScheduledInterviews from "./Components/Recruiter/ScheduledInterview";
+import ScheduledInterviews from "./Components/Recruiter/Scheduled/ScheduledInterview";
 import { ModalProvider } from "./Components/Recruiter/JobForm/ModalContext";
 // import WebSocketTest from "./Components/Meeting/WebSocketConnectivityTest"; 
 
@@ -22,6 +22,11 @@ import { ModalProvider } from "./Components/Recruiter/JobForm/ModalContext";
   // Pass Redux token to the hook - it will only schedule when token exists
 import { Toaster } from "react-hot-toast";
 import { useSelector } from "react-redux";
+// import JobDescription from "./Components/Recruiter/JobDescriptionDetails";
+import JobDescriptionDetails from "./Components/Recruiter/JobDescriptionDetails";
+import CompletedInterviews from "./Components/Recruiter/Completed/CompletedInterview";
+import CandidateProfile from "./Components/Recruiter/CandidateProfile";
+import ReportPage from "./Components/Report/Detailed/DetailedReportPage";
 
 function App() {
   const accessToken = useSelector((state) => state.auth.accessToken);
@@ -79,7 +84,11 @@ function App() {
           <Route path="/Meet" element={<Meet />} />
           <Route path="/verify-notice" element={<VerificationNotice />} />
           <Route path="/ScheduledInterview" element={<ScheduledInterviews />} />
+           <Route path="/CompletedInterview" element={<CompletedInterviews />} />
+           <Route path="/job/:id" element={<JobDescriptionDetails />} />
+           <Route path="/resume/:resumeId" element={<CandidateProfile />} />
           {/* <Route path="/WebTest" element={<WebSocketTest/>} /> */}
+          <Route path="/report" element={<ReportPage />} />
         </Routes>
         {/* Conditionally render Footer */}
         {!auth && !Meeting && !userVerification && <Footer />}
@@ -92,4 +101,7 @@ function App() {
 
 
 export default App;
+
 // #29445D #D1DED3 #9CBFAC #719D99 #45767C
+// skills_summary
+// description in experience and project 

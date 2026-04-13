@@ -8,12 +8,9 @@ import {
 } from "@fortawesome/free-regular-svg-icons";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useModal } from "./JobForm/ModalContext"; // adjust path
-// import CandidateProfileModal from "./CandidateProfileModal";
 
 const ScheduledInterviewCard = ({ interview, onViewProfile }) => {
     const navigate = useNavigate();
-    const { openModal } = useModal();
     const [timeLeft, setTimeLeft] = useState("");
     useEffect(() => {
         const calculateTimeLeft = () => {
@@ -95,7 +92,7 @@ const ScheduledInterviewCard = ({ interview, onViewProfile }) => {
 
                 <div className="flex items-center gap-2">
                     <FontAwesomeIcon icon={faUser} />
-                    <span>{interview.candidateProfile?.name}</span>
+                    <span>{interview.Candidate}</span>
                 </div>
 
                 <div className="flex items-center gap-2 text-[#45767C] font-semibold">
@@ -113,7 +110,8 @@ const ScheduledInterviewCard = ({ interview, onViewProfile }) => {
 
                 {/* View Profile (Modal trigger) */}
                 <button
-                    onClick={() => onViewProfile(interview.candidateProfile)}
+                onClick={() => navigate(`/resume/${interview.resumeId}`)}
+                style={{cursor: "pointer"}}
                     className="flex-1 bg-[#DDE8E2] text-[#29445D] py-2 rounded-lg hover:bg-[#cddbd3] transition"
                 >
                     View Profile
@@ -121,7 +119,8 @@ const ScheduledInterviewCard = ({ interview, onViewProfile }) => {
 
                 {/* View Details (Route) */}
                 <button
-                    onClick={() => navigate(`/interview/${interview.id}`)}
+                    onClick={() => navigate(`/job/${interview.jobDescriptionId}`)}
+                    style={{cursor: "pointer"}}
                     className="flex-1 bg-[#29445D] text-white py-2 rounded-lg hover:bg-[#1f3447] transition"
                 >
                     View Details

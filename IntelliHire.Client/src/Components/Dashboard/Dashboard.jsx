@@ -41,8 +41,10 @@ const Dashboard = () => {
   const user = useSelector(state => state.auth.user);
   const chartData = [
   { name: "Scheduled", value: scheduledInterviews.length },
+
 ];
 
+// console.log("chart interviews in dashboard", chartData)
   return (
     <div className="bg-[#D1DED3] w-full min-h-screen flex flex-row ">
       {/* Left Sidebar */}
@@ -73,6 +75,7 @@ const Dashboard = () => {
           <DashBoardCard
             title="Scheduled"
             value={scheduledInterviews?.length}
+            data = {dashboardData}
             chartData={chartData}
             chartSize={160}
           />

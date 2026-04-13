@@ -48,6 +48,8 @@ export const getDashboardData = async (req, res) => {
         const completedPercentage = total ? (completed / total) * 100 : 0;
         const interviewsList = interviews.map((i) => ({
             id: i.id,
+            jobDescriptionId: i.FK_JobDescription,
+            resumeId: i.FK_Resume || "id not defined",
             company: i.User?.company || "Unknown Company",
             role: i.JobDescription?.JobRole || "Role",
             date: i.date,
@@ -55,16 +57,6 @@ export const getDashboardData = async (req, res) => {
             duration: i.duration,
             Candidate: i.Resume?.name || "Candidate",
             isCompleted: i.IsCompleted,
-
-            // 🔥 ADD THIS
-            candidateProfile: {
-                name: i.Resume?.name || "Unknown Candidate",
-                email: i.Resume?.email || "",
-                skills_summary: i.Resume?.skills_summary || [],
-                coursework_keywords: i.Resume?.coursework_keywords || [],
-                linkedin: i.Resume?.linkedin || "",
-                github_link: i.Resume?.github_link || "",
-            },
         }));
         res.json({
             total,
@@ -73,7 +65,6 @@ export const getDashboardData = async (req, res) => {
             completedPercentage,
             scheduledData: domainData, // 🔥 IMPORTANT
             interviews: interviewsList,
-            // candidateProfile: CandidateProfile
         });
     }
     catch (err) {
