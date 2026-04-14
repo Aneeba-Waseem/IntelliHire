@@ -256,8 +256,8 @@ class QuestionDeepgramSession:
         self.start_time = time.time()
 
         self.collector = TranscriptCollector(
-            max_answer_time_sec=180,
-            silence_timeout_ms=60000,
+            max_answer_time_sec=300,    # 5  min total question time 
+            silence_timeout_ms=120000,  # 2 min silence timeout
             on_complete=None,
             on_interim=on_interim_transcript or (
                 lambda text: logger.debug(f"🟡 [Q{self.question_num}] Interim: {text[:50]}...")
@@ -468,7 +468,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             async def send_keepalive():
                 while not session_ctx.client_disconnected:
                     try:
-                        await asyncio.sleep(30)
+                        await asyncio.sleep(10)
                         sent = await safe_send_json(
                             websocket, session_ctx, {"type": "keepalive", "timestamp": time.time()}
                         )
@@ -514,7 +514,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
                 try:
                     logger.debug("[5] Waiting for message (timeout: 60s)...")
-                    message = await asyncio.wait_for(websocket.receive(), timeout=60.0)
+                    message = await asyncio.wait_for(websocket.receive(), timeout=120.0)
                     consecutive_timeouts = 0
 
                     # ✅ FIX 3: Starlette signals disconnect via the 'type' key
@@ -613,6 +613,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         if current_deepgram_session:
                             logger.info("🛑 Closing previous Deepgram session")
                             # ✅ FIXED: This now only closes Deepgram, not WebRTC
+                            await asyncio.sleep(1)  # brief pause to ensure any in-flight audio is processed
                             await current_deepgram_session.close()
 
                         # ✅ FIXED: Create new Deepgram session without passing main WebSocket
@@ -683,12 +684,31 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
                     elif msg_type == "auth":
                         new_token = data.get("token")
+
                         if new_token and is_valid_token(new_token):
                             token = new_token
+
+                            # ✅ Track last auth refresh time
+                            sess.last_auth_time = time.time()
+
                             logger.info("✅ Token updated")
+
+                            # ✅ Optional: acknowledge (helps debugging / client sync)
+                            # await safe_send_json(
+                            #     websocket,
+                            #     session_ctx,
+                            #     {"type": "auth_ack", "timestamp": sess.last_auth_time},
+                            # )
+
                         else:
                             logger.warning("⚠️ Invalid token in auth message")
 
+                            # ❌ Do NOT close connection — just warn
+                            await safe_send_json(
+                                websocket,
+                                session_ctx,
+                                {"type": "auth_error", "error": "Invalid token"},
+                            )
                     # ───────────────── LISTENING STATE ─────────────────
                     elif msg_type == "listening_started":
                         logger.info("[5] Listening started")
@@ -787,7 +807,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 except Exception as e:
                     logger.warning(f"⚠️ Error closing PeerConnection: {e}")
 
-            await session_manager.close(session_id)
+            await asyncio.sleep(60)  # grace period
+            if session_ctx.client_disconnected:
+                await session_manager.close(session_id)
             logger.info("✅ Cleanup complete")
 
     except Exception as e:

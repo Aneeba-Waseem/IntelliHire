@@ -32,6 +32,11 @@ const ScheduledInterviews = () => {
         hidden: { scale: 0 },
         visible: { scale: 1, transition: { duration: 0.5, ease: "backOut" } },
     };
+    
+      // ✅ FIX: scroll reset on page open
+      useEffect(() => {
+        window.scrollTo(0, 0);
+      }, []);
     const [dashboardData, setDashboardData] = useState(null);
     useEffect(() => {
         const fetchData = async () => {

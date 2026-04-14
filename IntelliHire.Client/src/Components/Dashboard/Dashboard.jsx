@@ -14,6 +14,9 @@ const Dashboard = () => {
  
   const [dashboardData, setDashboardData] = useState(null);
   const token = useSelector(state => state.auth.accessToken);
+      useEffect(() => {
+          window.scrollTo(0, 0);
+        }, [dashboardData]);
   console.log("token from selector",token)
   useEffect(() => {
     const fetchData = async () => {
@@ -29,7 +32,7 @@ const Dashboard = () => {
 
     if (token) fetchData();
   }, [token]);
-
+  
    const interviews = dashboardData?.interviews || [];
 
   const scheduledInterviews = interviews.filter(i => !i.isCompleted);

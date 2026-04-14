@@ -51,7 +51,11 @@ const User = sequelize.define("User", {
     validate: {
       isUrl: true
     }
-  }
+  },
+  Role: {
+  type: DataTypes.STRING,
+  allowNull: true
+}
 
 });
 

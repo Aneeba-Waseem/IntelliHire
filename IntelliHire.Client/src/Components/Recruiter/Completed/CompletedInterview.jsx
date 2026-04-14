@@ -11,7 +11,10 @@ import CompletedPieChart from "../../Dashboard/CompletedPieChart";
 const CompletedInterviews = () => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
-
+        useEffect(() => {
+            window.scrollTo(0, 0);
+          }, []);
+          
     const [dashboardData, setDashboardData] = useState(null);
 
     useEffect(() => {

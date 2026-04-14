@@ -295,6 +295,7 @@ class TranscriptCollector:
         self.state = TranscriptState.COMPLETE
         self.end_time = time.time()
         elapsed = self.end_time - self.start_time if self.start_time else 0
+        self.in_final_sequence = False
         
         # Set final text
         self.final_text = self.accumulated_text
