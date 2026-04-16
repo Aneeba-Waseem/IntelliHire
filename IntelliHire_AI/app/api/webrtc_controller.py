@@ -159,7 +159,7 @@ async def submit_answer_to_flow(
                 },
             )
         logger.info(f"✅ [FLOW] Response: HTTP {response.status_code}")
-        
+
         if response.status_code == 200:
             data = response.json()
             logger.info("✅ [FLOW] Answer submitted successfully")
@@ -262,8 +262,8 @@ class QuestionDeepgramSession:
         logger.info(f"   Created isolated STT queue")
         
         self.collector = TranscriptCollector(
-            max_answer_time_sec=180,
-            silence_timeout_ms=60000,      # silence timeout - 1 min
+            max_answer_time_sec=180,        # 4 min in total
+            silence_timeout_ms=30000,      # silence timeout - 30 sec
             on_complete=None,
             on_interim=on_interim_transcript or (
                 lambda text: logger.debug(f"🟡 [Q{self.question_num}] Interim: {text[:50]}...")
@@ -716,11 +716,11 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 except asyncio.TimeoutError:
                     consecutive_timeouts += 1
                     logger.warning(
-                        f"⚠️ No message for 60s (timeout #{consecutive_timeouts}/2)"
+                        f"⚠️ No message for 30s (timeout #{consecutive_timeouts}/2)"
                     )
 
                     if consecutive_timeouts >= 2:
-                        logger.warning("⚠️ No activity for 120s - force finalizing answer")
+                        logger.warning("⚠️ No activity for 60s - force finalizing answer")
                         if current_deepgram_session and current_deepgram_session.collector:
                             try:
                                 await asyncio.wait_for(
