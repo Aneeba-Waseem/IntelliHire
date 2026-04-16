@@ -1,0 +1,20 @@
+Setup: Webrtc, websocket, deepgram stt and tts.
+The webrtc session must persist for 1 hour. There is an isolated connection of deepgram for stt and tts, total time for each session 5 min. If the candidate stops speaking before 5 min, a silence of 2 min triggers the finalization of transcript. If he keeps speaking and 5 min pass, the speech is force finalized. After finalization from either cases, the deepgram session is cleaned up and a new isolated connection establishes and so on. 
+
+The setup is working as expected. The only problem is inconsistency in webrtc session length. Sometimes it ends after 5 to 6 questions, sometimes 1 to 2.  
+
+Folders: 
+Meet.jsx
+MeetingButton..jsx
+Webrtc_controller.py
+session_manager.py
+In Stt folder: 
+deepgram_client.py, deepgram_manager.py, TranscriptCollector.py, deepgram_stream.py
+In tts folder:
+tts_track.py
+deepgram_stream.py
+
+Let's discuss the probable causes and let me know which file should i show you. 
+To be noted: keepalive, ping/pong is implemented.  You can ask questions about my implementation, if you want. 
+
+Output should not include extra unnecessary text or documentation files. Keep your answers precise

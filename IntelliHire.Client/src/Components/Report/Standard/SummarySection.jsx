@@ -27,7 +27,13 @@ export default function SummarySection({
 
       <div>
         <h4 className="font-semibold">Recommendation</h4>
-        <p>{recommendation}</p>
+        <p className="font-bold">
+  {recommendation?.title || "No recommendation"}
+</p>
+
+<p className="text-sm">
+  {recommendation?.description || ""}
+</p>
       </div>
     </div>
   );

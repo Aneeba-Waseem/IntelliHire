@@ -6,7 +6,7 @@ Two finalization triggers for each question (4 minute max):
 1. ⭐ EARLY FINALIZATION (Candidate finishes < 4 min)
    - Candidate stops speaking (2s silence detected)
    - Transcript immediately finalized
-   - Example: Answer complete at T=1:30 → finalize at T=1:32 (with 2s silence)
+   - Example: Answer complete at T=1:30 → finalize at T=3:32 (with 2min silence)
 
 2. ⭐ HARD TIMEOUT (Candidate still speaking at 4 min)
    - If candidate not finalized by 4:00
@@ -124,8 +124,7 @@ class TranscriptCollector:
     
     async def start_timer(self):
         """
-        ⭐ START THE ANSWER TIMER
-        
+        START THE ANSWER TIMER
         Call this when question is displayed to candidate.
         Begins the 4-minute countdown.
         """
@@ -145,8 +144,7 @@ class TranscriptCollector:
     async def add_chunk(self, text: str, is_final: bool, confidence: float = 0.0):
         """
         Feed Deepgram transcript chunks.
-        
-        ⭐ KEY: Resets silence timer on every final chunk
+        Resets silence timer on every final chunk
         """
         if not text or not text.strip():
             logger.debug("⊘ Empty chunk received")
@@ -216,7 +214,7 @@ class TranscriptCollector:
     
     async def _restart_silence_timer(self):
         """
-        ⭐ RESTART SILENCE TIMER after each final chunk
+        RESTART SILENCE TIMER after each final chunk
         
         This implements the "reset on final" logic:
         - When final chunk arrives, start waiting for silence_timeout_ms
@@ -295,7 +293,6 @@ class TranscriptCollector:
         self.state = TranscriptState.COMPLETE
         self.end_time = time.time()
         elapsed = self.end_time - self.start_time if self.start_time else 0
-        self.in_final_sequence = False
         
         # Set final text
         self.final_text = self.accumulated_text

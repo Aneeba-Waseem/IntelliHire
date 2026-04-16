@@ -1,4 +1,4 @@
-import React, { useState , useEffect} from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { webrtcStore } from "../../store/webRtcStore";
 import { useSession } from "./sessionContext";
@@ -18,17 +18,6 @@ const MeetingButton = () => {
     return accessToken;
   };
 
-  useEffect(() => {
-    if (webrtcStore.pc) {
-      webrtcStore.pc.close();
-      webrtcStore.pc = null;
-    }
-
-    if (webrtcStore.ws) {
-      webrtcStore.ws.close();
-      webrtcStore.ws = null;
-    }
-  }, []);
   const joinMeeting = async () => {
     setLoading(true);
     try {
@@ -65,12 +54,11 @@ const MeetingButton = () => {
         pc.addTrack(track, stream);
         console.log(`  ✅ Added local ${track.kind} track`);
       });
-      console.log("✅ [3] Local tracks added");
 
       // ════════════════════════════════════════════
-      // ⭐ STEP 5: SET UP ontrack HANDLER
+      // ⭐ STEP 4: SET UP ontrack HANDLER
       // ════════════════════════════════════════════
-      console.log("[5] Setting up ontrack handler...");
+      console.log("[4] Setting up ontrack handler...");
 
       const tempAudio = new Audio();
       tempAudio.style.display = "none";
@@ -79,9 +67,7 @@ const MeetingButton = () => {
       let remoteStream = null;
 
       pc.ontrack = (event) => {
-        console.log("\n" + "🎉".repeat(30));
         console.log("🎉 pc.ontrack FIRED IN MEETINGBUTTON 🎉");
-        console.log("🎉".repeat(30));
 
         console.log("Track details:", {
           kind: event.track.kind,
@@ -110,12 +96,12 @@ const MeetingButton = () => {
         }
       };
 
-      console.log("✅ [5] ontrack handler ready");
+      console.log("✅ [4] ontrack handler ready");
 
       // ════════════════════════════════════════════
-      // ⭐ STEP 6: Setup connection state listeners
+      // ⭐ STEP 5: Setup connection state listeners
       // ════════════════════════════════════════════
-      console.log("[6] Setting up connection listeners...");
+      console.log("[5] Setting up connection listeners...");
 
       let isIceConnected = false;
 
@@ -138,11 +124,11 @@ const MeetingButton = () => {
         // ⭐ CRITICAL: Track when ICE actually connects
         if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
           isIceConnected = true;
-          console.log("✅✅✅ ICE CONNECTION ESTABLISHED - AUDIO SHOULD FLOW NOW ✅✅✅");
+          console.log("✅ ICE CONNECTION ESTABLISHED - AUDIO SHOULD FLOW NOW ✅");
         }
 
         if (pc.iceConnectionState === "failed") {
-          console.error("❌❌❌ ICE CONNECTION FAILED - NO AUDIO WILL FLOW ❌❌❌");
+          console.error("❌❌ ICE CONNECTION FAILED - NO AUDIO WILL FLOW ❌❌");
           setLoading(false);
         }
 
@@ -151,17 +137,19 @@ const MeetingButton = () => {
         }
       };
 
-      console.log("✅ [6] Listeners attached");
+      console.log("✅ [5] Listeners attached");
 
       // ════════════════════════════════════════════
-      // ⭐ STEP 7: Setup ICE candidate handler with QUEUING
+      // ⭐ STEP 6: Setup ICE candidate handler with QUEUING
       // ════════════════════════════════════════════
-      console.log("[7] Setting up ICE candidate handler with queuing...");
+      console.log("[6] Setting up ICE candidate handler with queuing...");
 
       // ⭐ CRITICAL: Queue candidates until WebSocket is ready
       let iceCandidateQueue = [];
       let wsReady = false;
       let pendingCandidatesSent = false;
+      let iceCheckInterval = null;
+      let iceCheckTimeout = null;
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
@@ -173,8 +161,11 @@ const MeetingButton = () => {
             ws.send(
               JSON.stringify({
                 type: "ice",
-                candidate: event.candidate,
-                sessionId: sessionId,
+                candidate: {
+                  candidate: event.candidate.candidate,      // ← SDP string
+                  sdpMid: event.candidate.sdpMid,
+                  sdpMLineIndex: event.candidate.sdpMLineIndex,
+                },
               })
             );
             console.log("  ✅ ICE candidate sent to server");
@@ -185,12 +176,12 @@ const MeetingButton = () => {
         }
       };
 
-      console.log("✅ [7] ICE handler ready (with queuing)");
+      console.log("✅ [6] ICE handler ready (with queuing)");
 
       // ════════════════════════════════════════════
-      // ⭐ STEP 8: CREATE SESSION ID & SETUP WEBSOCKET
+      // ⭐ STEP 7: CREATE SESSION ID & SETUP WEBSOCKET
       // ════════════════════════════════════════════
-      console.log("[8] Creating session ID and connecting WebSocket...");
+      console.log("[7] Creating session ID and connecting WebSocket...");
 
       const sessionId = uuidv4();
       console.log("📍 Session ID created:", sessionId);
@@ -204,31 +195,37 @@ const MeetingButton = () => {
       const ws = new WebSocket(`ws://localhost:8001/api/webrtc/ws/${sessionId}`);
 
       ws.onopen = async () => {
-        console.log("✅ [8] WebSocket connected");
+        console.log("✅ [7] WebSocket connected");
         wsReady = true;
 
-        console.log("[9] Sending auth...");
-        ws.send(JSON.stringify({ type: "auth", token }));
-        console.log("✅ [9] Auth sent");
+        webrtcStore.ws = ws;
 
         // ⭐ CRITICAL: Flush queued ICE candidates
-        console.log(`[8.5] Flushing ${iceCandidateQueue.length} queued ICE candidates...`);
+        console.log(`[7.5] Flushing ${iceCandidateQueue.length} queued ICE candidates...`);
         iceCandidateQueue.forEach((candidate) => {
           ws.send(
             JSON.stringify({
               type: "ice",
-              candidate: candidate,
+              candidate: {
+                candidate: candidate.candidate,      // ✅ FIXED: Use loop variable, not event
+                sdpMid: candidate.sdpMid,
+                sdpMLineIndex: candidate.sdpMLineIndex,
+              },
             })
           );
         });
         pendingCandidatesSent = true;
-        console.log(`✅ [8.5] All queued candidates sent (${iceCandidateQueue.length})`);
+        console.log(`✅ [7.5] All queued candidates sent (${iceCandidateQueue.length})`);
 
-        console.log("[10] Creating offer...");
+        console.log("[8] Sending auth...");
+        ws.send(JSON.stringify({ type: "auth", token }));
+        console.log("✅ [8] Auth sent");
+
+        console.log("[9] Creating offer...");
         try {
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
-          console.log("✅ [10] Offer created and local description set");
+          console.log("✅ [9] Offer created and local description set");
 
           ws.send(
             JSON.stringify({
@@ -236,9 +233,9 @@ const MeetingButton = () => {
               sdp: offer.sdp,
             })
           );
-          console.log("✅ [10] Offer sent");
+          console.log("✅ [9] Offer sent");
         } catch (err) {
-          console.error("❌ [10] Offer error:", err);
+          console.error("❌ [9] Offer error:", err);
           setLoading(false);
         }
       };
@@ -250,108 +247,104 @@ const MeetingButton = () => {
 
       ws.onclose = () => {
         console.error("❌ WebSocket closed unexpectedly");
-
-        // HARD FAIL — clean everything
-        pc.close();
-
-        if (webrtcStore.pc) webrtcStore.pc = null;
-        if (webrtcStore.ws) webrtcStore.ws = null;
-
-        alert("Connection lost. Please rejoin.");
-        navigate("/");
+        // Properly clean up timers
+        if (iceCheckInterval) clearInterval(iceCheckInterval);
+        if (iceCheckTimeout) clearTimeout(iceCheckTimeout);
+        setLoading(false);
       };
 
       // ════════════════════════════════════════════
-      // STEP 11: Handle WebSocket messages
+      // STEP 10: Handle WebSocket messages
       // ════════════════════════════════════════════
       ws.onmessage = async (msg) => {
         try {
           const data = JSON.parse(msg.data);
 
           if (data.type === "answer") {
-            console.log("[11] Received answer");
+            console.log("[10] Received answer");
 
             await pc.setRemoteDescription({
               type: "answer",
               sdp: data.sdp,
             });
-            console.log("✅ [11] Remote description set");
+            console.log("✅ [10] Remote description set");
+
+            // ✅ FIXED: Send interview_session_id to backend
+            ws.send(JSON.stringify({
+              type: "interview_session_id",
+              interview_session_id: sessionId,
+            }));
+            console.log("✅ [10] Interview session ID sent");
 
             // Store connection data
             webrtcStore.pc = pc;
-            webrtcStore.ws = ws;
             webrtcStore.stream = stream;
             webrtcStore.webRtcSessionId = sessionId;
 
-            console.log("\n" + "🎬".repeat(25));
             console.log("🎬 OFFER-ANSWER EXCHANGE COMPLETE 🎬");
             console.log(`🎬 Session ID: ${sessionId}`);
             console.log("🎬 Waiting for ICE connection...");
-            console.log("🎬".repeat(25) + "\n");
 
             // ⭐ WAIT for ICE to actually connect before navigating
             // Give ICE gathering + connection 10 seconds max
-            const iceCheckInterval = setInterval(() => {
-              if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: "ping" }));
+            iceCheckInterval = setInterval(() => {
+              if (isIceConnected) {
+                clearInterval(iceCheckInterval);
+                clearTimeout(iceCheckTimeout);
+
+                console.log("🎬 ICE CONNECTED - NAVIGATING TO MEET 🎬");
+
+                setTimeout(() => {
+                  if (document.body.contains(tempAudio)) {
+                    document.body.removeChild(tempAudio);
+                  }
+                }, 500);
+
+                navigate("/Meet");
               }
-            }, 25000);
+            }, 500);
 
-            if (isIceConnected) {
+            // Timeout after 10 seconds
+            iceCheckTimeout = setTimeout(() => {
               clearInterval(iceCheckInterval);
-              clearTimeout(iceCheckTimeout);
-
-              console.log("🎬 ICE CONNECTED - NAVIGATING TO MEET 🎬");
-
-              setTimeout(() => {
-                tempAudio.srcObject = remoteStream;
-              }, 500);
+              console.error("⚠️ ICE did not connect within 10s, navigating anyway...");
+              console.error(`   ICE state: ${pc.iceConnectionState}`);
+              console.error(`   Connection state: ${pc.connectionState}`);
 
               navigate("/Meet");
-            }
-          ;
-
-          // Timeout after 10 seconds
-          const iceCheckTimeout = setTimeout(() => {
-            clearInterval(iceCheckInterval);
-            console.error("⚠️ ICE did not connect within 10s, navigating anyway...");
-            console.error(`   ICE state: ${pc.iceConnectionState}`);
-            console.error(`   Connection state: ${pc.connectionState}`);
-
-            navigate("/Meet");
-          }, 10000);
-        }
+            }, 10000);
+          }
 
           if (data.type === "ice") {
-          try {
-            await pc.addIceCandidate(data.candidate);
-            console.log("✅ Server ICE candidate added");
-          } catch (err) {
-            console.warn("⚠️ ICE candidate error", err.message);
+            try {
+              await pc.addIceCandidate(data.candidate);
+              console.log("✅ Server ICE candidate added");
+            } catch (err) {
+              console.warn("⚠️ ICE candidate error", err.message);
+            }
           }
+        } catch (err) {
+          console.error("❌ Message error:", err);
         }
-      } catch (err) {
-        console.error("❌ Message error:", err);
-      }
-    };
-  } catch (err) {
-    console.error("❌ Join failed:", err);
-    setLoading(false);
-  }
-};
+      };
+    } catch (err) {
+      console.error("❌ Join failed:", err);
+      setLoading(false);
+    }
+  };
 
-return (
-  <button
-    onClick={joinMeeting}
-    disabled={loading}
-    className="rounded-3xl w-[180px] py-5 font-semibold mt-20
+  return (
+    <button
+      onClick={joinMeeting}
+      disabled={loading}
+      className="rounded-3xl w-[180px] py-5 font-semibold mt-20
       text-[#F2FAF5]
       bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
       hover:opacity-90 disabled:opacity-50"
-  >
-    {loading ? "Connecting..." : "Join Now"}
-  </button>
-);
+    >
+      {loading ? "Connecting..." : "Join Now"}
+    </button>
+  );
 };
 
 export default MeetingButton;

@@ -65,8 +65,8 @@ class DeepgramConfig:
     ping_interval: int = 30
     ping_timeout: int = 3600
     # ✅ NEW: Configurable session parameters
-    max_session_duration: float = 180.0  # 10 minutes max per question
-    idle_timeout: float = 30.0  # 30 seconds of inactivity = timeout
+    max_session_duration: float = 600.0  # 10 minutes max per question
+    idle_timeout: float = 120.0  # 2 minutes of inactivity = timeout
     max_retries: int = 3
     retry_backoff: float = 1.0  # seconds, multiplied exponentially
 

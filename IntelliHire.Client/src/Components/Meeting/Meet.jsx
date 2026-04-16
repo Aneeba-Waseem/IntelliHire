@@ -57,7 +57,7 @@ export default function Meet() {
     console.log("📍 WebRTC Session ID (Store):", storeSessionId);
     console.log("📍 Active Session ID:", webRtcSessionId);
 
-  if (remoteAudioStream && remoteAudioRef.current.srcObject !== remoteAudioStream) {
+    if (remoteAudioStream) {
       console.log("✅ Remote audio stream available");
       console.log("  Stream ID:", remoteAudioStream.id);
       console.log("  Audio tracks:", remoteAudioStream.getAudioTracks().length);
@@ -90,32 +90,29 @@ export default function Meet() {
       console.log("⚠️ No remote audio stream yet");
       setAudioStatus("⏳ Waiting for audio track...");
 
-      // if (pc) {
-      //   pc.ontrack = (event) => {
-      //     console.log("\n🎉 pc.ontrack fired");
+      if (pc) {
+        pc.ontrack = (event) => {
+          console.log("\n🎉 pc.ontrack fired");
 
-      //     if (event.track.kind === "audio" && event.streams.length > 0) {
-      //       const audioStream = event.streams[0];
-      //       console.log("✅ Audio stream:", audioStream.id);
+          if (event.track.kind === "audio" && event.streams.length > 0) {
+            const audioStream = event.streams[0];
+            console.log("✅ Audio stream:", audioStream.id);
 
-      //       remoteAudioRef.current.srcObject = audioStream;
-      //       setAudioStatus("✅ Stream connected");
+            remoteAudioRef.current.srcObject = audioStream;
+            setAudioStatus("✅ Stream connected");
 
-      //       remoteAudioRef.current
-      //         .play()
-      //         .then(() => {
-      //           console.log("✅ AUDIO PLAYBACK STARTED");
-      //           setAudioStatus("✅✅✅ AUDIO PLAYING 🎉");
-      //         })
-      //         .catch((err) => {
-      //           console.error("❌ Play error:", err.message);
-      //           setAudioStatus(`❌ ${err.message}`);
-      //         });
-      //     }
-      //   };
-      // }
-      if (remoteAudioStream) {
-        remoteAudioRef.current.srcObject = remoteAudioStream;
+            remoteAudioRef.current
+              .play()
+              .then(() => {
+                console.log("✅ AUDIO PLAYBACK STARTED");
+                setAudioStatus("✅✅✅ AUDIO PLAYING 🎉");
+              })
+              .catch((err) => {
+                console.error("❌ Play error:", err.message);
+                setAudioStatus(`❌ ${err.message}`);
+              });
+          }
+        };
       }
     }
 
@@ -254,7 +251,7 @@ export default function Meet() {
     if (ws) {
       const previousOnMessage = ws.onmessage;
 
-      ws.addEventListener("message", (event) => {
+      ws.onmessage = (event) => {
         if (typeof event.data !== "string") return;
 
         try {
@@ -289,10 +286,10 @@ export default function Meet() {
 
             setListeningState("complete");
             setAnswerFeedback(`
-              🎉 Interview Complete!
-              Rating: ${data.report.overallRating}
-              Score: ${data.report.score}
-              Message: ${data.message}
+🎉 Interview Complete!
+Rating: ${data.report.overallRating}
+Score: ${data.report.score}
+Message: ${data.message}
             `);
 
             // Restore previous handler
@@ -317,7 +314,7 @@ export default function Meet() {
         } catch (err) {
           console.error("Error parsing message:", err);
         }
-      });
+      };
     }
   };
 
@@ -353,10 +350,6 @@ export default function Meet() {
     if (!pc || !stream) {
       console.error("❌ Missing PC or Stream - redirecting");
       navigate("/");
-      setTimeout(() => {
-        webrtcStore.pc = null;
-        webrtcStore.ws = null;
-      }, 500);
     } else if (!webRtcSessionId) {
       console.error("❌ Missing WebRTC Session ID - redirecting");
       navigate("/");

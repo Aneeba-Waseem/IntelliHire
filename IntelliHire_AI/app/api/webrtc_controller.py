@@ -146,6 +146,7 @@ async def submit_answer_to_flow(
         )
 
         async with httpx.AsyncClient(timeout=FLOW_SUBMISSION_TIMEOUT) as client:
+            logger.info(f"🔗 [FLOW] Calling {INTERVIEW_FLOW_URL}") 
             response = await client.post(
                 INTERVIEW_FLOW_URL,
                 headers={
@@ -157,7 +158,8 @@ async def submit_answer_to_flow(
                     "answer": answer_text
                 },
             )
-
+        logger.info(f"✅ [FLOW] Response: HTTP {response.status_code}")
+        
         if response.status_code == 200:
             data = response.json()
             logger.info("✅ [FLOW] Answer submitted successfully")
@@ -244,20 +246,24 @@ class QuestionDeepgramSession:
 
     async def open(
         self,
-        stt_queue: asyncio.Queue,
+        # stt_queue: asyncio.Queue,
         session_ctx: SessionContext,
         on_interim_transcript=None,
     ):
         """
-        ✅ FIXED: Only receives stt_queue and session_ctx, NOT the main WebSocket.
+        FIXED: Only receives stt_queue and session_ctx, NOT the main WebSocket.
         Transcript updates are handled via callbacks.
         """
         logger.info(f"📍 [Q{self.question_num}] Opening Deepgram connection")
         self.start_time = time.time()
 
+         # ✅ NEW: Create isolated queue for THIS question only
+        self.stt_queue = asyncio.Queue(maxsize=900000)
+        logger.info(f"   Created isolated STT queue")
+        
         self.collector = TranscriptCollector(
-            max_answer_time_sec=300,    # 5  min total question time 
-            silence_timeout_ms=120000,  # 2 min silence timeout
+            max_answer_time_sec=180,
+            silence_timeout_ms=60000,      # silence timeout - 1 min
             on_complete=None,
             on_interim=on_interim_transcript or (
                 lambda text: logger.debug(f"🟡 [Q{self.question_num}] Interim: {text[:50]}...")
@@ -268,7 +274,7 @@ class QuestionDeepgramSession:
         try:
             # ✅ FIXED: Do NOT pass the main websocket to Deepgram
             self.deepgram_ws, _ = await connect_deepgram_stt_only(
-                stt_queue,
+                self.stt_queue,
                 websocket=None,  # Important: Deepgram session should NOT have direct access to the main WebSocket
                 session_id=self.session_id,
                 transcript_collector=self.collector,
@@ -282,7 +288,7 @@ class QuestionDeepgramSession:
 
             logger.info(f"✅ [Q{self.question_num}] Deepgram connected")
             await self.collector.start_timer()
-            logger.info(f"⏱️ [Q{self.question_num}] Answer timer started (2 min window)")
+            logger.info(f"⏱️ [Q{self.question_num}] Answer timer started (4 min window)")
             return True
 
         except Exception as e:
@@ -352,8 +358,7 @@ class QuestionDeepgramSession:
 async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
     """
     Main WebRTC + Per-Question STT/TTS endpoint
-    
-    ✅ FIXED: Deepgram sessions are now isolated from WebRTC.
+    Deepgram sessions are isolated from WebRTC.
     Closing a Deepgram session will NOT close the WebRTC connection.
     """
 
@@ -363,6 +368,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
     question_num = 0
     current_deepgram_session: QuestionDeepgramSession = None
     consecutive_timeouts = 0
+    current_stt_queue = None
 
     try:
         await websocket.accept()
@@ -372,8 +378,6 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             # ─────────────────────────────────────────────
             # Auth
             # ─────────────────────────────────────────────
-            logger.info("[1] Waiting for auth message...")
-
             first = await asyncio.wait_for(websocket.receive(), timeout=10.0)
 
             if "text" not in first:
@@ -404,12 +408,12 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             # ─────────────────────────────────────────────
             # Session
             # ─────────────────────────────────────────────
-            logger.info("[2] Creating/getting WebRTC session...")
+            # logger.info("[2] Creating/getting WebRTC session...")
 
-            if not session_id:
-                session_id = str(uuid.uuid4())
-                await websocket.send_json({"type": "session_id", "session_id": session_id})
-                logger.info(f"Created new session: {session_id}")
+            # if not session_id:
+            #     session_id = str(uuid.uuid4())
+            #     await websocket.send_json({"type": "session_id", "session_id": session_id})
+            #     logger.info(f"Created new session: {session_id}")
 
             sess = await session_manager.create_or_get(
                 session_id=session_id, pc_factory=RTCPeerConnection
@@ -468,7 +472,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             async def send_keepalive():
                 while not session_ctx.client_disconnected:
                     try:
-                        await asyncio.sleep(10)
+                        await asyncio.sleep(30)
                         sent = await safe_send_json(
                             websocket, session_ctx, {"type": "keepalive", "timestamp": time.time()}
                         )
@@ -488,13 +492,12 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             # Track Handler
             # ─────────────────────────────────────────────
             if not sess.track_handler_added:
-
                 @pc.on("track")
                 async def on_track(track):
                     if track.kind == "audio":
-                        logger.info(f"🎧 Audio track: {track.id}")
+                        logger.info(f"Audio track: {track.id}")
                         session_ctx.create_task(
-                            stream_audio(track, sess.stt_queue),
+                            stream_audio(track, lambda: current_stt_queue),
                             name=f"stream-audio-{track.id}",
                         )
 
@@ -507,17 +510,15 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             logger.info("[5] Entering message loop...")
 
             while True:
-                # ✅ FIX 3: Don't call receive() if we already know the client is gone
                 if session_ctx.client_disconnected:
                     logger.info("[5] Client disconnected — exiting message loop cleanly")
                     break
 
                 try:
                     logger.debug("[5] Waiting for message (timeout: 60s)...")
-                    message = await asyncio.wait_for(websocket.receive(), timeout=120.0)
+                    message = await asyncio.wait_for(websocket.receive(), timeout=60.0)
                     consecutive_timeouts = 0
 
-                    # ✅ FIX 3: Starlette signals disconnect via the 'type' key
                     if message.get("type") == "websocket.disconnect":
                         logger.info("[5] Received disconnect frame — exiting message loop")
                         session_ctx.client_disconnected = True
@@ -612,17 +613,15 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
                         if current_deepgram_session:
                             logger.info("🛑 Closing previous Deepgram session")
-                            # ✅ FIXED: This now only closes Deepgram, not WebRTC
-                            await asyncio.sleep(1)  # brief pause to ensure any in-flight audio is processed
+                            # This only closes Deepgram, not WebRTC
                             await current_deepgram_session.close()
 
-                        # ✅ FIXED: Create new Deepgram session without passing main WebSocket
+                        # Create new Deepgram session without passing main WebSocket
                         current_deepgram_session = QuestionDeepgramSession(
                             question_num, sess.interview_session_id
                         )
                         
                         success = await current_deepgram_session.open(
-                            sess.stt_queue,
                             session_ctx,
                             # Optional: callback for interim transcripts
                             on_interim_transcript=lambda text: logger.debug(
@@ -639,6 +638,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                             )
                             continue
 
+                        current_stt_queue = current_deepgram_session.stt_queue
+
                         logger.info(f"🗣️ [Q{question_num}] Speaking question...")
                         session_ctx.create_task(
                             run_tts(question_text, sess.tts_queue),
@@ -653,9 +654,13 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                             try:
                                 answer_text, reason, elapsed = await q_session.wait_for_answer()
                                 await q_session.close()
-                                # ✅ FIX 1 & 2 & 4: pass session_ctx so safe_send and
-                                #    CancelledError handling work correctly
+                                
                                 logger.debug(f"🔐 [Q{q_num}] Token available: {bool(token)}")
+                                
+                                # ✅ CLEAR QUEUE HERE
+                                nonlocal current_stt_queue
+                                current_stt_queue = None
+                                
                                 await submit_answer_to_flow(
                                     session_id=sess.interview_session_id,
                                     answer_text=answer_text,
@@ -684,31 +689,12 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
                     elif msg_type == "auth":
                         new_token = data.get("token")
-
                         if new_token and is_valid_token(new_token):
                             token = new_token
-
-                            # ✅ Track last auth refresh time
-                            sess.last_auth_time = time.time()
-
                             logger.info("✅ Token updated")
-
-                            # ✅ Optional: acknowledge (helps debugging / client sync)
-                            # await safe_send_json(
-                            #     websocket,
-                            #     session_ctx,
-                            #     {"type": "auth_ack", "timestamp": sess.last_auth_time},
-                            # )
-
                         else:
                             logger.warning("⚠️ Invalid token in auth message")
 
-                            # ❌ Do NOT close connection — just warn
-                            await safe_send_json(
-                                websocket,
-                                session_ctx,
-                                {"type": "auth_error", "error": "Invalid token"},
-                            )
                     # ───────────────── LISTENING STATE ─────────────────
                     elif msg_type == "listening_started":
                         logger.info("[5] Listening started")
@@ -734,9 +720,18 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     )
 
                     if consecutive_timeouts >= 2:
-                        logger.error("❌ Connection unresponsive after 2 timeouts. Closing.")
-                        break
-
+                        logger.warning("⚠️ No activity for 120s - force finalizing answer")
+                        if current_deepgram_session and current_deepgram_session.collector:
+                            try:
+                                await asyncio.wait_for(
+                                    current_deepgram_session.collector.force_finalize(),
+                                    timeout=2.0
+                                )
+                                logger.info("✅ Answer force finalized")
+                            except Exception as e:
+                                logger.error(f"Error force finalizing: {e}")
+                        consecutive_timeouts = 0
+                        
                     sent = await safe_send_json(
                         websocket, session_ctx, {"type": "ping", "timestamp": time.time()}
                     )
@@ -807,9 +802,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 except Exception as e:
                     logger.warning(f"⚠️ Error closing PeerConnection: {e}")
 
-            await asyncio.sleep(60)  # grace period
-            if session_ctx.client_disconnected:
-                await session_manager.close(session_id)
+            await session_manager.close(session_id)
             logger.info("✅ Cleanup complete")
 
     except Exception as e:

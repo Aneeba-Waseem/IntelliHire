@@ -9,6 +9,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import ReportModal from "../../Report/Standard/ReportModal";
+import ReportContainer from "../../Report/ReportContainer";
 
 const CompletedInterviewCard = ({ interview }) => {
     const navigate = useNavigate();
@@ -80,19 +81,32 @@ const CompletedInterviewCard = ({ interview }) => {
                 {/* View Report */}
                 <button
                     onClick={() => setSelectedReport({
-                        candidate: "John Doe",
-                        role: "Frontend Developer",
-                        duration: "45 minutes",
-                        overallScore: 4,
-                        domainScores: {
-                            "Technical Skills": 4,
-                            "Communication": 3,
-                            "Problem Solving": 5,
-                            "Cultural Fit": 2,
-                        },
-                        strengths: ["Strong React knowledge", "Clean code practices", "Quick learner"],
-                        concerns: ["Limited backend experience", "Needs improvement in system design", "Time management"],
-                        recommendation: "HIRE",
+                        candidate: "NOOR FATIMA",
+                        duration: "30 MINS",
+                        role: "AI ENGINEER",
+                        score: 4,
+                        summary: [
+                            { domain: "Web Development", score: 4, notes: "All basics clear" }
+                        ],
+                        strengths: ["Web Development"],
+                        weaknesses: ["Web Development"],
+                        sections: [
+                            {
+                                title: "Cloud Computing",
+                                score: 4.5,
+                                questions: [
+                                    {
+                                        question: "How would you automate infrastructure provisioning?",
+                                        feedback: "Correctly identified Terraform...",
+                                        score: 4.5
+                                    }
+                                ]
+                            }
+                        ],
+                        recommendation: {
+                            title: "HIRE THE CANDIDATE",
+                            description: "Correctly identified Terraform..."
+                        }
                     })} // or fetch by interview.id
                     className="flex-1 bg-[#29445D] text-white py-2 rounded-lg hover:bg-[#1f3447] transition"
                 >
@@ -110,7 +124,7 @@ const CompletedInterviewCard = ({ interview }) => {
                     <div
                         className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 bg-[#DDE8E2]"
                         onClick={() => setSelectedReport(null)} // close on backdrop click
-                        style={{cursor: "pointer"}}
+                        style={{ cursor: "pointer" }}
                     >
                         <div
                             className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 relative"
@@ -119,13 +133,13 @@ const CompletedInterviewCard = ({ interview }) => {
                             {/* Close button */}
                             <button
                                 onClick={() => setSelectedReport(null)}
-                                style={{cursor: "pointer"}}
+                                style={{ cursor: "pointer" }}
                                 className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl font-bold"
                             >
                                 ✕
                             </button>
 
-                            <ReportModal report={selectedReport} />
+                            <ReportContainer report={selectedReport} />
                         </div>
                     </div>
                 )}

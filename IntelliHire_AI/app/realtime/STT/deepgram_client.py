@@ -111,9 +111,9 @@ async def connect_deepgram_stt_only(
         transcript_collector = TranscriptCollector(
             on_complete=lambda text: logger.info(f"✅ [COLLECTOR] Complete: {text[:50]}..."),
             on_interim=lambda text: logger.debug(f"🟡 [COLLECTOR] Interim: {text[:50]}..."),
-            silence_timeout_ms=60000,  # Wait 1min after final for additional chunks
+            max_silence_ms=60000,  # Wait 20s after final for additional chunks
         )
-        await transcript_collector.start_timer()
+    
     try:
         if not DEEPGRAM_API_KEY:
             raise ValueError("DEEPGRAM_API_KEY environment variable not set!")
@@ -333,16 +333,8 @@ async def connect_deepgram_stt_only(
         await send_to_node(session_id, text)
     
     # Attach completion callback to collector
-    async def on_timeout_utterance(text: str):
-        if websocket:
-            await websocket.send_json({
-                "type": "transcript_timeout",
-                "text": text,
-                "session_id": session_id
-            })
-
-    transcript_collector.on_timeout = on_timeout_utterance
-
+    transcript_collector.on_complete = on_complete_utterance
+    
     # ⭐ Start both tasks - use session_ctx if provided, otherwise create standalone
     logger.info(f"🚀 [STT] Starting Deepgram tasks for {session_id}")
     

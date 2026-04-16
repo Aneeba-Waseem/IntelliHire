@@ -1,7 +1,7 @@
 """
-stream_audio.py - RELIABILITY VERSION
+deepgram_stream.py
 
-✅ Major Improvements:
+Major Improvements:
 - Proper queue backpressure with exponential backoff
 - Never silently drops frames
 - Resource cleanup on error
@@ -19,20 +19,13 @@ from av.audio.resampler import AudioResampler
 
 logger = logging.getLogger(__name__)
 
-
-async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
+async def stream_audio(track: MediaStreamTrack, queue_getter):
     """
     Read WebRTC audio (48kHz), resample to 16kHz mono, push to STT queue.
     
-    ✅ RELIABLE VERSION:
-    - Handles queue full gracefully with exponential backoff
-    - Never silently drops frames
-    - Monitors resampler health
-    - Proper cleanup on error or track end
-    
     Args:
         track: WebRTC audio track (MediaStreamTrack)
-        queue: asyncio.Queue to receive resampled PCM bytes
+        queue_getter: callable that returns current STT queue (or None)
     """
     logger.info("🎧 STT Audio Stream: Initializing resampler (48kHz → 16kHz mono)")
     
@@ -43,14 +36,11 @@ async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
     queue_full_count = 0
     
     try:
-        # Create resampler: Convert 48kHz stereo/mono to 16kHz mono PCM
-        # s16 = signed 16-bit, mono = single channel, rate = 16000 Hz
         resampler = AudioResampler(format="s16", layout="mono", rate=16000)
         logger.info("✅ Resampler initialized")
         
         while True:
             try:
-                # ⭐ NEW: Timeout on frame receive (detect track end)
                 frame = await asyncio.wait_for(track.recv(), timeout=30.0)
                 frame_count += 1
                 
@@ -59,20 +49,16 @@ async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
                     f"channels: {frame.layout.channels if hasattr(frame, 'layout') else '?'}"
                 )
                 
-                # Resample the frame from 48kHz to 16kHz mono
                 try:
                     resampled_frames = resampler.resample(frame)
                 except Exception as e:
                     logger.error(f"❌ Resampler error on frame {frame_count}: {e}")
-                    # Don't crash - try to continue with next frame
                     continue
                 
                 for resampled_frame in resampled_frames:
                     try:
-                        # Convert to numpy array for byte conversion
                         pcm_array = resampled_frame.to_ndarray()
                         
-                        # Handle multi-channel audio (take first channel if stereo)
                         if pcm_array.ndim > 1:
                             logger.debug(
                                 f"  Multi-channel audio detected ({pcm_array.ndim}D), "
@@ -80,11 +66,16 @@ async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
                             )
                             pcm_array = pcm_array[0]
                         
-                        # Convert numpy array to bytes (little-endian, signed 16-bit)
                         pcm_bytes = pcm_array.astype('int16').tobytes()
                         total_samples += len(pcm_array)
                         
-                        # ⭐ NEW: Exponential backoff for queue full
+                        # ✅ GET QUEUE FROM CALLABLE
+                        queue = queue_getter()
+                        if not queue:
+                            logger.debug("⊘ No active STT queue, dropping audio")
+                            continue
+                        
+                        # ✅ THEN PUT DATA IN QUEUE
                         backoff = 0.1
                         max_backoff = 5.0
                         attempt = 0
@@ -92,7 +83,6 @@ async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
                         
                         while attempt < max_attempts:
                             try:
-                                # Try immediate put with short timeout
                                 await asyncio.wait_for(queue.put(pcm_bytes), timeout=0.1)
                                 logger.debug(
                                     f"  📤 Sent {len(pcm_array)} samples ({len(pcm_bytes)} bytes)"
@@ -114,7 +104,6 @@ async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
                                         f"❌ Queue persistently full after {max_attempts} attempts. "
                                         f"Deepgram is severely backed up. This will cause audio loss!"
                                     )
-                                    # Final attempt without timeout (blocking)
                                     try:
                                         await queue.put(pcm_bytes)
                                         logger.warning(f"  ✅ Recovered with blocking put")
@@ -123,7 +112,6 @@ async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
                                         dropped_frames += 1
                                     break
                                 
-                                # Exponential backoff
                                 backoff = min(backoff * 1.5, max_backoff)
                                 logger.debug(
                                     f"  ⏳ Queue full - waiting {backoff:.2f}s before retry "
@@ -137,7 +125,6 @@ async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
                         continue
             
             except asyncio.TimeoutError:
-                # 30 second timeout on track.recv() means track probably ended
                 logger.info(
                     f"⏱️ [TIMEOUT] No audio frame for 30s - track may have ended"
                 )
@@ -149,17 +136,12 @@ async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
             
             except Exception as e:
                 logger.error(f"❌ Error receiving frame: {e}", exc_info=True)
-                # Continue receiving - don't break on a single bad frame
-                # But count it as a drop for metrics
                 dropped_frames += 1
                 
-                # Check if this is a persistent error
                 if frame_count > 0 and dropped_frames > (frame_count * 0.1):
-                    # More than 10% drop rate - probably a real problem
                     logger.error(f"❌ Drop rate {(dropped_frames/frame_count)*100:.1f}% exceeds threshold")
                     break
                 
-                # Small delay before retry
                 await asyncio.sleep(0.1)
                 continue
     
@@ -172,13 +154,17 @@ async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
             f"    Queue full events: {queue_full_count}"
         )
         
-        # Cleanup resampler
         if resampler:
             try:
-                # Force flush any pending samples
                 final_frames = resampler.resample(None)
                 for final_frame in final_frames:
                     try:
+                        # ✅ GET QUEUE AGAIN
+                        queue = queue_getter()
+                        if not queue:
+                            logger.debug("⊘ No queue for final samples")
+                            continue
+                        
                         pcm_array = final_frame.to_ndarray()
                         if pcm_array.ndim > 1:
                             pcm_array = pcm_array[0]
@@ -192,16 +178,19 @@ async def stream_audio(track: MediaStreamTrack, queue: asyncio.Queue):
             except Exception as e:
                 logger.debug(f"Resampler flush error (expected): {e}")
         
-        # Send None to signal end of stream
+        # ✅ SEND END-OF-STREAM TO CURRENT QUEUE
         try:
-            await asyncio.wait_for(queue.put(None), timeout=5.0)
-            logger.info("✅ Sent end-of-stream signal (None) to STT queue")
+            queue = queue_getter()
+            if queue:
+                await asyncio.wait_for(queue.put(None), timeout=5.0)
+                logger.info("✅ Sent end-of-stream signal (None) to STT queue")
+            else:
+                logger.info("⊘ No queue to send end-of-stream")
         except asyncio.TimeoutError:
             logger.error(f"❌ Timeout sending end-of-stream signal")
         except Exception as e:
             logger.error(f"❌ Error sending end-of-stream: {e}")
         
-        # Report final statistics
         if frame_count > 0:
             drop_rate = (dropped_frames / frame_count) * 100
             logger.info(
