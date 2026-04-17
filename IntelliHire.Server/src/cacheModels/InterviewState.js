@@ -1,25 +1,14 @@
-// cacheModels/InterviewState.js
 export default class InterviewState {
-  constructor({
-    phase = "rapport",
-    candidateType = "fresher",
-    topicsCovered = [],
-    currentTopic = null,
-    depthLevel = 1,
-    lastResponseQuality = null, // weak | ok | strong
-    stuckCount = 0,
-    lastAction = null,          // "asked_question" | "received_answer"
-    currentTurnId = null,       // ✅ store only id
-  } = {}) {
-    this.phase = phase;
-    this.candidateType = candidateType;
-    this.topicsCovered = topicsCovered;
-    this.currentTopic = currentTopic;
-    this.depthLevel = depthLevel;
-    this.lastResponseQuality = lastResponseQuality;
-    this.stuckCount = stuckCount;
-    this.lastAction = lastAction;
-    this.currentTurnId = currentTurnId;
+  constructor(data = {}) {
+    this.phase               = data.phase ?? "rapport";
+    this.candidateType       = data.candidateType ?? "fresher";
+    this.topicsCovered       = data.topicsCovered ?? [];
+    this.currentTopic        = data.currentTopic ?? null;
+    this.depthLevel          = data.depthLevel ?? 1;
+    this.lastResponseQuality = data.lastResponseQuality ?? null;
+    this.stuckCount          = data.stuckCount ?? 0;
+    this.lastAction          = data.lastAction ?? null;
+    this.currentTurnId       = data.currentTurnId ?? null;
   }
 
   toJSON() {

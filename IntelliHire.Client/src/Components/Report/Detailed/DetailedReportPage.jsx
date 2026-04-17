@@ -17,95 +17,129 @@ export default function DetailedReportModal({ report, onBack, onDownload }) {
 
   return (
     <>
-      {/* 🔙 Back Button */}
+      {/* Back Button */}
       <button
         onClick={onBack}
-        className="mb-4 text-sm text-[#45767C] underline"
+        style={{ color: "#45767C", textDecoration: "underline", fontSize: "12px" }}
       >
         ← Back to Summary
       </button>
 
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold tracking-wide text-gray-700">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <h1 style={{ fontSize: 22, fontWeight: "bold", letterSpacing: 1, color: "#374151" }}>
           DETAILED REPORT
         </h1>
+
         <button
-  onClick={onDownload}
-  className="
-    bg-[#45767C] text-white
-    px-4 py-2
-    rounded-xl
-    text-sm sm:text-base
-    hover:scale-105 transition
-  "
->
-  Download Report
-</button>
+          onClick={onDownload}
+          style={{
+            backgroundColor: "#45767C",
+            color: "#ffffff",
+            padding: "10px 16px",
+            borderRadius: 12,
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          Download Report
+        </button>
       </div>
 
       {/* Meta */}
-      <div className="grid grid-cols-2 gap-4 text-gray-700 mb-6">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, color: "#374151", marginBottom: 24 }}>
         <div>
           <p><strong>Candidate:</strong> {candidate}</p>
           <p><strong>Duration:</strong> {duration}</p>
         </div>
-        <div className="text-right">
+
+        <div style={{ textAlign: "right" }}>
           <p><strong>Role:</strong> {role}</p>
           <p><strong>Candidate Score:</strong> {score} / 5</p>
         </div>
       </div>
 
       {/* Score Summary */}
-      <div className="mb-6">
-        <h2 className="font-bold text-lg mb-2">SCORE SUMMARY:</h2>
-        <p className="text-sm text-gray-600 mb-2 text-right">
-          (Overall Score scale: 1-5 (1=Below bar, 3=Meets bar, 5=Exceptional))
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize: 16, fontWeight: "bold", marginBottom: 8, color: "#111827" }}>
+          SCORE SUMMARY:
+        </h2>
+
+        <p style={{ fontSize: 12, color: "#4B5563", textAlign: "right", marginBottom: 8 }}>
+          (Overall Score scale: 1-5)
         </p>
 
-        <div className="bg-[#dfe7e5] rounded-lg overflow-hidden">
-          <div className="grid grid-cols-3 font-semibold border-b p-3">
+        <div style={{ backgroundColor: "#dfe7e5", borderRadius: 8, overflow: "hidden" }}>
+          
+          {/* Header Row */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 2fr",
+            fontWeight: "bold",
+            padding: 10,
+            borderBottom: "1px solid #ccc",
+            fontSize: 13,
+            color: "#111827",
+          }}>
             <div>DOMAIN</div>
             <div>SCORE</div>
             <div>NOTES</div>
           </div>
 
+          {/* Rows */}
           {summary.length > 0 ? (
             summary.map((item, idx) => (
-              <div key={idx} className="grid grid-cols-3 p-3 border-t text-sm">
+              <div
+                key={idx}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 2fr",
+                  padding: 10,
+                  borderTop: "1px solid #e5e7eb",
+                  fontSize: 12,
+                  color: "#374151",
+                }}
+              >
                 <div>{item.domain}</div>
                 <div>{item.score}</div>
                 <div>{item.notes}</div>
               </div>
             ))
           ) : (
-            <p className="p-3 text-sm text-gray-500">
+            <div style={{ padding: 10, fontSize: 12, color: "#6B7280" }}>
               No summary available
-            </p>
+            </div>
           )}
         </div>
       </div>
 
       {/* Strengths & Weaknesses */}
-      <div className="grid grid-cols-2 gap-6 mb-6">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
+        
         <div>
-          <h3 className="font-bold mb-2">STRENGTHS:</h3>
-          <ul className="list-disc ml-5">
+          <h3 style={{ fontWeight: "bold", marginBottom: 8, color: "#111827" }}>
+            STRENGTHS:
+          </h3>
+
+          <ul style={{ paddingLeft: 18, color: "#374151", fontSize: 12 }}>
             {strengths.length > 0 ? (
               strengths.map((s, i) => <li key={i}>{s}</li>)
             ) : (
-              <li className="text-gray-500">No strengths listed</li>
+              <li style={{ color: "#6B7280" }}>No strengths listed</li>
             )}
           </ul>
         </div>
 
         <div>
-          <h3 className="font-bold mb-2">WEAKNESSES:</h3>
-          <ul className="list-disc ml-5">
+          <h3 style={{ fontWeight: "bold", marginBottom: 8, color: "#111827" }}>
+            WEAKNESSES:
+          </h3>
+
+          <ul style={{ paddingLeft: 18, color: "#374151", fontSize: 12 }}>
             {weaknesses.length > 0 ? (
               weaknesses.map((w, i) => <li key={i}>{w}</li>)
             ) : (
-              <li className="text-gray-500">No weaknesses listed</li>
+              <li style={{ color: "#6B7280" }}>No weaknesses listed</li>
             )}
           </ul>
         </div>
@@ -113,41 +147,52 @@ export default function DetailedReportModal({ report, onBack, onDownload }) {
 
       {/* Details */}
       <div>
-        <h2 className="font-bold text-lg mb-4">DETAILS:</h2>
+        <h2 style={{ fontWeight: "bold", marginBottom: 12, color: "#111827" }}>
+          DETAILS:
+        </h2>
 
         {sections.length > 0 ? (
           sections.map((section, idx) => (
-            <div key={idx} className="mb-6">
-              <div className="flex justify-between font-bold">
+            <div key={idx} style={{ marginBottom: 20 }}>
+              
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontWeight: "bold",
+                color: "#111827",
+                marginBottom: 8,
+              }}>
                 <h3>{section.title?.toUpperCase()}</h3>
                 <span>{section.score} / 5</span>
               </div>
 
               {section.questions?.map((q, i) => (
-                <div key={i} className="mt-3 text-sm">
-                  <p>
-                    <strong>Q{i + 1}:</strong> {q.question}
-                  </p>
-                  <p>
-                    <strong>Feedback:</strong> {q.feedback}
-                  </p>
-                  <p>
-                    <strong>Score:</strong> {q.score} / 5
-                  </p>
+                <div key={i} style={{ fontSize: 12, marginBottom: 10, color: "#374151" }}>
+                  <p><strong>Q{i + 1}:</strong> {q.question}</p>
+                  <p><strong>Feedback:</strong> {q.feedback}</p>
+                  <p><strong>Score:</strong> {q.score} / 5</p>
                 </div>
               ))}
             </div>
           ))
         ) : (
-          <p className="text-sm text-gray-500">No detailed sections available</p>
+          <p style={{ fontSize: 12, color: "#6B7280" }}>
+            No detailed sections available
+          </p>
         )}
       </div>
 
       {/* Recommendation */}
-      <div className="mt-6">
-        <h2 className="font-bold text-lg">RECOMMENDATION:</h2>
-        <p className="font-bold mt-1">{recommendation?.title || "N/A"}</p>
-        <p className="text-sm mt-2">
+      <div style={{ marginTop: 20 }}>
+        <h2 style={{ fontWeight: "bold", color: "#111827" }}>
+          RECOMMENDATION:
+        </h2>
+
+        <p style={{ fontWeight: "bold", marginTop: 6, color: "#374151" }}>
+          {recommendation?.title || "N/A"}
+        </p>
+
+        <p style={{ fontSize: 12, marginTop: 8, color: "#4B5563" }}>
           {recommendation?.description || "No recommendation provided"}
         </p>
       </div>

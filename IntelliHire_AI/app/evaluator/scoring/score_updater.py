@@ -1,45 +1,21 @@
 from typing import Dict, Any
 from app.evaluator.scoring.utils import clamp
-# from evaluator.scoring.post_processing import clamp_delta
 
 def apply_delta(
     *,
-    current_scorecard: Dict[str, Any],
     delta: Dict[str, float],
-) -> Dict[str, Any]:
+) -> Dict[str, float]:
     """
-    Applies delta to the current scorecard safely.
-
-    Rules:
-    - Only existing dimensions may be updated
-    - Max score is never exceeded
-    - Missing dimensions are ignored
-    - Negative deltas are allowed
+    Convert delta (0.0, 0.25, 0.5) to scores.
+    Three dimensions sum to 0-5 marks per question.
     """
-
-    updated = {
-        "dimensions": {},
-        "by_domain": current_scorecard.get("by_domain", {}),
-        "metadata": current_scorecard.get("metadata", {}),
+    scores = {}
+    for dim_name, delta_value in delta.items():
+        score = delta_value * (5 / 3)
+        scores[dim_name] = clamp(score, 0, 5)  # Safety ceiling per dimension
+    
+    total = clamp(sum(scores.values()), 0, 5)
+    return {
+        "dimensions": scores,
+        "total_score": total
     }
-
-    for dim_name, dim_data in current_scorecard["dimensions"].items():
-        current = float(dim_data.get("current", 0))
-        max_value = float(dim_data.get("max", 0))
-
-        # delta = apply_backend_rules(delta, candidate_answer, ideal_answer)
-        # updated = apply_delta(current_scorecard=scorecard, delta=delta)
-        delta_value = max(0.0, float(delta.get(dim_name, 0)))
-
-        new_value = clamp(
-            current + delta_value,
-            min_value=0,
-            max_value=max_value,
-        )
-
-        updated["dimensions"][dim_name] = {
-            "current": new_value,
-            "max": max_value,
-        }
-
-    return updated

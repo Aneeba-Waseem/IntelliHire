@@ -33,6 +33,7 @@ export default class InterviewSession {
       candidateId: this.candidateId,
       jobId: this.jobId,
       topicsListed: this.topicsListed,
+      state: this.state.toJSON(),
       startedAt: this.startedAt.toISOString(),
       endedAt: this.endedAt ? this.endedAt.toISOString() : null,
     };

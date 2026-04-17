@@ -52,7 +52,7 @@ export default class FlowService {
       const jobData = await this.jobClient.getJobStep1(token);
       if (!jobData || Object.keys(jobData).length === 0) return ["general"];
 
-      const topics = [...(jobData.techStack || []), ...(jobData.domains || [])]
+      const topics = [ ...(jobData.domains || []), ...(jobData.techStack || [])]
         .map((t) => String(t).trim())
         .filter(Boolean);
 
@@ -243,7 +243,7 @@ export default class FlowService {
       turn_index:   turnIndex,
     });
 
-    console.log("Evaluation:", evaluation.response_quality);
+    console.log("Evaluation:", evaluation);
 
     // ── Persist evaluation ────────────────────────────────────────────────
     await this.evalRepo.appendQuestion(sessionId, {

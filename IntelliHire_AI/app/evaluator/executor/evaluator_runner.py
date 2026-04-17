@@ -6,7 +6,7 @@ from app.evaluator.llm.prompt_builder import EvaluatorPromptBuilder
 from app.evaluator.executor.validator import validate_evaluator_output
 from app.evaluator.llm.errors import LLMError
 from app.evaluator.scoring.score_updater import apply_delta
-from app.evaluator.scoring.post_processing import apply_backend_rules  # or backend_rules
+# from app.evaluator.scoring.post_processing import apply_backend_rules  # or backend_rules
 from app.evaluator.utils.turn_logger import log_turn_result
 
 class EvaluatorRunner:

@@ -1,5 +1,6 @@
 import asyncio
 import httpx
+import json
 
 from app.evaluator.config.settings import (
     HF_API_KEY,
@@ -58,23 +59,42 @@ class HuggingFaceLLMClient:
                         json=payload,
                     )
 
+                # Handle service unavailable with retry
                 if response.status_code == 503:
+                    last_error = LLMResponseError("Service unavailable")
                     await asyncio.sleep(1.5 * (attempt + 1))
                     continue
 
+                # Handle other HTTP errors
                 if response.status_code >= 400:
                     raise LLMResponseError(
                         f"HF routing error {response.status_code}: {response.text}"
                     )
 
-                data = response.json()
-                return data["choices"][0]["message"]["content"].strip()
+                # Parse and validate response structure
+                try:
+                    data = response.json()
+                except json.JSONDecodeError as e:
+                    raise LLMResponseError(f"Invalid JSON response: {response.text}") from e
+
+                # Validate response has expected structure
+                try:
+                    content = data["choices"][0]["message"]["content"].strip()
+                    return content
+                except (KeyError, IndexError, AttributeError) as e:
+                    raise LLMResponseError(
+                        f"Unexpected response structure: {data}"
+                    ) from e
 
             except httpx.ReadTimeout as e:
                 last_error = e
                 await asyncio.sleep(1.5 * (attempt + 1))
-
+                continue
+            except (LLMResponseError, LLMTimeoutError) as e:
+                last_error = e
+                raise
             except Exception as e:
-                raise LLMError(str(e))
+                raise LLMError(f"Unexpected error: {str(e)}") from e
 
-        raise LLMTimeoutError(str(last_error))
+        # All retries exhausted
+        raise LLMTimeoutError(f"Failed after {MAX_RETRIES + 1} attempts: {str(last_error)}")
