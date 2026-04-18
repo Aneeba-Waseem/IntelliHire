@@ -6,8 +6,8 @@ class InputEvent(BaseModel):
     interview_id: str
     question_id: str
     domain: str
-    question: str
-    answer: str
+    question_text: str
+    candidate_answer: str
     ideal_answer: Optional[str] = None
     turn_index: int
     timestamp: Optional[str] = None
@@ -26,12 +26,11 @@ class Scorecard(BaseModel):
 
 
 class EvaluateRequest(BaseModel):
-    input_event: InputEvent
-    scorecard: Scorecard
+    input_event: Dict[str, Any]
+    scorecard: Dict[str, Any] = {}  # Optional, defaults to empty dict
 
 
 class EvaluateResponse(BaseModel):
-    updated_scorecard: Dict[str, Any]
     delta: Dict[str, float]
     notes: List[str]
     signals: Dict[str, Any]

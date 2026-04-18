@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Existing routers
 from app.api.resume_routes import router as resume_router
-# from app.api.stt_controller import router as stt_router
 from app.api.chatModel.qna_routes import router as qna_router
 from app.api.chatModel.groq_routes import router as groq_router
 from app.api.chatModel import qna_routes
@@ -60,7 +59,6 @@ app.include_router(qna_router, prefix="/api/chatModel/qna")
 app.include_router(groq_router, prefix="/api/chatModel/groq")
 app.include_router(evaluator_router.router, prefix="/api/evaluator")
 app.include_router(webrtc_router, prefix="/api/webrtc")
-# app.include_router(tts_router, prefix="/api/tts")
 
 # Root
 @app.get("/")

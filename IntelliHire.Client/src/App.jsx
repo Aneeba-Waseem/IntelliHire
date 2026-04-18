@@ -27,7 +27,7 @@ import JobDescriptionDetails from "./Components/Recruiter/JobDescriptionDetails"
 import CompletedInterviews from "./Components/Recruiter/Completed/CompletedInterview";
 import CandidateProfile from "./Components/Recruiter/CandidateProfile";
 import ReportPage from "./Components/Report/Detailed/DetailedReportPage";
-
+// import CandidateLogin from "./Components/Auth/CandidateLogin";
 function App() {
   const accessToken = useSelector((state) => state.auth.accessToken);
   useAuthRefresh(accessToken);
@@ -89,6 +89,8 @@ function App() {
            <Route path="/resume/:resumeId" element={<CandidateProfile />} />
           {/* <Route path="/WebTest" element={<WebSocketTest/>} /> */}
           <Route path="/report" element={<ReportPage />} />
+          {/* <Route path="/login" element={<CandidateLogin />} /> */}
+
         </Routes>
         {/* Conditionally render Footer */}
         {!auth && !Meeting && !userVerification && <Footer />}

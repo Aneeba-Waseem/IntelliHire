@@ -23,6 +23,7 @@ else:
 # =====================================================
 
 HF_API_KEY = os.getenv("HF_API_KEY")
+HF_API_URL = os.getenv("HF_API_URL")
 HF_MODEL = os.getenv("HF_MODEL")
 HF_TIMEOUT = os.getenv("HF_TIMEOUT", "30")
 HF_MAX_RETRIES = os.getenv("HF_MAX_RETRIES", "2")
@@ -53,9 +54,3 @@ try:
     MAX_RETRIES = int(HF_MAX_RETRIES)
 except ValueError:
     MAX_RETRIES = 2
-
-# =====================================================
-# HF API URL
-# =====================================================
-
-HF_API_URL = "https://router.huggingface.co/v1"

@@ -32,6 +32,11 @@ const Interview = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    candidateUserId: {
+      type: DataTypes.INTEGER,   // ✅ match AutoId type
+      allowNull: true,
+      references: { model: User, key: "AutoId" },
+    }
   },
   { tableName: "Interview" }
 );
@@ -52,6 +57,7 @@ Interview.belongsTo(Resume, {
   foreignKey: "FK_Resume",
 });
 
+
 Resume.hasMany(Interview, {
   foreignKey: "FK_Resume",
 });
@@ -62,4 +68,9 @@ Interview.belongsTo(User, {
 
 User.hasMany(Interview, {
   foreignKey: "FK_Users",
+});
+
+Interview.belongsTo(User, {
+  foreignKey: "candidateUserId",
+  as: "candidate",
 });

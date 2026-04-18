@@ -22,17 +22,14 @@ async def evaluate(req: EvaluateRequest):
     try:
         # Ensure we pass plain JSON-serializable dicts to the runner
         input_event = jsonable_encoder(req.input_event)
-        scorecard = jsonable_encoder(req.scorecard)
+        
+        # normalize
+        input_event["question-text"] = input_event.get("question-text") or input_event.get("question")
+        input_event["candidate_answer"] = input_event.get("candidate_answer") or input_event.get("answer")
+
         print("in the evaluation route, input_event is ", input_event)
-        # Ensure `candidate_answer` and `answer` are present for downstream logic
-        if not input_event.get("candidate_answer"):
-            input_event["candidate_answer"] = input_event.get("answer")
-
-        if not input_event.get("answer") and input_event.get("candidate_answer"):
-            input_event["answer"] = input_event.get("candidate_answer")
-
-        result = await runner.evaluate_turn(input_event=input_event, scorecard=scorecard)
+        
+        result = await runner.evaluate_turn(input_event=input_event)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    

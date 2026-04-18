@@ -1,5 +1,33 @@
+import re
 from typing import Dict, Any
 from app.evaluator.scoring.utils import clamp
+
+def clamp_delta(delta: Dict[str, float]) -> Dict[str, float]:
+    """
+    Force allowed discrete values:
+    0.5 = strong
+    0.25 = partial
+    0.0 = incorrect
+    """
+    sanitized = {}
+
+    for k, v in delta.items():
+        try:
+            v = float(v)
+        except:
+            v = 0.0
+
+        # Quantization - fixed thresholds
+        if v >= 0.75:      # 0.4+ → 0.5
+            v = 1.0
+        elif v >= 0.3:   # 0.15-0.39 → 0.25
+            v = 0.5
+        else:             # <0.15 → 0.0
+            v = 0.0
+
+        sanitized[k] = v
+
+    return sanitized
 
 def apply_delta(
     *,

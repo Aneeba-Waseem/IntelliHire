@@ -242,8 +242,12 @@ export default class FlowService {
       ideal_answer: turn.idealAnswer || "",
       turn_index:   turnIndex,
     });
-
-    console.log("Evaluation:", evaluation);
+    console.log("question id :", turn.id);
+    console.log("question :", turn.question);
+    console.log("candidate answer ", candidateAnswer);
+    console.log("ideal answer ", turn.idealAnswer);
+    
+    console.log("Evaluation from AI client:", evaluation);
 
     // ── Persist evaluation ────────────────────────────────────────────────
     await this.evalRepo.appendQuestion(sessionId, {

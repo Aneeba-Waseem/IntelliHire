@@ -23,6 +23,11 @@ export default function InterviewScheduled({ name, date, time, link }) {
     ),
     React.createElement(
       "p",
+      { style: { color: "#29445D", fontWeight: "500", fontSize: "12px" } },
+      "This is a secure, single-use interview link. Once you proceed to the interview, this session will be locked and cannot be reused for security purposes."
+    ),
+    React.createElement(
+      "p",
       null,
       "Best regards,",
       React.createElement("br"),

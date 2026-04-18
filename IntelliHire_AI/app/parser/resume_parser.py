@@ -1,62 +1,48 @@
-
 import os
 import json
-import fitz  # PyMuPDF
+import re
+import time
+import hashlib
+import fitz
 from docx import Document
 from dotenv import load_dotenv
-
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 
-
-# -------------------------------
-# Load environment variables
-# -------------------------------
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-
-# If a key exists in the environment or .env file, propagate it to os.environ.
-# Do not raise at import time so the app can start when parsing isn't used.
 if GOOGLE_API_KEY:
     os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 
+CACHE_DIR = ".resume_cache"
+os.makedirs(CACHE_DIR, exist_ok=True)
+
 
 # -------------------------------
-# File Readers
+# File Readers (unchanged)
 # -------------------------------
 def read_pdf_with_links(path: str) -> str:
     doc = fitz.open(path)
     content = []
-
     for page in doc:
         text = page.get_text("text")
         links = page.get_links()
-
         urls = [link.get("uri") for link in links if link.get("uri")]
         if urls:
             text += "\n\n[EXTRACTED LINKS]\n" + "\n".join(urls)
-
         content.append(text)
-
     return "\n\n".join(content)
-
 
 def read_docx(path: str) -> str:
     document = Document(path)
     return "\n".join([para.text for para in document.paragraphs])
 
-
 def read_txt(path: str) -> str:
     with open(path, "r", encoding="utf-8", errors="ignore") as f:
         return f.read()
 
-
-# -------------------------------
-# Unified Resume Text Loader
-# -------------------------------
 def load_resume_text(path: str) -> str:
     ext = os.path.splitext(path)[1].lower()
-
     if ext == ".pdf":
         return read_pdf_with_links(path)
     elif ext == ".docx":
@@ -68,28 +54,82 @@ def load_resume_text(path: str) -> str:
 
 
 # -------------------------------
-# MAIN PARSER FUNCTION
+# Cache Helpers
+# -------------------------------
+def _cache_key(path: str) -> str:
+    """Hash file content so cache invalidates if the file changes."""
+    with open(path, "rb") as f:
+        return hashlib.md5(f.read()).hexdigest()
+
+def _cache_path(key: str) -> str:
+    return os.path.join(CACHE_DIR, f"{key}.json")
+
+def _load_cache(key: str) -> dict | None:
+    cp = _cache_path(key)
+    if os.path.exists(cp):
+        with open(cp, "r") as f:
+            return json.load(f)
+    return None
+
+def _save_cache(key: str, data: dict):
+    with open(_cache_path(key), "w") as f:
+        json.dump(data, f, indent=2)
+
+
+# -------------------------------
+# Retry with Exponential Backoff
+# -------------------------------
+def _invoke_with_retry(llm, prompt_text: str, max_retries: int = 4) -> str:
+    """
+    Retries on 429 with exponential backoff.
+    Delays: 10s → 20s → 40s → 80s
+    """
+    delay = 10
+    for attempt in range(max_retries):
+        try:
+            response = llm.invoke(prompt_text)
+            return response.content
+        except Exception as e:
+            err = str(e).lower()
+            is_rate_limit = "429" in err or "quota" in err or "resource_exhausted" in err
+            if is_rate_limit and attempt < max_retries - 1:
+                print(f"[Rate limit] Attempt {attempt + 1} hit 429. Waiting {delay}s...")
+                time.sleep(delay)
+                delay *= 2
+            else:
+                raise
+
+
+# -------------------------------
+# JSON Parser
+# -------------------------------
+def safe_json_parse(text: str) -> dict:
+    match = re.search(r"\{[\s\S]*\}", text)
+    if not match:
+        raise ValueError("No JSON object found in LLM response")
+    return json.loads(match.group())
+
+
+# -------------------------------
+# Main Parser
 # -------------------------------
 def parse_resume(path: str) -> dict:
-    """
-    Parses resume (.pdf, .docx, .txt) and returns structured JSON.
-    """
-
     if not os.path.exists(path):
         raise FileNotFoundError(f"Resume not found: {path}")
 
+    # --- Cache check ---
+    key = _cache_key(path)
+    cached = _load_cache(key)
+    if cached:
+        print(f"[Cache hit] Returning cached result for {os.path.basename(path)}")
+        return cached
+
     resume_text = load_resume_text(path)
 
-    # Ensure the Google API key is available when actually parsing (runtime check).
     if not os.getenv("GOOGLE_API_KEY"):
-        raise ValueError(
-            "GOOGLE_API_KEY not found in environment. Set it in .env or the environment before parsing resumes."
-        )
+        raise ValueError("GOOGLE_API_KEY not found.")
 
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        temperature=0.2
-    )
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.2)
 
     prompt = PromptTemplate(
         input_variables=["resume"],
@@ -119,17 +159,9 @@ Rules:
 - Output ONLY a JSON object
 - Use exactly these keys:
 {{
-  "name",
-  "contact_info",
-  "github_link",
-  "linkedin",
-  "qualification",
-  "university",
-  "experience",
-  "projects",
-  "coursework_keywords",
-  "skills_summary",
-  "extracurricular"
+  "name", "contact_info", "github_link", "linkedin",
+  "qualification", "university", "experience", "projects",
+  "coursework_keywords", "skills_summary", "extracurricular"
 }}
 - Set missing fields to null
 
@@ -140,20 +172,11 @@ JSON:
 """
     )
 
-    response = llm.invoke(prompt.format(resume=resume_text))
-    return safe_json_parse(response.content)
+    raw = _invoke_with_retry(llm, prompt.format(resume=resume_text))
+    result = safe_json_parse(raw)
 
-import json
-import re
+    # --- Save to cache ---
+    _save_cache(key, result)
+    print(f"[Cached] Saved result for {os.path.basename(path)}")
 
-def safe_json_parse(text: str) -> dict:
-    """
-    Extracts and parses JSON object from LLM output.
-    Raises clear error if JSON not found.
-    """
-    match = re.search(r"\{[\s\S]*\}", text)
-    if not match:
-        raise ValueError("No JSON object found in LLM response")
-
-    json_str = match.group()
-    return json.loads(json_str)
+    return result

@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import RefreshToken from "../models/RefreshToken.js";
 import { v4 as uuidv4 } from "uuid";
+import MagicLink from "../models/magicLink.js";
 
 // ================= HELPERS =================
 
@@ -52,6 +53,7 @@ export const register = async (req, res) => {
             email,
             company,
             password: hashedPassword,
+            Role: "Recruiter", // ✅ ADD THIS
         });
 
         res.status(201).json({
@@ -180,4 +182,78 @@ export const getCurrentUser = async (req, res) => {
         console.error(err);
         res.status(500).json({ error: "Something went wrong" });
     }
+};
+
+
+export const magicLogin = async (req, res) => {
+  try {
+    const { token } = req.body;
+    console.log("LOGIN TOKEN:", req.body.token);
+    const record = await MagicLink.findOne({ where: { token } });
+
+    if (!record || record.isUsed || new Date() > record.expiresAt) {
+      return res.status(400).json({ error: "Invalid or expired link" });
+    }
+
+    const user = await User.findOne({
+         where: { UserId: record.FK_userId }, // ✅ FIX
+    });
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const refreshToken = await generateRefreshToken(user);
+    const accessToken = generateAccessToken(user, refreshToken);
+
+    record.isUsed = true;
+    await record.save();
+
+    res.json({
+      accessToken,
+      user: {
+        userId: user.UserId,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.Role,
+      },
+    });
+    console.log("Magic login successful for user:", {
+      userId: user.UserId,
+      email: user.email,        
+      fullName: user.fullName,
+      role: user.Role,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Magic login failed" });
+  }
+};
+
+// GET candidate info from token (NO LOGIN YET)
+export const getMagicUser = async (req, res) => {
+  try {
+    const { token } = req.query;
+    console.log("TOKEN RECEIVED:", req.query.token);
+    const record = await MagicLink.findOne({ where: { token } });
+
+    if (!record || record.isUsed || new Date() > record.expiresAt) {
+      return res.status(400).json({ error: "Invalid or expired link" });
+    }
+
+    const user = await User.findOne({
+         where: { UserId: record.FK_userId }, // ✅ FIX
+    });
+    
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    res.json({
+      fullName: user.fullName,
+      email: user.email,
+    });
+    console.log("Fetched user for magic link:", {
+      fullName: user.fullName,
+      email: user.email,
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch user" });
+  }
 };

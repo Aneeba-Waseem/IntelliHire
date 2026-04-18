@@ -1,21 +1,43 @@
-import React from 'react';
+import React, { useEffect, useState } from "react";
+import { useModal } from "../../Components/Recruiter/JobForm/ModalContext";
+import ProfileModal from "../Profile/ProfileModal";
+import { getCurrentUser } from "../../api/profileApi";
 
 const Profile = () => {
+  const { openModal } = useModal();
+  const [user, setUser] = useState(null);
+
+  const fetchUser = async () => {
+    try {
+      const res = await getCurrentUser();
+      setUser(res.data.user);
+      console.log("Fetched user in Profile component:", res.data.user);
+    } catch (err) {
+      console.error("Failed to load user", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
   return (
-    <div className="flex items-center gap-2 md:gap-4">
-      {/* Notification icon */}
-      <div className="relative cursor-pointer">
-        <i className="fa-regular fa-bell text-[#29445D] text-lg md:text-2xl"></i>
-
-        {/* Notification dot */}
-        <span className="absolute md:-top-1 md:-right-1 h-1 md:h-2 w-1 md:w-2 rounded-full bg-red-500"></span>
-      </div>
-
-      {/* Profile image */}
+    <div>
       <img
-        src="/profile.jpg"
-        alt="Profile"
-        className="w-5 md:w-9 h-5 md:h-9 text-sm rounded-full object-cover cursor-pointer"
+        src={
+          user?.profileImage
+            ? `http://localhost:8000/uploads/${user.profileImage}`
+            : "..."
+        }
+        className="w-5 md:w-15 h-5 md:h-15 rounded-full object-cover cursor-pointer"
+        onClick={() =>
+          openModal(
+            <ProfileModal
+              user={user}
+              onClose={fetchUser} // 🔥 KEY FIX
+            />
+          )
+        }
       />
     </div>
   );

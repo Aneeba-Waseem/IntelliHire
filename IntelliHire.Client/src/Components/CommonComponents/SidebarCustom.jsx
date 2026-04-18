@@ -2,20 +2,33 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 import { useModal } from "../../Components/Recruiter/JobForm/ModalContext";
 import JobForm from "../../Components/Recruiter/JobForm/JobForm";
- // adjust path to your file
+import ProfileModal from "../Profile/ProfileModal";
+import { useSelector } from "react-redux";
+// adjust path to your file
+
 
 const iconBase =
   "text-[#2F4B4A] cursor-pointer transition text-xl sm:text-2xl";
 
 const SidebarCustom = () => {
   const { openModal } = useModal();
-
+  // const { user } = useSelector((state) => state.auth);
+  // console.log("User in SidebarCustom:", user);
   // Handle click for Add button
   const handleAddClick = (e) => {
     e.preventDefault();
-    openModal(<JobForm type="engineer" setFormType={() => {}} />);
+    openModal(<JobForm type="engineer" setFormType={() => { }} />);
   };
+  const handleProfileClick = (e) => {
+    e.preventDefault();
 
+    openModal(
+      <ProfileModal
+        // user={user}
+        onClose={() => { }}
+      />
+    );
+  };
   return (
     <div
       className={`
@@ -37,7 +50,7 @@ const SidebarCustom = () => {
       `}
     >
       <NavItem to="/userDashboard" icon="fa-house" />
-       <button
+      <button
         onClick={handleAddClick}
         className="p-2 sm:p-3 hover:bg-[#F2FAF5] rounded-full transition"
       >
@@ -45,12 +58,17 @@ const SidebarCustom = () => {
       </button>
       <NavItem to="/ScheduledInterview" icon="fa-calendar-check" regular />
       <NavItem to="/CompletedInterview" icon="fa-circle-check" />
-      <NavItem to="/profile" icon="fa-user" regular />
-
+      {/* <NavItem to="/profile" icon="fa-user" regular /> */}
+      <button
+        onClick={handleProfileClick}
+        className="p-2 sm:p-3 hover:bg-[#F2FAF5] rounded-full transition"
+      >
+        <i className="fa-regular fa-user text-[#2F4B4A] text-xl sm:text-2xl" />
+      </button>
       {/* Add Button — opens modal */}
-     
 
-      <NavItem to="/settings" icon="fa-gear" />
+
+      {/* <NavItem to="/settings" icon="fa-gear" /> */}
     </div>
   );
 };

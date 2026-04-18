@@ -45,7 +45,7 @@ export const refreshAccessToken = createAsyncThunk(
       const res = await axios.post(`${API_URL}/refresh`, {
         accessToken: localStorage.getItem("accessToken"),
       });
-    axios.defaults.headers.common["Authorization"] = `Bearer ${data.accessToken}`;
+    axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.accessToken}`;
       console.log("refresh called: ", res);
       return res.data.accessToken;
     } catch (err) {

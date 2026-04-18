@@ -13,6 +13,7 @@ const MeetingButton = () => {
   const getAuthHeaders = () => {
     const authState = loadAuthState();
     const accessToken = authState?.accessToken;
+    // const accessToken = localStorage.getItem("accessToken");
     console.log(accessToken);
 
     return accessToken;

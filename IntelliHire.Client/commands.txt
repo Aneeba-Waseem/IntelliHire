@@ -34,6 +34,7 @@ npm install node-fetch
 npm install nodemailer
 npm install ioredis
 npm i @react-email/render nodemailer
+npm install multer
 
 #frontend -> backend 
 npm install cors

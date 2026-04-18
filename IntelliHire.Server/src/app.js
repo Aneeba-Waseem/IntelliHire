@@ -6,10 +6,11 @@ import jobDescriptionRoutes from "./routes/jobDescriptionRoutes.js";
 import listRoutes from "./routes/listRoutes.js";
 import jobCacheRoutes from "./routes/jobCache.js";
 import flowRoutes from "./routes/flowRoutes.js";
-import interviewEmail from "./routes/interviewEmail.js";
+import { sendInterviewEmails } from "./routes/interviewEmail.js";
 import  finalizeHiring  from "./routes/finalizeHiring.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import resumeRoutes from "./routes/resumeRoutes.js"
+import userRoutes from "./routes/userRoutes.js";
 const app = express();
 
 app.use(cors({
@@ -25,9 +26,11 @@ app.use("/api/auth", authRoutes);
 app.use("/api/interview", interviewRoutes);
 app.use("/api/lists", listRoutes);
 app.use("/api/job-description", jobDescriptionRoutes);
-app.use("/api/interview-email", interviewEmail);
+app.use("/api/interview-email", sendInterviewEmails);
 app.use("/api/finalizeHiring", finalizeHiring);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/resume", resumeRoutes);
+app.use("/api/user", userRoutes);
+app.use("/uploads", express.static("uploads"));
 
 export default app;

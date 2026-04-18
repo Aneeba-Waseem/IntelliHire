@@ -5,9 +5,9 @@ from app.evaluator.llm.api_client import HuggingFaceLLMClient
 from app.evaluator.llm.prompt_builder import EvaluatorPromptBuilder
 from app.evaluator.executor.validator import validate_evaluator_output
 from app.evaluator.llm.errors import LLMError
-from app.evaluator.scoring.score_updater import apply_delta
-# from app.evaluator.scoring.post_processing import apply_backend_rules  # or backend_rules
+from app.evaluator.scoring.score_updater import clamp_delta
 from app.evaluator.utils.turn_logger import log_turn_result
+
 
 class EvaluatorRunner:
     def __init__(self, rubric: Dict[str, Any]):
@@ -18,13 +18,11 @@ class EvaluatorRunner:
         self,
         *,
         input_event: Dict[str, Any],
-        scorecard: Dict[str, Any],
         max_attempts: int = 2,
     ) -> Dict[str, Any]:
 
         prompt = EvaluatorPromptBuilder.build(
             input_event=input_event,
-            scorecard=scorecard,
             rubric=self.rubric,
         )
 
@@ -33,31 +31,25 @@ class EvaluatorRunner:
         for attempt in range(max_attempts + 1):
             try:
                 raw_output = await self.llm.generate(prompt)
+                print(f"🔴 RAW LLM OUTPUT:\n{repr(raw_output)}\n")
                 parsed = json.loads(raw_output)
 
                 validate_evaluator_output(parsed)
 
-                # ✅ Apply backend rules (quantize + semantic guard)
-                sanitized_delta = apply_backend_rules(
-                    parsed.get("delta", {}),
-                    candidate_answer=input_event.get("answer", ""),
-                    ideal_answer=input_event.get("ideal_answer", ""),
-                )
-
-                # overwrite so returned delta/logs are correct
+                raw_delta = parsed.get("delta", {})
+                print(f"✅Raw delta from LLM: {raw_delta}")
+                # Quantize delta to allowed values
+                sanitized_delta = clamp_delta(parsed.get("delta", {}))
+                print(f"✅Sanitized delta after clamping: {sanitized_delta}")
                 parsed["delta"] = sanitized_delta
 
-                # ---- overall response quality (per turn) ----
+                # Calculate question score (0-5 scale)
+                # Three dimensions sum to 0-5 marks
                 delta_values = list(sanitized_delta.values())
-                question_score_raw = sum(delta_values)
-                question_max_raw = len(delta_values) * 0.5
+                question_score = sum(delta_values) * (5 / 3)
+                question_score = round(min(question_score, 5), 2)
 
-                question_score = (
-                    (question_score_raw / question_max_raw) * 5
-                    if question_max_raw > 0 else 0
-                )
-
-                # derive quality from report scale (0–5)
+                # Derive quality label
                 if question_score >= 4:
                     quality_label = "strong"
                 elif question_score >= 2.5:
@@ -65,32 +57,26 @@ class EvaluatorRunner:
                 else:
                     quality_label = "weak"
 
-                # ---- Apply delta to scorecard ----
-                authoritative_scorecard = apply_delta(
-                    current_scorecard=scorecard,
+                # Log turn result
+                log_turn_result(
+                    input_event=input_event,
                     delta=sanitized_delta,
+                    quality=quality_label,
+                    updated_scorecard=None,
+                    notes=parsed["notes"],
                 )
 
-                log_turn_result(
-                input_event=input_event,
-                delta=sanitized_delta,
-                quality=quality_label,
-                updated_scorecard=authoritative_scorecard,
-                notes=parsed["notes"],
-                )
-                
                 return {
-                    "updated_scorecard": authoritative_scorecard,
                     "delta": parsed["delta"],
                     "notes": parsed["notes"],
                     "signals": parsed["signals"],
                     "response_quality": quality_label,
-                    "question_score": round(question_score,2)
+                    "question_score": question_score,
                 }
 
             except (json.JSONDecodeError, ValueError) as e:
                 last_error = e
-                prompt = self._repair_prompt(prompt, raw_output)
+                prompt = self._repair_prompt(prompt)
 
             except LLMError as e:
                 raise e
@@ -98,7 +84,7 @@ class EvaluatorRunner:
         raise RuntimeError(f"Evaluator failed after retries: {last_error}")
 
     @staticmethod
-    def _repair_prompt(original_prompt: str, bad_output: str) -> str:
+    def _repair_prompt(original_prompt: str) -> str:
         return (
             original_prompt
             + "\n\n"

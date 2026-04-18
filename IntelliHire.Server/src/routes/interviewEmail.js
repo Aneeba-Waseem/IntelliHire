@@ -1,13 +1,9 @@
-// utils/sendEmails.js
 import nodemailer from "nodemailer";
 import { render } from "@react-email/render";
 import React from "react";
-import express from "express"; // ✅ important!
-
 import InterviewScheduled from "../emails/InterviewScheduled.js";
-const router = express.Router();
 
-export const sendInterviewEmails = async (interviews) => {
+export const sendInterviewEmails = async (emailData) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -16,15 +12,16 @@ export const sendInterviewEmails = async (interviews) => {
     },
   });
 
-  const link = "http://localhost:5173/auth";
+  for (const i of emailData) {
 
-  for (const i of interviews) {
+    // const link = `http://localhost:5173/login?token=${i.token}`;
+
     const html = await render(
       React.createElement(InterviewScheduled, {
         name: i.name,
         date: i.date,
         time: i.time,
-        link,
+        link: i.link,
       })
     );
 
@@ -36,5 +33,3 @@ export const sendInterviewEmails = async (interviews) => {
     });
   }
 };
-// isi lie run kia ha
-export default router;

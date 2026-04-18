@@ -5,6 +5,8 @@ import {
     refreshAccessToken,
     logout,
     getCurrentUser,
+    magicLogin,
+    getMagicUser,
 } from "../controllers/authController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -18,6 +20,11 @@ router.post("/register", register);
 // Login
 router.post("/login", login);
 
+//candidate login with magic link
+router.post("/magic-login", magicLogin);
+
+//get user info from magic link token
+router.get("/magic-user", getMagicUser);
 // Refresh access token
 router.post("/refresh", refreshAccessToken);
 

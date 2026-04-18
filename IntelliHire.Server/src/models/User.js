@@ -55,7 +55,22 @@ const User = sequelize.define("User", {
   Role: {
   type: DataTypes.STRING,
   allowNull: true
-}
+},
+
+jobRole: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+
+phone: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+
+profileImage: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
 
 });
 
