@@ -629,15 +629,15 @@ async _processAnswerInBackground({
 
     await this.evalRepo.appendQuestion(sessionId, {
       questionId: turn.id,
-      question: turn.question,
-      candidateAnswer: answer,
-      response_quality: evaluation.response_quality,
-      question_score: evaluation.question_score,
-      feedback: evaluation.feedback || "",
+      domain: turn.topic,
+      question_text: turn.question,
+      candidate_answer: answer,
+      ideal_answer: turn.idealAnswer,
       topic: turn.topic,
       phase: turn.phase,
       depthLevel: turn.depthLevel,
       timestamp: new Date().toISOString(),
+      evaluation_output: evaluation
     });
 
     state.lastResponseQuality = evaluation.response_quality;
