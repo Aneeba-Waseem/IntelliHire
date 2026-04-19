@@ -3,6 +3,7 @@ import { motion as Motion } from 'framer-motion';
 import { FiVideo, FiVideoOff, FiMic, FiMicOff } from "react-icons/fi";
 import { useNavigate } from 'react-router-dom';
 import MeetingButton from "./MeetingButton";
+import { webrtcStore } from "../../store/webRtcStore";
 
 const MeetPreJoin = () => {
     const [cameraOn, setCameraOn] = useState(false);
@@ -19,6 +20,7 @@ const MeetPreJoin = () => {
                         video: cameraOn,
                         audio: micOn,
                     });
+                    
                     setStream(mediaStream);
                     if (videoRef.current) {
                         videoRef.current.srcObject = mediaStream;
@@ -52,12 +54,7 @@ const MeetPreJoin = () => {
         if (stream) {
             stream.getTracks().forEach((track) => track.stop());
         }
-        navigate('/Meet', {
-            state: {
-                isMuted: !micOn,
-                isVideoOff: !cameraOn
-            }
-        });
+        navigate('/Meet');
     };
 
     return (
@@ -101,7 +98,7 @@ const MeetPreJoin = () => {
                     {micOn ? <FiMic /> : <FiMicOff />}
                 </button>
 
-                <MeetingButton/>
+                <MeetingButton />
             </div>
         </div>
     );

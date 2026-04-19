@@ -262,8 +262,8 @@ class QuestionDeepgramSession:
         logger.info(f"   Created isolated STT queue")
         
         self.collector = TranscriptCollector(
-            max_answer_time_sec=180,        # 4 min in total
-            silence_timeout_ms=30000,      # silence timeout - 30 sec
+            max_answer_time_sec=240,        # 4 min in total
+            silence_timeout_ms=15000,      # silence timeout - 15 sec - 30 sec total
             on_complete=None,
             on_interim=on_interim_transcript or (
                 lambda text: logger.debug(f"🟡 [Q{self.question_num}] Interim: {text[:50]}...")
@@ -716,7 +716,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 except asyncio.TimeoutError:
                     consecutive_timeouts += 1
                     logger.warning(
-                        f"⚠️ No message for 30s (timeout #{consecutive_timeouts}/2)"
+                        f"⚠️ No message for 10s (timeout #{consecutive_timeouts}/2)"
                     )
 
                     if consecutive_timeouts >= 2:

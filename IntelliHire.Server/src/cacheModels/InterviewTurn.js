@@ -11,6 +11,7 @@ export default class InterviewTurn {
     phase = null,
     depthLevel = 1,
     createdAt = null,
+    isSystem = false, // ✅ NEW: flag to identify system-generated turns
   }) {
     this.id = id;
     this.sessionId = sessionId;
@@ -27,6 +28,7 @@ export default class InterviewTurn {
     this.phase = phase;
     this.depthLevel = depthLevel;
     this.createdAt = createdAt ? new Date(createdAt) : new Date();
+    this.isSystem = isSystem;
   }
 
   toJSON() {
@@ -41,6 +43,7 @@ export default class InterviewTurn {
       phase: this.phase,
       depthLevel: this.depthLevel,
       createdAt: this.createdAt.toISOString(),
+      isSystem: this.isSystem,
     };
   }
 

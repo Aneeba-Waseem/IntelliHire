@@ -16,7 +16,7 @@ const generateAccessToken = (user, refreshToken) => {
             refreshTokenId: refreshToken.RefreshTokenId,
         },
         process.env.JWT_SECRET || "accesssecret",
-        { expiresIn: "4m" }
+        { expiresIn: "15m" }
     );
 };
 

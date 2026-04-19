@@ -7,10 +7,22 @@
  */
 
 class TransitionEngine {
-  apply({ state, evaluation, totalTurnsInPhase, availableTopics }) {
+  apply({ state, evaluation, totalTurnsInPhase, availableTopics, totalTurnsOverall }) {
     if (evaluation?.quality) {
       state.lastResponseQuality = evaluation.quality;
       state.stuckCount = evaluation.quality === "weak" ? state.stuckCount + 1 : 0;
+    }
+    const MAX_TURNS = 30;
+    console.log(`Total turns overall: ${totalTurnsOverall} (current phase: ${state.phase})`);
+    if (totalTurnsOverall >= MAX_TURNS) {
+      console.log(`Max turns reached (${totalTurnsOverall}) → closing interview`);
+
+      state.phase = "close";
+
+      return {
+        updatedState: state,
+        nextAction: "wrap_up",
+      };
     }
 
     console.log("TransitionEngine.apply() — before:", {

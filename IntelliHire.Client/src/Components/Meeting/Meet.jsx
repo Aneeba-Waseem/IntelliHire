@@ -34,8 +34,8 @@ export default function Meet() {
   const stream = webrtcStore.stream;
   const remoteAudioStream = webrtcStore.remoteAudioStream;
 
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isMuted, setIsMuted] = useState(!(stream?.getAudioTracks()[0]?.enabled ?? true));
+  const [isVideoOff, setIsVideoOff] = useState(!(stream?.getVideoTracks()[0]?.enabled ?? true));
   const [question, setQuestion] = useState("");
 
   // ⭐ STATE MANAGEMENT
@@ -43,6 +43,20 @@ export default function Meet() {
   const [currentAnswer, setCurrentAnswer] = useState("");
   const [answerFeedback, setAnswerFeedback] = useState("");
   const [audioStatus, setAudioStatus] = useState("⏳ Initializing...");
+
+  // =====================================================
+  // 1. STREAM SAFETY 
+  // =====================================================
+  useEffect(() => {
+  if (!stream) return;
+
+  const audioTrack = stream.getAudioTracks()[0];
+  const videoTrack = stream.getVideoTracks()[0];
+
+  setIsMuted(!(audioTrack?.enabled ?? true));
+  setIsVideoOff(!(videoTrack?.enabled ?? true));
+
+}, [stream]);
 
   const listeningStartTimeRef = useRef(null);
 
@@ -70,9 +84,7 @@ export default function Meet() {
       remoteAudioRef.current
         .play()
         .then(() => {
-          console.log("\n" + "✅".repeat(25));
           console.log("✅ AUDIO PLAYBACK STARTED ✅");
-          console.log("✅".repeat(25) + "\n");
           setAudioStatus("✅✅✅ AUDIO PLAYING 🎉");
         })
         .catch((err) => {
@@ -287,10 +299,10 @@ export default function Meet() {
 
             setListeningState("complete");
             setAnswerFeedback(`
-🎉 Interview Complete!
-Rating: ${data.report.overallRating}
-Score: ${data.report.score}
-Message: ${data.message}
+              🎉 Interview Complete!
+              Rating: ${data.report.overallRating}
+              Score: ${data.report.score}
+              Message: ${data.message}
             `);
 
             // Restore previous handler
@@ -413,8 +425,17 @@ Message: ${data.message}
     }
   };
 
+  // ⭐ WAVEFORM ANIMATION STYLES
+  const waveformStyles = `
+    @keyframes waveform {
+      0%, 100% { height: 8px; }
+      50% { height: 20px; }
+    }
+  `;
+
   return (
     <div className="h-screen bg-[#D1DED3] flex flex-col">
+      <style>{waveformStyles}</style>
       <div className="flex-1 p-4 flex flex-col">
         <div className="grid grid-cols-2 gap-4 flex-1">
           <div className="bg-black rounded-xl overflow-hidden">
@@ -435,56 +456,78 @@ Message: ${data.message}
           </div>
         </div>
 
-        {/* Display current question */}
-        <div className="bg-white p-4 rounded-xl mt-4 text-lg font-semibold">
-          {question || "Interview starting..."}
+        {/* Display current question + Waveform indicator */}
+        <div className="bg-gray-50 p-4 rounded-xl mt-4 flex items-center justify-between border border-gray-200 shadow-md">
+          <div className="flex-1 text-lg font-semibold text-gray-800">
+            {question || "Interview starting..."}
+          </div>
+          
+          {/* Waveform - only visible when listening */}
+          {listeningState === "listening" && currentAnswer && (
+            <div className="flex items-center gap-1 ml-6">
+              {[...Array(18)].map((_, i) => (
+                <div
+                  key={i}
+                  className="w-1 bg-green-500 rounded-sm"
+                  style={{
+                    height: "20px",
+                    animation: `waveform 0.6s ease-in-out infinite`,
+                    animationDelay: `${i * 0.05}s`,
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Display current answer being transcribed */}
         {currentAnswer && (
-          <div className="bg-green-50 border-2 border-green-300 p-3 rounded-lg mt-2 text-sm">
+          <div className="bg-green-50 border-2 border-green-300 p-3 rounded-lg mt-2 text-sm shadow-md">
             <div className="font-semibold text-green-900">Your Answer:</div>
             <div className="text-green-800">{currentAnswer}</div>
           </div>
         )}
 
         {/* Listening state with color coding */}
-        <div className={`border-2 p-3 rounded-lg mt-3 text-center font-bold text-lg ${getListeningStateColor()}`}>
+        {/* <div className={`border-2 p-3 rounded-lg mt-3 text-center font-bold text-lg ${getListeningStateColor()}`}>
           {getListeningStateMessage()}
-        </div>
+        </div> */}
 
         {/* Answer feedback/processing status */}
         {answerFeedback && (
-          <div className="bg-purple-100 border-2 border-purple-500 p-3 rounded-lg mt-2 text-center font-semibold text-purple-900 whitespace-pre-line">
+          <div className="bg-green-50 border-2 border-green-400 p-3 rounded-lg mt-2 text-center font-semibold text-green-800 whitespace-pre-line shadow-md">
             {answerFeedback}
           </div>
         )}
 
-        {/* AUDIO STATUS */}
+        {/* AUDIO STATUS
         <div className="bg-blue-100 border-2 border-blue-500 p-3 rounded-lg mt-3 text-center font-bold text-blue-900 text-lg">
           {audioStatus}
-        </div>
+        </div> */}
 
         {/* Control buttons */}
         <div className="flex justify-center gap-6 mt-4">
-          <button
-            onClick={toggleMute}
-            className="p-4 bg-white rounded-xl hover:bg-gray-100 transition"
-            title={isMuted ? "Unmute" : "Mute"}
-          >
-            {isMuted ? <MicOff color="red" /> : <Mic color="green" />}
-          </button>
+          {/* Media controls (left) */}
+          <div className="flex gap-4">
+            <button
+              onClick={toggleMute}
+              className="p-4 bg-white rounded-xl hover:bg-gray-100 transition shadow-md"
+              title={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? <MicOff color="red" /> : <Mic color="green" />}
+            </button>
 
-          <button
-            onClick={toggleVideo}
-            className="p-4 bg-white rounded-xl hover:bg-gray-100 transition"
-            title={isVideoOff ? "Turn on video" : "Turn off video"}
-          >
-            {isVideoOff ? <VideoOff color="red" /> : <Video color="green" />}
-          </button>
-
+            <button
+              onClick={toggleVideo}
+              className="p-4 bg-white rounded-xl hover:bg-gray-100 transition shadow-md"
+              title={isVideoOff ? "Turn on video" : "Turn off video"}
+            >
+              {isVideoOff ? <VideoOff color="red" /> : <Video color="green" />}
+            </button>
+          </div>
+          
           {/* Stop listening button (only shown when listening) */}
-          {listeningState === "listening" && (
+          {/* {listeningState === "listening" && (
             <button
               onClick={stopListening}
               className="p-4 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition font-semibold"
@@ -492,11 +535,11 @@ Message: ${data.message}
             >
               ⏹️ Stop
             </button>
-          )}
-
+          )} */}
+          {/* End call (right) */}
           <button
             onClick={endCall}
-            className="p-4 bg-red-500 text-white rounded-xl hover:bg-red-600 transition"
+            className="p-4 bg-red-500 text-white rounded-xl hover:bg-red-600 transition shadow-md"
             title="End interview"
           >
             <Phone />

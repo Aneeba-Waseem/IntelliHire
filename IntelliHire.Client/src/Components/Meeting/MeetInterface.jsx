@@ -18,7 +18,7 @@ const MeetInterface = () => {
 
       {/* Left Sidebar (10%) */}
       <div className="w-[10%] min-w-[80px] flex items-around justify-center">
-        <SidebarCustom />
+        {/* <SidebarCustom /> */}
       </div>
 
       {/* Right Side (90%) */}

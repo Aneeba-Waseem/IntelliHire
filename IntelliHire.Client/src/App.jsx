@@ -39,6 +39,8 @@ function App() {
   const LandingNavBar = location.pathname === "/heroSection";
   const auth = location.pathname === "/auth";
   const Meeting = location.pathname === "/Meet";
+  // const MeetingPermissions = location.pathname === "/meetingPermissions";
+  // const MeetSection = location.pathname === "/meetingSection";
   const userVerification = location.pathname === "/verify-notice"
   return (
     <>

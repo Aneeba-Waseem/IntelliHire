@@ -10,11 +10,13 @@ export default class InterviewSession {
     startedAt = null,
     endedAt = null,
     topicsListed = [], // ✅ NEW: store topics listed by the system
+    turnsCount = 0,     // ✅ NEW: track total turns taken in the session
   }) {
     this.id = id;
     this.candidateId = candidateId;
     this.jobId = jobId;
     this.topicsListed = topicsListed;
+    this.turnsCount = turnsCount;
     this.state =
       state instanceof InterviewState
         ? state
@@ -36,6 +38,7 @@ export default class InterviewSession {
       state: this.state.toJSON(),
       startedAt: this.startedAt.toISOString(),
       endedAt: this.endedAt ? this.endedAt.toISOString() : null,
+      turnsCount: this.turnsCount,
     };
   }
 

@@ -23,6 +23,14 @@ class GenerateResponse(BaseModel):
     output_text: str
     time_taken: float
 
+class ConvAnalysisRequest(BaseModel):
+    question: str
+    answer: str
+    model: str = "openai/gpt-oss-20b"
+class ConvAnalysisResponse(BaseModel):
+    decision: str
+    followUpText: str | None = None
+
 # --------------------
 # OpenAI Client (lazy initializer)
 # --------------------
@@ -123,6 +131,140 @@ Return only the rewritten conversational question.
 
         return {
             "message": response.output_text.strip()
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.post("/conversational-analysis", response_model=ConvAnalysisResponse)
+async def conversational_analysis(req: ConvAnalysisRequest):
+    try:
+        client = get_openai_client()
+
+        prompt = f"""
+You are an interview evaluation classifier.
+
+Your job is to analyze a candidate's answer and decide the correct response category.
+
+----------------------------------------------------
+CATEGORIES:
+
+1. "submit"
+- The candidate has answered the question completely and correctly, OR
+- The candidate clearly does not know the answer and gives up
+- Examples:
+  - "I don't know"
+  - "No idea"
+  - "I haven't learned this yet"
+- No follow-up question is required
+
+2. "further_explanation"
+- The candidate shows partial understanding
+- Answer is incomplete, shallow, or missing key reasoning
+- The candidate is attempting the question but needs deeper explanation or follow-up
+
+3. "clarification_request"
+- The candidate is confused about the question itself
+- They are NOT attempting to answer
+- Examples:
+  - "I don't understand the question"
+  - "What does this mean?"
+  - "Can you explain the question?"
+  - "Please clarify"
+
+----------------------------------------------------
+STRICT RULES:
+
+- Be strict but fair in evaluation
+- DO NOT confuse:
+  - confusion about the question → clarification_request
+  - incorrect answer → further_explanation or submit (depending on effort)
+- If the candidate is asking what the question means → ALWAYS "clarification_request"
+- If the candidate attempts an answer → NEVER classify as "clarification_request"
+- If answer is complete or clearly given up → "submit"
+
+----------------------------------------------------
+FOLLOW-UP RULES:
+
+- Only "further_explanation" and "clarification_request" generate follow-ups
+- Follow-ups must be:
+  - short
+  - natural
+  - single question only
+- If "clarification_request":
+  → rephrase the original question in simpler terms
+- If "further_explanation":
+  → ask for deeper detail or missing reasoning
+- If "submit":
+  → followUpText MUST be null
+
+----------------------------------------------------
+OUTPUT RULES:
+
+- Output MUST be valid JSON only
+- No extra text, no explanation, no markdown
+
+----------------------------------------------------
+OUTPUT FORMAT:
+
+{{
+  "decision": "submit | further_explanation | clarification_request",
+  "followUpText": "string or null"
+}}
+
+----------------------------------------------------
+INPUT:
+
+QUESTION:
+{req.question}
+
+CANDIDATE ANSWER:
+{req.answer}
+"""
+
+        response = client.responses.create(
+            model=req.model,
+            input=prompt,
+        )
+
+        import json
+        raw = response.output_text.strip()
+        print("[ConvLLM RAW]:", raw)
+
+        try:
+            data = json.loads(raw)
+        except Exception:
+            return {
+                "decision": "submit",
+                "followUpText": None
+            }
+
+        decision = data.get("decision", "submit")
+
+        # -----------------------------
+        # CLEAN HANDLING
+        # -----------------------------
+        if decision == "clarification_request":
+            return {
+                "decision": "clarification_request",
+                "followUpText": data.get(
+                    "followUpText",
+                    "No worries — let me explain it differently. What part is unclear?"
+                )
+            }
+
+        if decision == "further_explanation":
+            return {
+                "decision": "further_explanation",
+                "followUpText": data.get(
+                    "followUpText",
+                    "Could you go a bit deeper on that?"
+                )
+            }
+
+        return {
+            "decision": "submit",
+            "followUpText": None
         }
 
     except Exception as e:

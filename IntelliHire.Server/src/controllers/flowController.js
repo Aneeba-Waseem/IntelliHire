@@ -70,14 +70,13 @@ export default class FlowController {
         token,
       });
 
-      console.log(`[${requestId}] Interview started:`, result.sessionId);
+      console.log(`[${requestId}] Interview started:`, result);
 
       return res.status(200).json({
         success: true,
         data: {
           sessionId: result.sessionId,
-          greeting:  result.greeting,
-          question:  result.question,
+          question:  result.greeting,
           phase:     result.phase,
         },
       });
@@ -112,7 +111,7 @@ export default class FlowController {
 
     try {
       const { sessionId, answer } = req.body;
-
+      console.log(`[${requestId}] Received answer for session ${sessionId}`);
       if (!sessionId || typeof sessionId !== "string") {
         return res.status(400).json({
           success: false,

@@ -72,6 +72,7 @@ export default function Step3Schedule({ handleBack, handleSubmit }) {
       toast.success(`Emails sent to ${interviews.length} candidate(s)`);
       handleSubmit(interviews);
       closeModal();
+      window.location.reload();
     } catch (err) {
       console.error(err);
       toast.error("Failed to send interview emails");
@@ -110,7 +111,7 @@ export default function Step3Schedule({ handleBack, handleSubmit }) {
                 </label>
                 <input
                   type="date"
-                  className="w-full border border-[#719D99] p-2 rounded-lg focus:ring-2 focus:ring-[#45767C] bg-[#D1DED3]  text-[#29445D]"
+                  className="w-full border border-[#719D99] p-2 rounded-lg focus:ring-2 focus:ring-[#45767C] bg-[#F2FAF5]  text-[#29445D]"
                   value={schedule[c.resume_id]?.date || ""}
                   onChange={(e) => handleChange(c.resume_id, "date", e.target.value)}
                 />
@@ -122,7 +123,7 @@ export default function Step3Schedule({ handleBack, handleSubmit }) {
                 </label>
                 <input
                   type="time"
-                  className="w-full border border-[#719D99] p-2 rounded-lg focus:ring-2 focus:ring-[#45767C] bg-[#D1DED3] text-[#29445D]"
+                  className="w-full border border-[#719D99] p-2 rounded-lg focus:ring-2 focus:ring-[#45767C] bg-[#F2FAF5] text-[#29445D]"
                   value={schedule[c.resume_id]?.time || ""}
                   onChange={(e) => handleChange(c.resume_id, "time", e.target.value)}
                 />

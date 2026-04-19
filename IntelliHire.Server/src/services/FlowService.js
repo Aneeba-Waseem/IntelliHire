@@ -7,52 +7,35 @@ import AIClient from "../AI/AIClient.js";
 import JobClient from "./JobClient.js";
 import QuestionQueueService from "./QuestionQueueService.js";
 
-/**
- * FlowService.js  (optimised)
- *
- * KEY CHANGES vs original:
- *
- *  1. QuestionQueue + FallbackQueue  (via QuestionQueueService)
- *     - On startInterview the fallback queue is seeded with 10 pre-generated Qs.
- *     - After every submitted answer a NEW question is generated in the background
- *       and pushed onto the questionQueue so the next dequeue is instant.
- *
- *  2. Conversational LLM layer  (aiClient.analyzeWithConversationalLLM)
- *     - When an answer is finalised the ConvLLM decides:
- *         "further_explanation" → send a follow-up to the candidate (no flow submit yet)
- *         "submit"              → evaluate, transition, dequeue next question
- *     - This replaces the previous direct evaluate-on-every-answer path.
- *
- *  3. sendQuestion helper   — dequeues the next Q and sends it over the wire.
- *     - If questionQueue is empty it falls back to fallbackQueue automatically
- *       (handled transparently by QuestionQueueService.dequeue).
- */
 export default class FlowService {
   constructor({
-    aiClient    = new AIClient(),
+    aiClient = new AIClient(),
     sessionRepo,
     turnRepo,
-    jobClient   = new JobClient(),
+    jobClient = new JobClient(),
     queueService,
   } = {}) {
-    this.aiClient         = aiClient;
+    this.aiClient = aiClient;
     this.transitionEngine = new TransitionEngine();
-    this.sessionRepo      = sessionRepo  || new InterviewSessionRepository();
-    this.turnRepo         = turnRepo     || new InterviewTurnRepository();
-    this.evalRepo         = new InterviewEvaluationRepository();
-    this.jobClient        = jobClient;
-    this.queueService     = queueService || new QuestionQueueService();
+    this.sessionRepo = sessionRepo || new InterviewSessionRepository();
+    this.turnRepo = turnRepo || new InterviewTurnRepository();
+    this.evalRepo = new InterviewEvaluationRepository();
+    this.jobClient = jobClient;
+    this.queueService = queueService || new QuestionQueueService();
   }
 
+  followUps = 0; // simple counter to prevent infinite follow-ups
+  
+
   /* =====================================================
-     TOPICS FOR JOB
+     TOPICS
   ===================================================== */
   async getTopicsForJob(token) {
     try {
       const jobData = await this.jobClient.getJobStep1(token);
       if (!jobData || Object.keys(jobData).length === 0) return ["general"];
 
-      const topics = [ ...(jobData.domains || []), ...(jobData.techStack || [])]
+      const topics = [...(jobData.domains || []), ...(jobData.techStack || [])]
         .map((t) => String(t).trim())
         .filter(Boolean);
 
@@ -64,285 +47,383 @@ export default class FlowService {
   }
 
   /* =====================================================
-     START INTERVIEW
+     START INTERVIEW (FIXED)
   ===================================================== */
   async startInterview({ candidateId, jobId, candidateType, token }) {
-    if (!candidateId || !jobId) throw new Error("candidateId and jobId are required");
+  if (!candidateId || !jobId)
+    throw new Error("candidateId and jobId are required");
 
-    // 1. Build initial state
-    const state = new InterviewState({
-      phase:               "rapport",
-      candidateType:       candidateType || "generic",
-      topicsCovered:       [],
-      currentTopic:        null,
-      depthLevel:          1,
-      lastResponseQuality: null,
-      stuckCount:          0,
-      lastAction:          null,
-      currentTurnId:       null,
-    });
+  const state = new InterviewState({
+    phase: "rapport",
+    candidateType: candidateType || "generic",
+    topicsCovered: [],
+    currentTopic: null,
+    depthLevel: 1,
+    lastResponseQuality: null,
+    stuckCount: 0,
+    lastAction: "awaiting_first_answer",
+    currentTurnId: null,
+  });
 
-    // 2. Fetch topics
-    const topics       = await this.getTopicsForJob(token);
-    state.currentTopic = topics[0];
-    console.log("Topics:", topics, "→ initial topic:", state.currentTopic);
+  const topics = await this.getTopicsForJob(token);
+  state.currentTopic = topics[0];
 
-    // 3. Create session
-    const session = await this.sessionRepo.create({
-      candidateId,
-      jobId,
-      initialState: state,
-      topicsListed: topics,
-    });
-    console.log("Session created:", session.id);
-    await this.evalRepo.initSession(session.id);
+  const session = await this.sessionRepo.create({
+    candidateId,
+    jobId,
+    initialState: state,
+    topicsListed: topics,
+  });
 
-    // 4. Seed fallback queue (10 pre-generated questions for this job role)
-    await this.queueService.initSession(
-      session.id,
-      topics,
-    );
-    console.log("Fallback queue seeded:", this.queueService.lengths(session.id));
+  await this.evalRepo.initSession(session.id);
+  await this.queueService.initSession(session.id, topics);
 
-    // 5. Generate first question and push to questionQueue
-    await this._generateAndEnqueue(session.id, state);
+  // 🔥 CREATE SYSTEM TURN (IMPORTANT FIX)
+  const systemTurn = await this.turnRepo.create({
+    sessionId: session.id,
+    question: "SYSTEM_GREETING",
+    idealAnswer: null,
+    topic: state.currentTopic,
+    phase: state.phase,
+    depthLevel: 0,
+    isSystem: true,
+  });
 
-    // 6. Dequeue the first question (from questionQueue)
-    const firstItem = this.queueService.dequeue(session.id);
-    if (!firstItem) throw new Error("Queue empty immediately after seeding — this should not happen");
+  state.currentTurnId = systemTurn.id;
+  state.lastAction = "awaiting_first_answer";
 
-    // 7. Create the first turn in the repo so we have a currentTurnId
-    const firstTurn = await this.turnRepo.create({
-      sessionId:   session.id,
-      question:    firstItem.question,
-      idealAnswer: firstItem.idealAnswer,
-      topic:       firstItem.topic  || state.currentTopic,
-      phase:       firstItem.phase  || state.phase,
-      depthLevel:  state.depthLevel,
-    });
+  await this.sessionRepo.updateState(session.id, state);
 
-    state.currentTurnId = firstTurn.id;
-    state.lastAction    = "asked_question";
-    await this.sessionRepo.updateState(session.id, state);
+  // pre-generate first real question
+  this._generateAndEnqueue(session.id, { ...state }).catch(() => {});
 
-    // 8. Convert to conversational format for the candidate
-    const conversational = await this.aiClient.convertQuestion(firstItem.question);
-
-    // 9. Fire-and-forget: pre-generate the NEXT question now so it is ready
-    this._generateAndEnqueue(session.id, state).catch((err) =>
-      console.warn("[prefetch] Failed to pre-generate next question:", err.message)
-    );
-
-    return {
-      sessionId: session.id,
-      greeting:  "Welcome! Let's begin the interview.",
-      question:  conversational,
-      phase:     state.phase,
-    };
-  }
+  return {
+    sessionId: session.id,
+    greeting: "Hi, Welcome! Kindly introduce yourself.",
+    question: null,
+    phase: state.phase,
+  };
+}
 
   /* =====================================================
-     SUBMIT ANSWER
-     ─────────────────────────────────────────────────────
-     Flow (matches the diagram):
-       1. Finalise answer text
-       2. Pass through Conversational LLM
-            ├─ "further_explanation"  → return follow-up question, NO evalRepo write
-            └─ "submit"
-                 ├─ Evaluate answer (evalRepo)
-                 ├─ Transition state
-                 ├─ Check close phase
-                 └─ Dequeue next question
+     SUBMIT ANSWER (FIXED FLOW)
   ===================================================== */
   async submitAnswer({ sessionId, candidateAnswer }) {
-    if (!sessionId || !candidateAnswer) {
-      throw new Error("sessionId and candidateAnswer are required");
+  try {
+    /* =====================================================
+       VALIDATION
+    ===================================================== */
+    if (!sessionId || typeof sessionId !== "string") {
+      throw new Error("Invalid sessionId");
     }
 
-    // ── Load session & state ──────────────────────────────────────────────
+    if (!candidateAnswer || typeof candidateAnswer !== "string") {
+      throw new Error("Invalid candidateAnswer");
+    }
+
+    const trimmedAnswer = candidateAnswer.trim();
+    if (!trimmedAnswer) {
+      throw new Error("Answer cannot be empty");
+    }
+
+    /* =====================================================
+       LOAD SESSION + STATE
+    ===================================================== */
     const session = await this.sessionRepo.findById(sessionId);
-    if (!session) throw new Error(`Session not found: ${sessionId}`);
+    if (!session) throw new Error("Session not found");
 
     const state = new InterviewState(session.state);
-    console.log("submitAnswer — state:", {
-      phase:         state.phase,
-      currentTopic:  state.currentTopic,
-      currentTurnId: state.currentTurnId,
-    });
 
-    // ── Locate the current turn ──────────────────────────────────────────
+    /* =====================================================
+       LOAD CURRENT TURN
+    ===================================================== */
     let turn = state.currentTurnId
       ? await this.turnRepo.findById(state.currentTurnId)
       : null;
 
     if (!turn) {
-      console.warn("Falling back to latest turn");
       turn = await this.turnRepo.findLatestBySessionId(sessionId);
     }
 
-    if (!turn) throw new Error("No active turn found for this session");
+    if (!turn) {
+      throw new Error("No active turn found");
+    }
+    console.log(turn);
 
-    /* ──────────────────────────────────────────────────────────────────────
-       STEP A  →  Conversational LLM decides: probe or submit
-    ────────────────────────────────────────────────────────────────────── */
-    const { decision, followUpText } = await this.aiClient.analyzeWithConversationalLLM({
-      question: turn.question,
-      answer:   candidateAnswer,
-    });
+    /* =====================================================
+       CASE 0: SYSTEM TURN → FIRST REAL QUESTION INIT
+       (THIS FIXES YOUR GREETING BUG)
+    ===================================================== */
+    if (turn.isSystem) {
+      console.log(` System turn detected → initializing first question`);
 
-    /* ──────────────────────────────────────────────────────────────────────
-       PATH A1  →  "further_explanation"
-       The LLM wants the candidate to elaborate.  We do NOT evaluate yet.
-       We create a follow-up turn so the next submitAnswer knows the context.
-    ────────────────────────────────────────────────────────────────────── */
-    if (decision === "further_explanation") {
-      console.log("[ConvLLM] Requesting further explanation from candidate");
+      let item = this.queueService.dequeue(sessionId);
 
-      // Store what the candidate said so far as a partial answer on the turn
-      await this.turnRepo.update(turn.id, { partialAnswer: candidateAnswer });
+      if (!item) {
+        await this._generateAndEnqueue(sessionId, { ...state });
+        item = this.queueService.dequeue(sessionId);
+      }
 
-      // Create a new turn for the follow-up exchange
-      const followUpTurn = await this.turnRepo.create({
-        sessionId:   sessionId,
-        question:    followUpText,
-        idealAnswer: turn.idealAnswer, // same ideal — still on the same concept
-        topic:       turn.topic  || state.currentTopic,
-        phase:       turn.phase  || state.phase,
-        depthLevel:  state.depthLevel,
-        isFollowUp:  true,
+      if (!item) {
+        throw new Error("Failed to generate first question");
+      }
+
+      const firstTurn = await this.turnRepo.create({
+        sessionId,
+        question: item.question,
+        idealAnswer: item.idealAnswer,
+        topic: item.topic || state.currentTopic,
+        phase: state.phase,
+        depthLevel: state.depthLevel,
       });
 
-      state.currentTurnId = followUpTurn.id;
-      state.lastAction    = "follow_up";
+      console.log(` First question initialized: ${item.question}`);
+
+      state.currentTurnId = firstTurn.id;
+      state.lastAction = "asked_question";
+
       await this.sessionRepo.updateState(sessionId, state);
 
+      const conversational = await this.aiClient.convertQuestion(item.question);
+
+      this._generateAndEnqueue(sessionId, { ...state }).catch((err) =>
+        console.warn("[prefetch] first question failed:", err.message)
+      );
+
       return {
-        done:     false,
-        question: followUpText,
-        phase:    state.phase,
-        isFollowUp: true,
+        done: false,
+        question: conversational,
+        phase: state.phase,
       };
     }
 
-    /* ──────────────────────────────────────────────────────────────────────
-       PATH A2  →  "submit"
-       Evaluate, transition, dequeue next.
-    ────────────────────────────────────────────────────────────────────── */
+    /* =====================================================
+       CASE 1: FOLLOW-UP LOGIC
+    ===================================================== */
+    const { decision, followUpText } =
+      await this.aiClient.analyzeWithConversationalLLM({
+        question: turn.question,
+        answer: trimmedAnswer,
+      });
 
-    // ── Evaluate ──────────────────────────────────────────────────────────
-    const turns      = await this.turnRepo.findBySessionId(sessionId);
-    const turnIndex  = Math.max(0, turns.length - 1);
+     /* =====================================================
+       CASE 1: CLARIFICATION REQUEST (NO EVALUATION)
+    ===================================================== */
+    if (decision === "clarification_request") {
+      const followUpTurn = await this.turnRepo.create({
+        sessionId,
+        question: followUpText,
+        idealAnswer: turn.idealAnswer,
+        topic: turn.topic || state.currentTopic,
+        phase: state.phase,
+        depthLevel: state.depthLevel,
+        isFollowUp: true,
+      });
+
+      state.currentTurnId = followUpTurn.id;
+      state.lastAction = "clarification_request";
+
+      await this.sessionRepo.updateState(sessionId, state);
+
+      return {
+        done: false,
+        question: followUpText,
+        isFollowUp: true,
+        phase: state.phase,
+        skipEvaluation: true,
+      };
+    }
+
+    /* =====================================================
+       CASE 2: FOLLOW-UP LOGIC (PARTIAL ANSWERS)
+    ===================================================== */
+    if (decision === "further_explanation" && followUps % 3 === 0) {
+      this.followUps += 1;
+
+      const followUpTurn = await this.turnRepo.create({
+        sessionId,
+        question: followUpText,
+        idealAnswer: turn.idealAnswer,
+        topic: turn.topic || state.currentTopic,
+        phase: state.phase,
+        depthLevel: state.depthLevel,
+        isFollowUp: true,
+      });
+
+      state.currentTurnId = followUpTurn.id;
+      state.lastAction = "follow_up";
+
+      await this.sessionRepo.updateState(sessionId, state);
+
+      return {
+        done: false,
+        question: followUpText,
+        isFollowUp: true,
+        phase: state.phase,
+        skipEvaluation: true,
+      };
+    }
+
+    /* =====================================================
+       CASE 2: EVALUATION
+    ===================================================== */
+    
+    const turns = await this.turnRepo.findBySessionId(sessionId);
 
     const evaluation = await this.aiClient.evaluateAnswer({
       interview_id: sessionId,
-      question_id:  turn.id,
-      domain:       turn.topic || state.currentTopic || "technical",
-      question:     turn.question,
-      answer:       candidateAnswer,
-      ideal_answer: turn.idealAnswer || "",
-      turn_index:   turnIndex,
+      question_id: turn.id,
+      domain: turn.topic || state.currentTopic,
+      question: turn.question,
+      answer: trimmedAnswer,
+      ideal_answer: turn.idealAnswer,
+      turn_index: Math.max(0, turns.length - 1),
     });
-    console.log("question id :", turn.id);
-    console.log("question :", turn.question);
-    console.log("candidate answer ", candidateAnswer);
-    console.log("ideal answer ", turn.idealAnswer);
-    
-    console.log("Evaluation from AI client:", evaluation);
 
-    // ── Persist evaluation ────────────────────────────────────────────────
     await this.evalRepo.appendQuestion(sessionId, {
-      questionId:       turn.id,
-      question:         turn.question,
-      idealAnswer:      turn.idealAnswer,
-      candidateAnswer,
+      questionId: turn.id,
+      question: turn.question,
+      idealAnswer: turn.idealAnswer,
+      candidateAnswer: trimmedAnswer,
       response_quality: evaluation.response_quality,
-      question_score:   evaluation.question_score,
-      dimensions:       evaluation.delta  || {},
-      notes:            evaluation.notes  || [],
-      feedback:         evaluation.feedback || "",
-      topic:            turn.topic,
-      phase:            turn.phase,
-      depthLevel:       turn.depthLevel,
-      timestamp:        new Date().toISOString(),
+      question_score: evaluation.question_score,
+      dimensions: evaluation.delta || {},
+      notes: evaluation.notes || [],
+      feedback: evaluation.feedback || "",
+      topic: turn.topic,
+      phase: turn.phase,
+      depthLevel: turn.depthLevel,
+      timestamp: new Date().toISOString(),
     });
 
-    // ── Transition ───────────────────────────────────────────────────────
-    state.lastResponseQuality = evaluation.response_quality || "ok";
-
-    const turnsInPhase = turns.filter((t) => t.phase === state.phase).length;
+    state.lastResponseQuality = evaluation.response_quality;
 
     const { updatedState } = this.transitionEngine.apply({
       state,
-      evaluation:         { quality: state.lastResponseQuality },
-      totalTurnsInPhase:  turnsInPhase,
-      availableTopics:    session.topicsListed || [],
+      evaluation: { quality: state.lastResponseQuality },
+      totalTurnsInPhase: turns.length,
+      availableTopics: session.topicsListed || [],
+      totalTurnsOverall: session.turnsCount || 0,  
     });
 
-    // Safety: preserve topic if transition cleared it
-    if (!updatedState.currentTopic && state.currentTopic) {
-      updatedState.currentTopic = state.currentTopic;
-    }
-
     await this.sessionRepo.updateState(sessionId, updatedState);
-
-    // ── Close phase? ──────────────────────────────────────────────────────
+  
+    /* =====================================================
+       CASE 3: INTERVIEW COMPLETE
+    ===================================================== */
     if (updatedState.phase === "close") {
-      console.log("Interview moving to close phase");
       const report = await this.generateFinalReport(sessionId);
+
       await this.sessionRepo.endSession(sessionId);
       this.queueService.destroy(sessionId);
 
       return {
-        done:    true,
+        done: true,
         report,
-        message: "Thank you for participating in this interview!",
       };
     }
 
-    // ── Dequeue next question ─────────────────────────────────────────────
-    const nextItem = this.queueService.dequeue(sessionId);
-    let   nextQuestion;
+    /* =====================================================
+       CASE 4: NEXT QUESTION
+    ===================================================== */
+    let nextItem = this.queueService.dequeue(sessionId);
+
+    let nextQuestion;
 
     if (nextItem) {
-      // We have a pre-generated question ready — fast path
-      console.log(`[Queue] Dequeued next question (source=${nextItem.source})`);
-
       const nextTurn = await this.turnRepo.create({
         sessionId,
-        question:    nextItem.question,
+        question: nextItem.question,
         idealAnswer: nextItem.idealAnswer,
-        topic:       nextItem.topic || updatedState.currentTopic,
-        phase:       updatedState.phase,
-        depthLevel:  updatedState.depthLevel,
+        topic: nextItem.topic || updatedState.currentTopic,
+        phase: updatedState.phase,
+        depthLevel: updatedState.depthLevel,
       });
 
+      await this.sessionRepo.incrementTurns(sessionId);
+
       updatedState.currentTurnId = nextTurn.id;
-      updatedState.lastAction    = "asked_question";
+      updatedState.lastAction = "asked_question";
+
       await this.sessionRepo.updateState(sessionId, updatedState);
 
       nextQuestion = await this.aiClient.convertQuestion(nextItem.question);
     } else {
-      // Both queues empty — generate on the fly (should be rare)
-      console.warn("[Queue] Both queues empty, generating on-the-fly");
-      const result = await this.generateNextQuestion({ sessionId, state: updatedState });
-      nextQuestion  = result.question;
+      const result = await this.generateNextQuestion({
+        sessionId,
+        state: updatedState,
+      });
+
+      nextQuestion = result.question;
+
       await this.sessionRepo.updateState(sessionId, result.updatedState);
-      updatedState.currentTurnId = result.updatedState.currentTurnId;
     }
 
-    // ── Pre-fetch: enqueue the question AFTER next so queue stays warm ────
-    this._generateAndEnqueue(sessionId, updatedState).catch((err) =>
-      console.warn("[prefetch] Failed:", err.message)
+    /* =====================================================
+       PREFETCH NEXT
+    ===================================================== */
+    this._generateAndEnqueue(sessionId, { ...updatedState }).catch((err) =>
+      console.warn("[prefetch] failed:", err.message)
     );
 
+    /* =====================================================
+       RESPONSE
+    ===================================================== */
     return {
-      done:     false,
+      done: false,
       question: nextQuestion,
-      phase:    updatedState.phase,
+      phase: updatedState.phase,
     };
+
+  } catch (err) {
+    console.error(`[submitAnswer] error:`, err.message);
+
+    if (err.message.includes("not found")) {
+      throw new Error("Interview session not found");
+    }
+
+    if (err.message.includes("No active turn")) {
+      throw new Error("No active question available");
+    }
+
+    throw err;
+  }
+}
+  /* =====================================================
+     GENERATE QUESTION FALLBACK
+  ===================================================== */
+  async generateNextQuestion({ sessionId, state }) {
+    const topic = state.currentTopic || "general";
+    const context = await this.aiClient
+      .generateContext(topic)
+      .catch(() => topic);
+
+    const qna = await this.aiClient.generateQuestion({
+      context,
+      difficulty: this._getDifficultyString(state.depthLevel),
+    });
+
+    const conversational = await this.aiClient.convertQuestion(qna.question);
+
+    const newTurn = await this.turnRepo.create({
+      sessionId,
+      question: qna.question,
+      idealAnswer: qna.ideal_answer,
+      topic: state.currentTopic,
+      phase: state.phase,
+      depthLevel: state.depthLevel,
+    });
+    await this.sessionRepo.incrementTurns(sessionId);
+
+    console.log(`Generated new question: ${qna.question} \n Answer: ${qna.ideal_answer}`);
+
+    state.currentTurnId = newTurn.id;
+    state.lastAction = "asked_question";
+
+    return { question: conversational, updatedState: state };
   }
 
-  /* =====================================================
+    /* =====================================================
      GENERATE NEXT QUESTION  (unchanged API, used as fallback)
   ===================================================== */
   async generateNextQuestion({ sessionId, state }) {
@@ -467,44 +548,40 @@ export default class FlowService {
     };
   }
 
-  /* =====================================================
-     PRIVATE HELPERS
-  ===================================================== */
 
-  /**
-   * Generate one question and push it onto the questionQueue.
-   * Fire-and-forget safe: never throws to the caller.
-   */
+  /* =====================================================
+     PREFETCH QUEUE WORKER
+  ===================================================== */
   async _generateAndEnqueue(sessionId, state) {
     try {
-      const topic      = state.currentTopic || "general";
-      const difficulty = this._getDifficultyString(state.depthLevel);
+      const topic = state.currentTopic || "general";
+      const context = await this.aiClient
+        .generateContext(topic)
+        .catch(() => topic);
 
-      const context = await this.aiClient.generateContext(topic).catch(() => topic);
-
-      const qna = await this.aiClient.generateQuestion({ context, difficulty });
-      if (!qna?.question) return;
-
-      this.queueService.enqueue(sessionId, {
-        question:    qna.question,
-        idealAnswer: qna.ideal_answer || "",
-        topic,
-        phase:       state.phase,
+      const qna = await this.aiClient.generateQuestion({
+        context,
+        difficulty: this._getDifficultyString(state.depthLevel),
       });
 
-      console.log(
-        `[prefetch] Enqueued AI question. ` +
-        `Queue lengths: ${JSON.stringify(this.queueService.lengths(sessionId))}`
-      );
+      if (!qna?.question) return;
+      await this.sessionRepo.incrementTurns(sessionId);
+
+      console.log(`[Prefetch] Generated question for session ${sessionId}: ${qna.question} \n Ideal answer: ${qna.ideal_answer}`); 
+      this.queueService.enqueue(sessionId, {
+        question: qna.question,
+        idealAnswer: qna.ideal_answer || "",
+        topic,
+        phase: state.phase,
+      });
     } catch (err) {
-      console.error("[_generateAndEnqueue] error:", err.message);
+      console.error("[_generateAndEnqueue]", err.message);
     }
   }
 
   _getDifficultyString(depthLevel) {
     if (depthLevel === 1) return "easy";
     if (depthLevel === 2) return "medium";
-    if (depthLevel >= 3)  return "hard";
-    return "easy";
+    return "hard";
   }
 }

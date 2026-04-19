@@ -164,4 +164,15 @@ export default class InterviewSessionRepository {
     if (!jobCache) return null;
     return JSON.parse(jobCache);
   } 
+    async incrementTurns(sessionId) {
+  const key = `session:${sessionId}`;
+
+  const raw = await redisClient.get(key);
+  if (!raw) return null;
+
+  const session = JSON.parse(raw);
+  session.turnsCount = (session.turnsCount || 0) + 1;
+
+  await redisClient.set(key, JSON.stringify(session), "EX", 86400);
+}
 }

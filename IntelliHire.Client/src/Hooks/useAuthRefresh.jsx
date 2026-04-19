@@ -4,7 +4,7 @@ import { refreshAccessToken } from "../api/authFetch";
 import { saveAuthState } from "../features/auth/persistAuth";
 import { setAccessToken } from "../features/auth/authSlice";
 
-const TOKEN_REFRESH_INTERVAL_MS = 2 * 60 * 1000; // 14 minutes
+const TOKEN_REFRESH_INTERVAL_MS = 13 * 60 * 1000; // 14 minutes
 
 export default function useAuthRefresh(accessToken) {
     const dispatch = useDispatch();
