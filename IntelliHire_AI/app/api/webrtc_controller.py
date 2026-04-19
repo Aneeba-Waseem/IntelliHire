@@ -1,5 +1,3 @@
-
-
 import json
 import asyncio
 import uuid
@@ -263,7 +261,7 @@ class QuestionDeepgramSession:
         
         self.collector = TranscriptCollector(
             max_answer_time_sec=240,        # 4 min in total
-            silence_timeout_ms=15000,      # silence timeout - 15 sec - 30 sec total
+            silence_timeout_ms=10000,      # silence timeout - 15 sec - 30 sec total
             on_complete=None,
             on_interim=on_interim_transcript or (
                 lambda text: logger.debug(f"🟡 [Q{self.question_num}] Interim: {text[:50]}...")

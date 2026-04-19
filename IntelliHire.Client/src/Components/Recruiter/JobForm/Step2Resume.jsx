@@ -242,7 +242,7 @@ export default function Step2Resume({ handleNext, handleBack }) {
       )}
       {profiles.map(p => {
         const isChecked =
-          selectedIds.has(p.resume_id) || p.matching?.is_shortlisted;
+          selectedIds.has(p.resume_id);
 
         return (
           <div

@@ -57,13 +57,13 @@ class TransitionEngine {
   handlePhaseTransitions(state, totalTurnsInPhase) {
     const originalTopic = state.currentTopic;
 
-    if (state.phase === "rapport" && totalTurnsInPhase >= 2) {
+    if (state.phase === "rapport" && totalTurnsInPhase >= 1) {
       state.phase      = "baseline";
       state.depthLevel = 1;
     } else if (state.phase === "baseline" && state.lastResponseQuality === "ok") {
       state.phase      = "depth";
       state.depthLevel = 2;
-    } else if (state.phase === "depth" && state.stuckCount >= 2) {
+    } else if (state.phase === "depth" && state.stuckCount >= 1) {
       state.depthLevel = Math.max(1, state.depthLevel - 1);
     }
 
@@ -83,7 +83,7 @@ class TransitionEngine {
   }
 
   handleTopicSwitch(state, availableTopics = []) {
-    const maxDepth = 4;
+    const maxDepth = 3;
     if (state.depthLevel < maxDepth) return;
 
     state.topicsCovered = state.topicsCovered || [];
