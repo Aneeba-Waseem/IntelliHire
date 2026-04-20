@@ -15,7 +15,7 @@ const MeetPreJoin = () => {
     useEffect(() => {
         const getMedia = async () => {
             try {
-                if (cameraOn || micOn) {
+                if (cameraOn && micOn) {
                     const mediaStream = await navigator.mediaDevices.getUserMedia({
                         video: cameraOn,
                         audio: micOn,
@@ -98,8 +98,8 @@ const MeetPreJoin = () => {
                     {micOn ? <FiMic /> : <FiMicOff />}
                 </button>
 
-                {!(cameraOn || micOn) && (
-  <div className="text-sm text-red-500 mt-4 text-center">
+                {!(cameraOn && micOn) && (
+  <div className="text-md text-red-500 mt-4 text-center">
     Turn on camera or microphone to enable joining
   </div>
 )}

@@ -631,10 +631,11 @@ async _processAnswerInBackground({
       question_id: turn.id,
       domain: turn.topic,
       question: turn.question,
-      answer,
+      answer: answer,
       ideal_answer: turn.idealAnswer,
       turn_index: turns.length - 1,
     });
+    console.log(`Evaluation result for turn ${turn.id}:`, evaluation);
 
     await this.evalRepo.appendQuestion(sessionId, {
       questionId: turn.id,
@@ -650,6 +651,7 @@ async _processAnswerInBackground({
     });
 
     state.lastResponseQuality = evaluation.response_quality;
+    console.log(`Updated state with response quality: ${state.lastResponseQuality}`);
 
     /* =========================================
        4. TRANSITION

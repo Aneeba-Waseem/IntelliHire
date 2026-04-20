@@ -9,6 +9,7 @@
 class TransitionEngine {
   apply({ state, evaluation, totalTurnsInPhase, availableTopics, totalTurnsOverall }) {
     if (evaluation?.quality) {
+      console.log(`Received evaluation: ${evaluation}`);
       state.lastResponseQuality = evaluation.quality;
       state.stuckCount = evaluation.quality === "weak" ? state.stuckCount + 1 : 0;
     }
@@ -60,7 +61,7 @@ class TransitionEngine {
     if (state.phase === "rapport" && totalTurnsInPhase >= 1) {
       state.phase      = "baseline";
       state.depthLevel = 1;
-    } else if (state.phase === "baseline" && state.lastResponseQuality === "average") {
+    } else if (state.phase === "baseline" && state.lastResponseQuality === "ok") {
       state.phase      = "depth";
       state.depthLevel = 2;
     } else if (state.phase === "depth" && state.stuckCount >= 1) {
@@ -75,7 +76,7 @@ class TransitionEngine {
   handleDepthAdjustments(state) {
     if (state.phase !== "depth") return;
 
-    if (state.lastResponseQuality === "average") {
+    if (state.lastResponseQuality === "ok") {
       state.depthLevel += 1;
     } else if (state.lastResponseQuality === "weak") {
       state.depthLevel = Math.max(1, state.depthLevel - 1);
@@ -107,7 +108,7 @@ class TransitionEngine {
       case "baseline":  return "assess_fundamentals";
       case "depth":
         if (state.stuckCount >= 2)                        return "simplify_or_hint";
-        if (state.lastResponseQuality === "average")       return "probe_deeper";
+        if (state.lastResponseQuality === "ok")       return "probe_deeper";
         return "continue_depth";
       case "close":     return "wrap_up";
       default:          return "continue";

@@ -53,7 +53,7 @@ class EvaluatorRunner:
                 if question_score >= 4:
                     quality_label = "strong"
                 elif question_score >= 2.5:
-                    quality_label = "average"
+                    quality_label = "ok"
                 else:
                     quality_label = "weak"
 

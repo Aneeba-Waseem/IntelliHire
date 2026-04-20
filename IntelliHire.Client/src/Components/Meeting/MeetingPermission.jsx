@@ -11,7 +11,7 @@ const MeetingPermissions = () => {
   }, []);
  
   return (
-    <div className="bg-[#D1DED3] w-full min-h-screen flex flex-row overflow-x-hidden overflow-y-hidden">
+    <div className="bg-[#D1DED3] w-full min-h-[80vh] flex flex-row overflow-x-hidden overflow-y-hidden">
 
       {/* Left Sidebar (10%) */}
       <div className="w-[10%] min-w-[80px] flex items-around justify-center">
@@ -20,7 +20,7 @@ const MeetingPermissions = () => {
 
       {/* Right Side (90%) */}
       <Motion.div
-        className="w-[90%] min-w-[80px] flex items-around justify-center"
+        className="w-[90%] min-w-[70px] min-h-[70vh] flex items-around justify-center"
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
@@ -28,7 +28,7 @@ const MeetingPermissions = () => {
 
         {/* Inner container */}
         <Motion.div
-          className="w-full flex items-around justify-center p-5 rounded-lg"
+          className="w-full min-h-[60vh] flex items-around justify-center p-3 rounded-lg"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}

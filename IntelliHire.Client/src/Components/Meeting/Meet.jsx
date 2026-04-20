@@ -73,6 +73,7 @@ export default function Meet() {
   const analyserRef = useRef(null);
   const silenceTimeoutRef = useRef(null);
   const vadCheckIntervalRef = useRef(null);
+  const isUserSpeakingRef = useRef(false); // ⭐ Track current state outside closure
 
   // ---------- WEB AUDIO API VAD SETUP ----------
   const setupVAD = () => {
@@ -117,8 +118,9 @@ export default function Meet() {
       const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
 
       if (average > SPEECH_THRESHOLD) {
-        if (!isUserSpeaking) {
+        if (!isUserSpeakingRef.current) {
           console.log("🎤 User speech detected");
+          isUserSpeakingRef.current = true;
           setIsUserSpeaking(true);
         }
 
@@ -127,8 +129,9 @@ export default function Meet() {
         if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
 
         silenceTimeoutRef.current = setTimeout(() => {
-          if (isUserSpeaking) {
+          if (isUserSpeakingRef.current) {
             console.log("🛑 User silence detected");
+            isUserSpeakingRef.current = false;
             setIsUserSpeaking(false);
           }
         }, SILENCE_DURATION);
@@ -349,6 +352,7 @@ export default function Meet() {
 
       setQuestion(data.question);
 
+      // ⭐ Send INITIAL question for TTS
       sendQuestionViaWebSocket(data.question);
 
       startListening();
@@ -373,12 +377,16 @@ export default function Meet() {
     }
   };
 
-  // ⭐ Start listening for answer
+  // ⭐ Start listening for answer (NO TTS sending here)
   const startListening = () => {
     console.log("🎤 Starting to listen for answer...");
     setListeningState("listening");
     setCurrentAnswer("");
     setAnswerFeedback("");
+    const track = webrtcStore.stream?.getAudioTracks()[0];
+console.log("Track enabled:", track?.enabled);
+console.log("Track state:", track?.readyState);
+console.log("Track settings:", track?.getSettings());
     listeningStartTimeRef.current = Date.now();
 
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -425,10 +433,16 @@ export default function Meet() {
             setDisplayedQuestion("");
             setListeningState("idle");
 
+            // ⭐ Send NEW question for TTS (only here!)
             sendQuestionViaWebSocket(data.text);
 
-            startListening();
-            sendAuthViaWebSocket(getToken());
+            // ⭐ Wait for TTS to start, then listen
+            setTimeout(() => {
+              startListening();
+              sendAuthViaWebSocket(getToken());
+            }, 100);
+
+            return; // ⭐ Exit handler
           }
 
           // Interview complete
@@ -545,11 +559,22 @@ Message: ${data.message}
     const track = stream?.getVideoTracks()[0];
     if (!track) return;
 
-    track.enabled = !track.enabled;
-    setIsVideoOff(!track.enabled);
-    console.log(track.enabled ? "📹 Video On" : "📹 Video Off");
-
     if (track.enabled) {
+      // Turning OFF: just disable track
+      track.enabled = false;
+      setIsVideoOff(true);
+      console.log("📹 Video Off");
+    } else {
+      // Turning ON: enable track + ensure srcObject is set + start warning
+      track.enabled = true;
+
+      // Force srcObject re-binding
+      if (localVideoRef.current && stream) {
+        localVideoRef.current.srcObject = stream;
+      }
+
+      setIsVideoOff(false);
+      console.log("📹 Video On");
       startCameraWarning();
     }
   };
@@ -572,7 +597,7 @@ Message: ${data.message}
   };
 
   return (
-    <div className="min-h-screen bg-[#D1DED3] flex flex-col items-center justify-center p-6 relative">
+    <div className=" bg-[#D1DED3] flex flex-col items-center justify-center relative min-h-[90vh]">
       {/* CAMERA WARNING BOX */}
       {showCameraWarning && (
         <div className="fixed top-4 right-4 bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4 max-w-sm shadow-lg z-50">
@@ -596,7 +621,7 @@ Message: ${data.message}
       )}
 
       {/* MAIN UNIFIED CONTAINER */}
-      <div className="w-full max-w-5xl bg-[#A9C5C0] rounded-3xl p-12 shadow-lg flex flex-col justify-between gap-12 min-h-[600px]">
+      <div className="w-full max-w-7xl bg-[#A9C5C0] rounded-3xl p-12 shadow-lg flex flex-col justify-between gap-5 min-h-[600px]">
 
         {/* TOP: AI AVATAR - Centered */}
         <div className="flex justify-center items-center">
@@ -610,7 +635,7 @@ Message: ${data.message}
             )}
 
             {/* Main AI circle */}
-            <div className={`relative w-48 h-48 bg-white rounded-full flex items-center justify-center transition-all duration-300 shadow-lg font-bold text-5xl text-[#29445D] ${isAISpeaking ? "ring-4 ring-gray-400 ring-opacity-80 scale-110" : ""
+            <div className={`relative mt-20 w-48 h-48 bg-white rounded-full flex items-center justify-center transition-all duration-300 shadow-lg font-bold text-5xl text-[#29445D] ${isAISpeaking ? "ring-4 ring-gray-400 ring-opacity-80 scale-110" : ""
               }`}>
               AI
             </div>
@@ -618,12 +643,12 @@ Message: ${data.message}
         </div>
 
         {/* BOTTOM: Two Columns - Subtitles Left + Candidate Right */}
-        <div className="flex gap-8 items-end">
+        <div className="flex gap-4 items-end">
 
           {/* LEFT: SUBTITLES (AI Question/Live Captions) */}
           <div className="flex-1">
             <div className="text-lg font-bold text-[#29445D] leading-relaxed">
-              {displayedQuestion || "Listening for question..."}
+              {displayedQuestion || ""}
               {displayedQuestion && displayedQuestion.length < question.length && (
                 <span className="animate-pulse ml-1">▌</span>
               )}
@@ -653,48 +678,51 @@ Message: ${data.message}
               </div>
             </div>
 
-            {/* Recorder/Mic Indicator Icon */}
+            {/* Animated Mic Bars - Only when user speaks */}
             {isUserSpeaking && (
-              <div className="mb-2 animate-bounce">
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 48 48"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="drop-shadow-lg"
-                >
-                  {/* Outer circle */}
-                  <circle cx="24" cy="24" r="22" fill="#A9D5D9" stroke="#45767C" strokeWidth="2" />
+              <div className="mb-2 flex items-end gap-1.5">
+                <style>{`
+                  @keyframes bars {
+                    0%, 100% {
+                      height: 12px;
+                      opacity: 0.6;
+                    }
+                    50% {
+                      height: 24px;
+                      opacity: 1;
+                    }
+                  }
+                `}</style>
 
-                  {/* Microphone icon */}
-                  <circle cx="24" cy="18" r="4" fill="#45767C" />
-                  <path
-                    d="M24 22V28C26.2091 28 28 26.2091 28 24V22M20 22V24C20 26.2091 21.7909 28 24 28V28M24 28V32"
-                    stroke="#45767C"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                {/* Bar 1 */}
+                <div className="w-1.5 bg-[#45767C] rounded-full transition-all" style={{
+                  animation: "bars 0.6s ease-in-out infinite",
+                  animationDelay: "0s"
+                }}></div>
 
-                  {/* Sound waves */}
-                  <path
-                    d="M18 24C18 24 17 22 17 20"
-                    stroke="#45767C"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    className="animate-pulse"
-                    style={{ opacity: 0.7 }}
-                  />
-                  <path
-                    d="M30 24C30 24 31 22 31 20"
-                    stroke="#45767C"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    className="animate-pulse"
-                    style={{ opacity: 0.7, animationDelay: "0.2s" }}
-                  />
-                </svg>
+                {/* Bar 2 */}
+                <div className="w-1.5 bg-[#45767C] rounded-full transition-all" style={{
+                  animation: "bars 0.6s ease-in-out infinite",
+                  animationDelay: "0.1s"
+                }}></div>
+
+                {/* Bar 3 */}
+                <div className="w-1.5 bg-[#45767C] rounded-full transition-all" style={{
+                  animation: "bars 0.6s ease-in-out infinite",
+                  animationDelay: "0.2s"
+                }}></div>
+
+                {/* Bar 4 */}
+                <div className="w-1.5 bg-[#45767C] rounded-full transition-all" style={{
+                  animation: "bars 0.6s ease-in-out infinite",
+                  animationDelay: "0.3s"
+                }}></div>
+
+                {/* Bar 5 */}
+                <div className="w-1.5 bg-[#45767C] rounded-full transition-all" style={{
+                  animation: "bars 0.6s ease-in-out infinite",
+                  animationDelay: "0.4s"
+                }}></div>
               </div>
             )}
           </div>
@@ -715,9 +743,9 @@ Message: ${data.message}
 
           {/* Video Button */}
           <button
-            onClick={toggleVideo}
-            className="p-4 bg-white rounded-full hover:bg-gray-100 transition shadow-md border border-gray-200"
-            title={isVideoOff ? "Turn on video" : "Turn off video"}
+            disabled={true}
+            className="p-4 bg-white rounded-full hover:bg-gray-100 transition shadow-md border border-gray-200 disabled:opacity-50"
+            title="Turning video off is not allowed"
           >
             {isVideoOff ? <VideoOff size={24} color="#d32f2f" /> : <Video size={24} color="#4caf50" />}
           </button>
@@ -743,4 +771,3 @@ Message: ${data.message}
     </div>
   );
 }
-

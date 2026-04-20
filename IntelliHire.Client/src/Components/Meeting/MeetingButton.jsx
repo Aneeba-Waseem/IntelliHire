@@ -347,16 +347,12 @@ stream.getVideoTracks().forEach(track => {
   return (
   <div className="flex flex-col items-center">
     
-    {!stream && (
-      <div className="text-sm text-red-600 mt-2 text-center">
-        Please enable camera or microphone to continue
-      </div>
-    )}
+    
 
     <button
       onClick={joinMeeting}
       disabled={loading || !stream}
-      className="rounded-3xl w-[180px] py-5 font-semibold mt-20
+      className="rounded-3xl w-[180px] py-5 font-semibold
       text-[#F2FAF5]
       bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
       hover:opacity-90 disabled:opacity-50"
