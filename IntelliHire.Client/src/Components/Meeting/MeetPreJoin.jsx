@@ -20,7 +20,7 @@ const MeetPreJoin = () => {
                         video: cameraOn,
                         audio: micOn,
                     });
-                    
+
                     setStream(mediaStream);
                     if (videoRef.current) {
                         videoRef.current.srcObject = mediaStream;
@@ -98,7 +98,17 @@ const MeetPreJoin = () => {
                     {micOn ? <FiMic /> : <FiMicOff />}
                 </button>
 
-                <MeetingButton />
+                {!(cameraOn || micOn) && (
+  <div className="text-sm text-red-500 mt-4 text-center">
+    Turn on camera or microphone to enable joining
+  </div>
+)}
+
+<MeetingButton
+  stream={stream}
+  cameraOn={cameraOn}
+  micOn={micOn}
+/>
             </div>
         </div>
     );

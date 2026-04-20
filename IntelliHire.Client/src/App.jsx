@@ -16,6 +16,7 @@ import { SessionProvider } from "./Components/Meeting/sessionContext";
 import VerificationNotice from "./Components/Auth/VerificationNotice";
 import ScheduledInterviews from "./Components/Recruiter/Scheduled/ScheduledInterview";
 import { ModalProvider } from "./Components/Recruiter/JobForm/ModalContext";
+import DetailedReportPage from "./Components/Report/Detailed/DetailedReportPage";
 // import WebSocketTest from "./Components/Meeting/WebSocketConnectivityTest"; 
 
   
@@ -92,7 +93,8 @@ function App() {
           {/* <Route path="/WebTest" element={<WebSocketTest/>} /> */}
           <Route path="/report" element={<ReportPage />} />
           {/* <Route path="/login" element={<CandidateLogin />} /> */}
-
+          <Route path="/report/detailed" element={<DetailedReportPage />} />
+          
         </Routes>
         {/* Conditionally render Footer */}
         {!auth && !Meeting && !userVerification && <Footer />}

@@ -84,10 +84,10 @@ def is_valid_token(token: str) -> bool:
     return token and len(token) > 10
 
 
-async def run_tts(text: str, tts_queue: asyncio.Queue):
+async def run_tts(text: str, tts_queue: asyncio.Queue, websocket=None):
     try:
         logger.info(f"🎙️ [TTS] Starting TTS: {text[:50]}...")
-        async for pcm in deepgram_pcm_stream(text):
+        async for pcm in deepgram_pcm_stream(text, websocket=websocket):
             logger.debug(f"[TTS] PCM chunk: {len(pcm)} bytes")
             try:
                 await asyncio.wait_for(tts_queue.put(pcm), timeout=2.0)
@@ -640,7 +640,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
                         logger.info(f"🗣️ [Q{question_num}] Speaking question...")
                         session_ctx.create_task(
-                            run_tts(question_text, sess.tts_queue),
+                            run_tts(question_text, sess.tts_queue, websocket=websocket),
                             name=f"tts-q{question_num}",
                         )
 

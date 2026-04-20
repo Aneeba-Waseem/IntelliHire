@@ -2,6 +2,8 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./src/.env" });
 
+
+import puppeteer from "puppeteer";
 import express from "express";
 import cors from "cors";
 import { createServer } from "http";
@@ -84,6 +86,55 @@ const io = new Server(server, {
 });
 
 export { io };
+
+// --------------------
+// PDF Generation Route (Puppeteer)
+// --------------------
+app.post("/generate-pdf", async (req, res) => {
+  try {
+    const { report } = req.body;
+
+    const browser = await puppeteer.launch({
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    const page = await browser.newPage();
+
+    // Open your frontend print route
+    await page.goto("http://localhost:5173/print-report", {
+      waitUntil: "networkidle0",
+    });
+
+    // Inject report data into window
+    await page.evaluate((reportData) => {
+      window.__REPORT_DATA__ = reportData;
+    }, report);
+
+    // Wait until your React page renders
+    await page.waitForSelector("#pdf-ready", {
+      timeout: 10000,
+    });
+
+    // Generate PDF
+    const pdf = await page.pdf({
+      format: "A4",
+      printBackground: true,
+    });
+
+    await browser.close();
+
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=report.pdf",
+    });
+
+    res.send(pdf);
+  } catch (err) {
+    console.error("PDF generation error:", err);
+    res.status(500).send("Failed to generate PDF");
+  }
+});
 
 // --------------------
 // Boot Server

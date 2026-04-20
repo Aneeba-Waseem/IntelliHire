@@ -79,7 +79,7 @@ const CompletedInterviewCard = ({ interview }) => {
             <div className="flex gap-3 mt-3">
 
                 {/* View Report */}
-                <button
+                {/* <button
                     onClick={() => setSelectedReport({
                         candidate: "NOOR FATIMA",
                         duration: "30 MINS",
@@ -111,8 +111,45 @@ const CompletedInterviewCard = ({ interview }) => {
                     className="flex-1 bg-[#29445D] text-white py-2 rounded-lg hover:bg-[#1f3447] transition"
                 >
                     View Report
-                </button>
+                </button> */}
 
+                <button
+                    onClick={() =>
+                        navigate("/report/detailed", {
+                            state: {
+                                candidate: "NOOR FATIMA",
+                                duration: "30 MINS",
+                                role: "AI ENGINEER",
+                                score: 4,
+                                summary: [
+                                    { domain: "Web Development", score: 4, notes: "All basics clear" }
+                                ],
+                                strengths: ["Web Development"],
+                                weaknesses: ["Web Development"],
+                                sections: [
+                                    {
+                                        title: "Cloud Computing",
+                                        score: 4.5,
+                                        questions: [
+                                            {
+                                                question: "How would you automate infrastructure provisioning?",
+                                                feedback: "Correctly identified Terraform...",
+                                                score: 4.5
+                                            }
+                                        ]
+                                    }
+                                ],
+                                recommendation: {
+                                    title: "HIRE THE CANDIDATE",
+                                    description: "Correctly identified Terraform..."
+                                }
+                            }
+                        })
+                    }
+                    className="flex-1 bg-[#29445D] text-white py-2 rounded-lg"
+                >
+                    View Report
+                </button>
                 {/* View Details */}
                 <button
                     onClick={() => navigate(`/job/${interview.jobDescriptionId}`)}

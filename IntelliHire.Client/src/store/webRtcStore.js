@@ -5,6 +5,6 @@ export const webrtcStore = {
   ws: null,
   stream: null,
   sessionId: null,
-  isMuted: false,
-  isVideoOff: false,
+  cameraOn: false,
+  micOn: false,
 };

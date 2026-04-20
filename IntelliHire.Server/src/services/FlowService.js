@@ -471,76 +471,16 @@ async submitAnswer({ sessionId, candidateAnswer }) {
 
   const turn = await this.turnRepo.findById(state.currentTurnId);
 
-  /* ===============================
-     1. GET NEXT QUESTION FAST
-  =============================== */
-  let nextItem = this.queueService.dequeue(sessionId);
-
-  if (!nextItem) {
-    this._generateAndEnqueue(sessionId, state); // async
-    nextItem = { question: "Give me a second..." };
-  }
-
-  /* ===============================
-     2. STORE NEXT TURN
-  =============================== */
-  const nextTurn = await this.turnRepo.create({
-    sessionId,
-    question: nextItem.question,
-    idealAnswer: nextItem.idealAnswer,
-    topic: nextItem.topic,
-    phase: state.phase,
-    depthLevel: state.depthLevel,
-  });
-
-  state.currentTurnId = nextTurn.id;
-  await this.sessionRepo.updateState(sessionId, state);
-
-  /* ===============================
-     3. FIRE BACKGROUND PROCESS
-  =============================== */
-  this._processAnswerInBackground({
-    sessionId,
-    turn,
-    answer: candidateAnswer,
-    state,
-    session,
-  });
-
-  /* ===============================
-     4. RETURN IMMEDIATELY
-  =============================== */
-  return {
-    done: false,
-    question: nextItem.question,
-    phase: state.phase,
-  };
-}
-
-// Background processing of answer (for next QA and evaluation)
-
-async _processAnswerInBackground({
-  sessionId,
-  turn,
-  answer,
-  state,
-  session,
-}) {
   try {
-    if (turn.isSystem) {
-  console.log("⏭ Skipping evaluation for system turn");
-
-  // Still prefetch next question
-  this._generateAndEnqueue(sessionId, state);
-  return;
-}
+    if (!turn.isSystem) {
+ 
     /* =========================================
        1. CONVERSATIONAL ANALYSIS
     ========================================= */
     const { decision, followUpText } =
       await this.aiClient.analyzeWithConversationalLLM({
         question: turn.question,
-        answer,
+          answer: candidateAnswer,
       });
 
     /* =========================================
@@ -596,6 +536,14 @@ async _processAnswerInBackground({
 
       await this.sessionRepo.updateState(sessionId, state);
 
+        this._processAnswerInBackground({
+    sessionId,
+    turn,
+    answer: candidateAnswer,
+    state,
+    session,
+  });
+
       return {
         done: false,
         question: followUpText,
@@ -604,7 +552,68 @@ async _processAnswerInBackground({
         skipEvaluation: true,
       };
     }
-        if (turn.isSystem) {
+  }
+}catch (err) {
+    console.error("[BG PROCESS ERROR]", err);
+  }
+  
+  /* ===============================
+     1. GET NEXT QUESTION FAST
+  =============================== */
+  let nextItem = this.queueService.dequeue(sessionId);
+
+  if (!nextItem) {
+    this._generateAndEnqueue(sessionId, state); // async
+    nextItem = { question: "Give me a second..." };
+  }
+
+  /* ===============================
+     2. STORE NEXT TURN
+  =============================== */
+  const nextTurn = await this.turnRepo.create({
+    sessionId,
+    question: nextItem.question,
+    idealAnswer: nextItem.idealAnswer,
+    topic: nextItem.topic,
+    phase: state.phase,
+    depthLevel: state.depthLevel,
+  });
+
+  state.currentTurnId = nextTurn.id;
+  await this.sessionRepo.updateState(sessionId, state);
+
+  /* ===============================
+     3. FIRE BACKGROUND PROCESS
+  =============================== */
+  this._processAnswerInBackground({
+    sessionId,
+    turn,
+    answer: candidateAnswer,
+    state,
+    session,
+  });
+
+  /* ===============================
+     4. RETURN IMMEDIATELY
+  =============================== */
+  return {
+    done: false,
+    question: nextItem.question,
+    phase: state.phase,
+  };
+}
+
+// Background processing of answer (for next QA and evaluation)
+
+async _processAnswerInBackground({
+  sessionId,
+  turn,
+  answer,
+  state,
+  session,
+}) {
+  try{
+  if (turn.isSystem) {
   console.log("⏭ Skipping evaluation for system turn");
 
   // Still prefetch next question

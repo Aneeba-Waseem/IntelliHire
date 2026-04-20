@@ -5,7 +5,7 @@ import { useSession } from "./sessionContext";
 import { v4 as uuidv4 } from "uuid";
 import { loadAuthState } from "../../features/auth/persistAuth";
 
-const MeetingButton = () => {
+const MeetingButton = ({ stream, cameraOn, micOn }) => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { setWebRtcSessionId } = useSession();
@@ -22,17 +22,25 @@ const MeetingButton = () => {
   const joinMeeting = async () => {
     setLoading(true);
     try {
+      if (!stream) {
+  console.error("❌ No stream from PreJoin");
+  return;
+}
+stream.getAudioTracks().forEach(track => {
+  track.enabled = micOn;
+});
+
+stream.getVideoTracks().forEach(track => {
+  track.enabled = cameraOn;
+});
       const token = getAuthHeaders();
 
       // ════════════════════════════════════════════
       // STEP 1: Get local media
       // ════════════════════════════════════════════
       console.log("[1] Requesting local media...");
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: true,
-      });
-      console.log("✅ [1] Media stream acquired");
+
+      console.log("✅ [1] Media stream acquired from preJoin component", stream, {micOn, cameraOn});
 
       // ════════════════════════════════════════════
       // STEP 2: Create peer connection
@@ -281,6 +289,8 @@ const MeetingButton = () => {
             webrtcStore.pc = pc;
             webrtcStore.stream = stream;
             webrtcStore.webRtcSessionId = sessionId;
+            webrtcStore.cameraOn = cameraOn;
+            webrtcStore.micOn = micOn;
 
             console.log("🎬 OFFER-ANSWER EXCHANGE COMPLETE 🎬");
             console.log(`🎬 Session ID: ${sessionId}`);
@@ -335,9 +345,17 @@ const MeetingButton = () => {
   };
 
   return (
+  <div className="flex flex-col items-center">
+    
+    {!stream && (
+      <div className="text-sm text-red-600 mt-2 text-center">
+        Please enable camera or microphone to continue
+      </div>
+    )}
+
     <button
       onClick={joinMeeting}
-      disabled={loading}
+      disabled={loading || !stream}
       className="rounded-3xl w-[180px] py-5 font-semibold mt-20
       text-[#F2FAF5]
       bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
@@ -345,7 +363,9 @@ const MeetingButton = () => {
     >
       {loading ? "Connecting..." : "Join Now"}
     </button>
-  );
+
+  </div>
+);
 };
 
 export default MeetingButton;
