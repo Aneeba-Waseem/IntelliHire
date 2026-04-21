@@ -28,6 +28,7 @@ import JobDescriptionDetails from "./Components/Recruiter/JobDescriptionDetails"
 import CompletedInterviews from "./Components/Recruiter/Completed/CompletedInterview";
 import CandidateProfile from "./Components/Recruiter/CandidateProfile";
 import ReportPage from "./Components/Report/Detailed/DetailedReportPage";
+import PrintReport from "./Components/Report/Detailed/PrintReport";
 // import CandidateLogin from "./Components/Auth/CandidateLogin";
 function App() {
   const accessToken = useSelector((state) => state.auth.accessToken);
@@ -43,6 +44,7 @@ function App() {
   // const MeetingPermissions = location.pathname === "/meetingPermissions";
   // const MeetSection = location.pathname === "/meetingSection";
   const userVerification = location.pathname === "/verify-notice"
+  const reportPage = location.pathname === "/print-report";
   return (
     <>
       <Toaster
@@ -74,7 +76,7 @@ function App() {
       <div>
         {/* Conditionally render Navbar */}
         {LandingNavBar && <Navbar />}
-        {!LandingNavBar && !userVerification && !auth && <TopBar />}
+        {!LandingNavBar && !userVerification && !auth && !reportPage && <TopBar />}
 
         <Routes>
           {/* Public Routes */}
@@ -94,10 +96,11 @@ function App() {
           <Route path="/report" element={<ReportPage />} />
           {/* <Route path="/login" element={<CandidateLogin />} /> */}
           <Route path="/report/detailed" element={<DetailedReportPage />} />
+          <Route path="/print-report" element={<PrintReport />} />
           
         </Routes>
         {/* Conditionally render Footer */}
-        {!auth && !Meeting && !userVerification && <Footer />}
+        {!auth && !Meeting && !userVerification && !reportPage && <Footer />}
       </div>
       </SessionProvider>
     </ModalProvider>

@@ -92,7 +92,7 @@ export { io };
 // --------------------
 app.post("/generate-pdf", async (req, res) => {
   try {
-    const { report } = req.body;
+    const { report, includeDetails } = req.body;
 
     const browser = await puppeteer.launch({
       headless: "new",
@@ -101,25 +101,38 @@ app.post("/generate-pdf", async (req, res) => {
 
     const page = await browser.newPage();
 
-    // Open your frontend print route
+    // Step 1: Open page FIRST
     await page.goto("http://localhost:5173/print-report", {
-      waitUntil: "networkidle0",
+      waitUntil: "domcontentloaded",
     });
 
-    // Inject report data into window
-    await page.evaluate((reportData) => {
-      window.__REPORT_DATA__ = reportData;
-    }, report);
+    // Step 2: Inject data BEFORE render
+    await page.evaluate((data, includeDetails) => {
+  localStorage.setItem("report", JSON.stringify(data));
+  localStorage.setItem("includeDetails", JSON.stringify(includeDetails));
+}, report, includeDetails);
 
-    // Wait until your React page renders
+    // Step 3: Reload so React picks data
+    await page.reload({ waitUntil: "networkidle0" });
+
+    // Step 4: Wait until UI is ready
     await page.waitForSelector("#pdf-ready", {
-      timeout: 10000,
+      timeout: 15000,
     });
 
-    // Generate PDF
+    // Step 5: Ensure correct CSS rendering
+    await page.emulateMediaType("screen");
+
+    // Step 6: Generate PDF
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,
+      margin: {
+        top: "20px",
+        bottom: "20px",
+        left: "20px",
+        right: "20px",
+      },
     });
 
     await browser.close();
