@@ -3,7 +3,7 @@ The webrtc session must persist for 1 hour. There is an isolated connection of d
 
 The setup is working as expected. The only problem is inconsistency in webrtc session length. Sometimes it ends after 5 to 6 questions, sometimes 1 to 2.  
 
-Folders: 
+Folders:
 Meet.jsx
 MeetingButton..jsx
 Webrtc_controller.py
