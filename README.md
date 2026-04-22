@@ -8,7 +8,7 @@ This system simulates a real technical interview conducted entirely by an AI int
 
 ## Key Features
 
-### 🎤 Real-time AI Interview
+### Real-time AI Interview
 - Fully live interview system using WebRTC audio streaming
 - AI-generated dynamic questions using fine-tuned Mistral 7B
 - Adaptive conversational flow with follow-up question handling
