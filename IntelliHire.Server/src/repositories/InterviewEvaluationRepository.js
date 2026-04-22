@@ -4,11 +4,12 @@ const redis = new Redis();
 
 export default class InterviewEvaluationRepository {
   _key(sessionId) {
-    return `interview:evaluation:${sessionId}`;
+    return `evaluation:${sessionId}`;
   }
 
-  async initSession(sessionId) {
+  async initSession(sessionId, interviewId) {
     const key = this._key(sessionId);
+    
     const exists = await redis.exists(key);
 
     if (!exists) {
@@ -16,6 +17,7 @@ export default class InterviewEvaluationRepository {
         key,
         JSON.stringify({
           sessionId,
+        interviewId,
           questions: [],
           createdAt: new Date().toISOString(),
         })

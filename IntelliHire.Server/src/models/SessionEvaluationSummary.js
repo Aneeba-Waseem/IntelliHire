@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
+
 const SessionEvaluationSummary = sequelize.define("SessionEvaluationSummary", {
   FK_Session: {
     type: DataTypes.UUID,
@@ -16,3 +17,5 @@ const SessionEvaluationSummary = sequelize.define("SessionEvaluationSummary", {
     allowNull: true,
   },
 });
+
+export default SessionEvaluationSummary;

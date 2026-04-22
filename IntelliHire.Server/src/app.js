@@ -33,5 +33,5 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/resume", resumeRoutes);
 app.use("/api/user", userRoutes);
 app.use("/uploads", express.static("uploads"));
-app.use("/api/evaluation", saveEvaluation)
+app.use("/api/evaluation", evaluationRoutes)
 export default app;

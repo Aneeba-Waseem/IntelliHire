@@ -18,14 +18,7 @@ const InterviewSession = sequelize.define("InterviewSession", {
     },
   },
 
-  FK_Recruiter: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: User,
-      key: "AutoId",
-    },
-  },
+  
 
   FK_JobDescription: {
     type: DataTypes.INTEGER,
@@ -37,6 +30,4 @@ const InterviewSession = sequelize.define("InterviewSession", {
   },
 });
 
-InterviewSession.belongsTo(User, { as: "candidate", foreignKey: "FK_Candidate" });
-InterviewSession.belongsTo(User, { as: "recruiter", foreignKey: "FK_Recruiter" });
-InterviewSession.belongsTo(JobDescription, { foreignKey: "FK_JobDescription" });
+export default InterviewSession;

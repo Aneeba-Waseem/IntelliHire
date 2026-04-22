@@ -1,37 +1,49 @@
+import Interview from "../models/Interview.js";
 import InterviewSession from "../models/InterviewSession.js";
 import QuestionResponse from "../models/QuestionResponse.js";
-import User from "../models/User.js";
+import InterviewEvaluationRepository from "../repositories/InterviewEvaluationRepository.js";
+
+const repo = new InterviewEvaluationRepository();
 
 export const saveEvaluation = async (req, res) => {
   try {
-    const { sessionData, candidateUserId } = req.body;
+    const { sessionId } = req.body;
 
-    const { sessionId, questions } = sessionData;
-
-    // 🔥 get candidate (UserId → AutoId)
-    const candidate = await User.findOne({
-      where: { UserId: candidateUserId },
-    });
-
-    if (!candidate) {
-      return res.status(404).json({ message: "Candidate not found" });
+    // 🔥 1. Get full session from Redis
+    const sessionData = await repo.getBySessionId(sessionId);
+    console.log("session data: ", sessionData);
+    if (!sessionData) {
+      return res.status(404).json({
+        message: "Session not found in Redis",
+      });
     }
 
-    // 🔥 recruiter from token (assuming middleware sets req.user)
-    const recruiterId = req.user.AutoId;
+    const { interviewId, questions } = sessionData;
 
-    // ⚠️ you must send this from frontend OR store earlier
-    const jobId = req.body.jobId;
+    // 🔥 2. Get interview details from DB
+    const interview = await Interview.findOne({
+      where: { id: interviewId },
+      attributes: ["FK_JobDescription", "candidateUserId"],
+    });
 
-    // 1️⃣ Create Session
+    if (!interview) {
+      return res.status(404).json({
+        message: "Interview not found",
+      });
+    }
+
+    const candidateId = interview.candidateUserId;
+    const jobId = interview.FK_JobDescription;
+    console.log("candidate: ", candidateId, "job: ", jobId);
+
+    // 🔥 3. Create Interview Session (DB)
     await InterviewSession.create({
       id: sessionId,
-      FK_Candidate: candidate.AutoId,
-      FK_Recruiter: recruiterId,
+      FK_Candidate: candidateId,
       FK_JobDescription: jobId,
     });
 
-    // 2️⃣ Prepare bulk questions
+    // 🔥 4. Bulk insert questions
     const questionRows = questions.map((q) => ({
       questionId: q.questionId,
       domain: q.domain,
@@ -46,17 +58,20 @@ export const saveEvaluation = async (req, res) => {
       FK_Session: sessionId,
     }));
 
-    // 3️⃣ Bulk Insert
     await QuestionResponse.bulkCreate(questionRows);
+
+    // 🔥 5. Clear Redis after successful save
+    await repo.clearSession(sessionId);
 
     return res.status(200).json({
       message: "Evaluation saved successfully",
     });
-
   } catch (error) {
-    console.error(error);
+    console.error("❌ saveEvaluation error:", error);
+
     return res.status(500).json({
       message: "Error saving evaluation",
+      error: error.message,
     });
   }
 };

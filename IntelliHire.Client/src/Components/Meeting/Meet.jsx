@@ -333,40 +333,44 @@ export default function Meet() {
 
   // ---------- START INTERVIEW ----------
   const startInterview = async () => {
-    try {
-      const token = getToken();
+  try {
+    const token = getToken();
 
-      const res = await fetch("http://localhost:8000/api/flow/start", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          candidateId: getUserId(),
-          jobId: "job123",
-          webrtcSessionId: webRtcSessionId,
-        }),
-      });
+    const res = await fetch("http://localhost:8000/api/flow/start", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        candidateId: getUserId(),
+        jobId: "job123",
+        webrtcSessionId: webRtcSessionId,
+      }),
+    });
 
-      const data = (await res.json()).data;
+    const response = await res.json();
+    const data = response.data;
 
-      console.log("✅ Interview started");
-      console.log("   Interview Session ID:", data.sessionId);
-      console.log("   WebRTC Session ID:", webRtcSessionId);
+    console.log("✅ Interview started");
+    console.log("   Interview Session ID:", data.sessionId);
+    console.log("   WebRTC Session ID:", webRtcSessionId);
 
-      sendInterviewSessionIdToBackend(data.sessionId);
+    // 🔥 STORE BOTH TO STATE / STORE
+    webrtcStore.interviewSessionId = data.sessionId;
+    webrtcStore.webRtcSessionId = webRtcSessionId;
 
-      setQuestion(data.question);
+    sendInterviewSessionIdToBackend(data.sessionId);
 
-      // ⭐ Send INITIAL question for TTS
-      sendQuestionViaWebSocket(data.question);
+    setQuestion(data.question);
 
-      startListening();
-    } catch (err) {
-      console.error("Start interview error:", err);
-    }
-  };
+    sendQuestionViaWebSocket(data.question);
+
+    startListening();
+  } catch (err) {
+    console.error("Start interview error:", err);
+  }
+};
 
   // Send question via WebSocket (TTS)
   const sendQuestionViaWebSocket = (text) => {
@@ -586,22 +590,44 @@ Message: ${data.message}
     }
   };
 
-  const endCall = () => {
-    console.log("📞 Ending call...");
-    stream?.getTracks().forEach((t) => t.stop());
-    pc?.close();
-    ws?.close();
+const endCall = async () => {
+  console.log("📞 Ending call...");
+  const token = getToken();
+  try {
+    const sessionData = {
+      sessionId: webrtcStore.interviewSessionId
+    };
 
-    webrtcStore.stream = null;
-    webrtcStore.pc = null;
-    webrtcStore.ws = null;
-    webrtcStore.remoteAudioStream = null;
-    webrtcStore.webRtcSessionId = null;
-    webrtcStore.cameraOn = null;
-    webrtcStore.micOn = null;
+    await fetch("http://localhost:8000/api/evaluation/save", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(sessionData), // ✅ only this
+    });
 
-    navigate("/");
-  };
+    console.log("✅ Evaluation saved");
+
+  } catch (err) {
+    console.error("❌ Failed to save evaluation:", err);
+  }
+
+  // 🔥 THEN cleanup (important: after API call)
+  stream?.getTracks().forEach((t) => t.stop());
+  pc?.close();
+  ws?.close();
+
+  webrtcStore.stream = null;
+  webrtcStore.pc = null;
+  webrtcStore.ws = null;
+  webrtcStore.remoteAudioStream = null;
+  webrtcStore.webRtcSessionId = null;
+  webrtcStore.cameraOn = null;
+  webrtcStore.micOn = null;
+
+  navigate("/");
+};
 
   return (
     <div className=" bg-[#D1DED3] flex flex-col items-center justify-center relative min-h-[90vh]">

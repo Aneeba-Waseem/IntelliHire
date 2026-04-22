@@ -1,6 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
-import InterviewSession from "../cacheModels/InterviewSession.js";
+
 const QuestionResponse = sequelize.define("QuestionResponse", {
   questionId: {
     type: DataTypes.UUID,
@@ -19,7 +19,6 @@ const QuestionResponse = sequelize.define("QuestionResponse", {
 
   timestamp: DataTypes.DATE,
 
-  // 🔥 Store evaluation_output EXACTLY as-is
   evaluation_output: {
     type: DataTypes.JSONB,
     allowNull: false,
@@ -32,5 +31,4 @@ const QuestionResponse = sequelize.define("QuestionResponse", {
   },
 });
 
-InterviewSession.hasMany(QuestionResponse, { foreignKey: "FK_Session" });
-QuestionResponse.belongsTo(InterviewSession, { foreignKey: "FK_Session" });
+export default QuestionResponse;

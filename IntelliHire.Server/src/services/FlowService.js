@@ -6,6 +6,8 @@ import TransitionEngine from "../engine/TransitionEngine.js";
 import AIClient from "../AI/AIClient.js";
 import { getCacheStep1 } from "./jobClient.js";
 import QuestionQueueService from "./QuestionQueueService.js";
+import Interview from "../models/Interview.js";
+import User from "../models/User.js";
 
 export default class FlowService {
   constructor({
@@ -421,8 +423,17 @@ async startInterview({ candidateId, jobId, candidateType, token }) {
     initialState: state,
     topicsListed: topics,
   });
+  const user = await User.findOne({
+    where: {UserId: candidateId},
+    attributes: ["AutoId"]
+  });
+  console.log(user);
+  const interview = await Interview.findOne({
+      where: { candidateUserId: user.AutoId },
+      attributes: ["id"],
+    });
 
-  await this.evalRepo.initSession(session.id);
+  await this.evalRepo.initSession(session.id, interview.id );
   await this.queueService.initSession(session.id, topics);
 
   /* =========================================
