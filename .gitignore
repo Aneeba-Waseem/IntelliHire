@@ -20,4 +20,28 @@ venv/
 .venv/
 
 IntelliHire_AI/IntelliHireEnvironment/
+<<<<<<< HEAD
 .IntelliHire_AI/IntelliHireEnvironment/
+=======
+.IntelliHire_AI/IntelliHireEnvironment/
+
+
+IntelliHire_AI/app/qna_Model/
+.IntelliHire_AI/app/qna_Model/
+
+
+IntelliHire_AI/outputs/
+.IntelliHire_AI/outputs/
+
+
+IntelliHire_AI/uploads/
+.IntelliHire_AI/uploads/
+
+
+IntelliHire_AI/.resume_cache/
+.IntelliHire_AI/.resume_cache/
+
+
+IntelliHire.server/uploads/
+.IntelliHire.server/uploads/
+>>>>>>> origin/feature/InterviewFlow

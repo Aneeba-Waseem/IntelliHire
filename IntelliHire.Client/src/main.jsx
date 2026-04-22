@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.jsx'
 // import './App.css'
 import { BrowserRouter } from 'react-router-dom'
+<<<<<<< HEAD
 
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
@@ -11,4 +12,14 @@ createRoot(document.getElementById('root')).render(
       <App />
     </StrictMode>,
   </BrowserRouter>
+=======
+import store from "./features/auth/store"; // 👈 your Redux store file
+import { Provider } from "react-redux"; // 👈 import Provider from react-redux
+createRoot(document.getElementById('root')).render(
+  <Provider store = {store}>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </Provider >
+>>>>>>> origin/feature/InterviewFlow
 )

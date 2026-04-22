@@ -3,10 +3,15 @@ pipeline {
 
     environment {
         NODE_HOME = tool name: 'Node20'
+<<<<<<< HEAD
         PYTHON_EXE = "C:\\Users\\MT\\AppData\\Local\\Programs\\Python\\Python311\\python.exe"
         VENV_DIR = "IntelliHire.AI\\.venv"
         // Node bin first, then Python venv Scripts, then system PATH
         PATH = "${NODE_HOME}\\bin;${VENV_DIR}\\Scripts;${env.PATH}"
+=======
+        PATH = "${NODE_HOME}\\bin;${env.PATH}"
+        PYTHON = "C:\\Users\\MT\\AppData\\Local\\Programs\\Python\\Python311"
+>>>>>>> origin/feature/InterviewFlow
     }
 
     stages {
@@ -24,6 +29,7 @@ pipeline {
                 }
 
                 dir('IntelliHire.AI') {
+<<<<<<< HEAD
                     // Create virtual environment if it doesn't exist
                     bat """
                     REM Create venv if missing
@@ -35,6 +41,9 @@ pipeline {
                     REM Install requirements
                     call .venv\\Scripts\\pip.exe install -r requirements.txt
                     """
+=======
+                    bat "\"${env.PYTHON}\" -m pip install -r requirements.txt"
+>>>>>>> origin/feature/InterviewFlow
                 }
             }
         }
@@ -53,6 +62,7 @@ pipeline {
             steps {
                 echo 'Validating AI build (lint + tests)...'
 
+<<<<<<< HEAD
                 // dir('IntelliHire.AI') {
                 //     bat """
                 //     REM Ensure lint and tests dependencies
@@ -63,6 +73,13 @@ pipeline {
                 //     call .venv\\Scripts\\pytest || echo No AI tests configured
                 //     """
                 // }
+=======
+                dir('IntelliHire.AI') {
+                    bat "\"${env.PYTHON}\" -m pip install flake8 pytest"
+                    bat "\"${env.PYTHON}\" -m flake8 . || echo Flake8 warnings found"
+                    bat "\"${env.PYTHON}\" -m pytest || echo No AI tests configured"
+                }
+>>>>>>> origin/feature/InterviewFlow
             }
         }
 
@@ -80,12 +97,20 @@ pipeline {
             steps {
                 echo 'Packaging build artifacts...'
 
+<<<<<<< HEAD
                 bat """
+=======
+                bat '''
+>>>>>>> origin/feature/InterviewFlow
                 tar -czf IntelliHire_Build.tar.gz ^
                 IntelliHire.Client/build ^
                 IntelliHire.Server ^
                 IntelliHire.AI
+<<<<<<< HEAD
                 """
+=======
+                '''
+>>>>>>> origin/feature/InterviewFlow
             }
         }
 

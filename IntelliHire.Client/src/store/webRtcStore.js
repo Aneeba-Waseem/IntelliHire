@@ -1,0 +1,10 @@
+// src/webrtcStore.js
+
+export const webrtcStore = {
+  pc: null,
+  ws: null,
+  stream: null,
+  sessionId: null,
+  cameraOn: false,
+  micOn: false,
+};
