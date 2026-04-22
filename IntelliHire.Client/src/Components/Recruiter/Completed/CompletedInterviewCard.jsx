@@ -8,8 +8,8 @@ import {
 } from "@fortawesome/free-regular-svg-icons";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import ReportModal from "../../Report/Standard/ReportModal";
-import ReportContainer from "../../Report/ReportContainer";
+// import ReportModal from "../../Report/Standard/ReportModal";
+// import ReportContainer from "../../Report/ReportContainer";
 
 const CompletedInterviewCard = ({ interview }) => {
     const navigate = useNavigate();

@@ -93,7 +93,7 @@ function App() {
            <Route path="/job/:id" element={<JobDescriptionDetails />} />
            <Route path="/resume/:resumeId" element={<CandidateProfile />} />
           {/* <Route path="/WebTest" element={<WebSocketTest/>} /> */}
-          <Route path="/report" element={<ReportPage />} />
+          {/* <Route path="/report" element={<ReportPage />} /> */}
           {/* <Route path="/login" element={<CandidateLogin />} /> */}
           <Route path="/report/detailed" element={<DetailedReportPage />} />
           <Route path="/print-report" element={<PrintReport />} />

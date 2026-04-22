@@ -17,6 +17,7 @@ import bcrypt from "bcryptjs";
 
 export const finalizeHiring = async (req, res) => {
     const { interviews } = req.body;
+    const userIdUUID = req.user.UserId;
     const userId = req.user.AutoId;
 
     const t = await sequelize.transaction();
@@ -144,11 +145,12 @@ export const finalizeHiring = async (req, res) => {
                     candidateUserId: user.AutoId,
                 }
             });
-
             if (exists) continue;
 
             const iData = interviewMap.get(data.resume_id);
-
+            const recruiter = await User.findOne({
+                where: { UserId: userIdUUID }
+            });
             // ================= INTERVIEW =================
             const interview = await Interview.create({
                 FK_JobDescription: job.id,
@@ -178,11 +180,17 @@ export const finalizeHiring = async (req, res) => {
                 name: r.name,
                 date: iData?.date,
                 time: iData?.time,
+                jobtitle: step1.jobRole,
+                recruiterName: recruiter.fullName,
+                recruiterEmail: recruiter.email,
+                recruiterCompany: recruiter.company,
                 link,
             });
+            console.log("user from userId" , recruiter)
             console.log("Generated Magic Link:", emailPayload);
 
         }
+       
 
         // ================= SEND EMAILS =================
         await sendInterviewEmails(emailPayload);

@@ -51,9 +51,9 @@ const Dashboard = () => {
   return (
     <div className="bg-[#D1DED3] w-full min-h-screen flex flex-row ">
       {/* Left Sidebar */}
-      <div className="w-[10%] flex justify-center md:justify-start mb-0">
-        <SidebarCustom />
-      </div>
+       <div className="w-[10%] lg:mr-[5px]  sm:mr-[30px] flex justify-center md:justify-start">
+                <SidebarCustom />
+        </div>
 
 
       {/* Right Section */}

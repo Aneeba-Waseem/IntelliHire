@@ -29,7 +29,7 @@ const Profile = () => {
             ? `http://localhost:8000/uploads/${user.profileImage}`
             : "..."
         }
-        className="w-5 md:w-15 h-5 md:h-15 rounded-full object-cover cursor-pointer"
+        className="w-15 h-15 md:w-15 h-5 md:h-15 rounded-full object-cover cursor-pointer"
         onClick={() =>
           openModal(
             <ProfileModal

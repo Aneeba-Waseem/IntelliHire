@@ -4,7 +4,7 @@ import InterviewSessionRepository from "../repositories/InterviewSessionReposito
 import InterviewEvaluationRepository from "../repositories/InterviewEvaluationRepository.js";
 import TransitionEngine from "../engine/TransitionEngine.js";
 import AIClient from "../AI/AIClient.js";
-import JobClient from "./JobClient.js";
+import { getCacheStep1 } from "./jobClient.js";
 import QuestionQueueService from "./QuestionQueueService.js";
 
 export default class FlowService {
@@ -12,7 +12,6 @@ export default class FlowService {
     aiClient = new AIClient(),
     sessionRepo,
     turnRepo,
-    jobClient = new JobClient(),
     queueService,
   } = {}) {
     this.aiClient = aiClient;
@@ -20,7 +19,7 @@ export default class FlowService {
     this.sessionRepo = sessionRepo || new InterviewSessionRepository();
     this.turnRepo = turnRepo || new InterviewTurnRepository();
     this.evalRepo = new InterviewEvaluationRepository();
-    this.jobClient = jobClient;
+    // this.jobClient = jobClient;
     this.queueService = queueService || new QuestionQueueService();
   }
 
@@ -30,14 +29,17 @@ export default class FlowService {
   /* =====================================================
      TOPICS
   ===================================================== */
-  async getTopicsForJob(token) {
+  async getTopicsForJob(candidateId) {
     try {
-      const jobData = await this.jobClient.getJobStep1(token);
+      const jobData = await getCacheStep1(candidateId);
       if (!jobData || Object.keys(jobData).length === 0) return ["general"];
 
-      const topics = [...(jobData.domains || []), ...(jobData.techStack || [])]
-        .map((t) => String(t).trim())
-        .filter(Boolean);
+      const topics = [
+  ...(jobData.domains || []),
+  ...(jobData.techStacks || [])
+]
+  .map((t) => t?.name?.trim())
+  .filter(Boolean);
 
       return topics.length ? topics : ["general"];
     } catch (err) {
@@ -407,7 +409,7 @@ async startInterview({ candidateId, jobId, candidateType, token }) {
   /* =========================================
      1. LOAD TOPICS
   ========================================= */
-  const topics = await this.getTopicsForJob(token);
+  const topics = await this.getTopicsForJob(candidateId);
   state.currentTopic = topics[0];
 
   /* =========================================

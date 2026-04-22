@@ -4,12 +4,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../../features/auth/authThunks";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import axios from "axios";
 
 export default function LoginForm() {
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
-
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const navigate = useNavigate();
 
@@ -20,18 +21,18 @@ export default function LoginForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const success = await dispatch(loginUser(formData));
-    
+
     if (loginUser.fulfilled.match(success)) {
       const { accessToken, user } = success.payload;
-      
+
       // Store token in localStorage
       localStorage.setItem("accessToken", accessToken);
       axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
-      
+
       console.log("✅ Login successful");
       console.log("User ID:", user.userId);
       console.log("User Name:", user.fullName);
-      
+
       // Navigate - Redux will update, which triggers useAuthRefresh in App.jsx
       navigate('/userDashboard');
     }
@@ -120,45 +121,54 @@ export default function LoginForm() {
 
       {/* Password */}
       <motion.div variants={itemVariants}>
-        <label className="block text-sm font-medium text-[#29445D]">Password</label>
+        <label className="block text-sm font-medium text-[#29445D]">
+          Password
+        </label>
+
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#29445D] w-5 h-5" />
+
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             name="password"
             value={formData.password}
             onChange={handleChange}
             placeholder="Enter your password"
             required
             className="
-    w-full 
-    pl-11 pr-4 py-3 
-    border border-[#29445D] 
-    rounded-lg 
-    bg-[#D1DED3]
-    text-[#]
-    transition-all duration-300 
-    outline-none
-    hover:border-[#45767C] 
-    hover:bg-white
-    hover:shadow-md 
-    hover:shadow-[#9CBFAC]/50
-    focus:ring-2 focus:ring-[#719D99] 
-    focus:border-transparent
-  "
+            w-full 
+            pl-11 pr-10 py-3 
+            border border-[#29445D] 
+            rounded-lg 
+            bg-[#D1DED3]
+            transition-all duration-300 
+            outline-none
+            hover:border-[#45767C] 
+            hover:bg-white
+            hover:shadow-md 
+            hover:shadow-[#9CBFAC]/50
+            focus:ring-2 focus:ring-[#719D99] 
+            focus:border-transparent
+      "
           />
+
+          {/* Eye Icon */}
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#29445D]"
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
         </div>
       </motion.div>
 
       {/* Error message */}
       {error && (
-        <motion.p
-          variants={itemVariants}
-          className="text-red-500 text-sm"
-        >
-          {error.message}
-        </motion.p>
-      )}
+  <motion.p variants={itemVariants} className="text-red-500 text-sm">
+    {error?.message || "Invalid email or password"}
+  </motion.p>
+)}
 
       <motion.button
         type="submit"

@@ -323,6 +323,13 @@ export default function Meet() {
     console.log(accessToken);
     return accessToken;
   };
+  const getUserId = () => {
+    const authState = loadAuthState();
+    const userId = authState?.user?.userId;
+    console.log(userId);
+    return userId;
+  };
+
 
   // ---------- START INTERVIEW ----------
   const startInterview = async () => {
@@ -336,7 +343,7 @@ export default function Meet() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          candidateId: "test123",
+          candidateId: getUserId(),
           jobId: "job123",
           webrtcSessionId: webRtcSessionId,
         }),

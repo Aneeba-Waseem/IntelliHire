@@ -100,9 +100,9 @@ const CandidateProfile = () => {
         <div className="flex min-h-screen bg-[#D1DED3]">
 
             {/* SIDEBAR */}
-            <div className="w-64">
+               <div className="w-[10%] lg:mr-[5px]  sm:mr-[30px] flex justify-center md:justify-start">
                 <SidebarCustom />
-            </div>
+                </div>
 
             {/* MAIN */}
             <div className="flex-1 px-10 py-8 space-y-10">
@@ -309,7 +309,7 @@ const CandidateProfile = () => {
                     </div>
 
                     {/* RIGHT SIDE */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 order-first lg:order-none">
 
                         {/* INTERVIEW STATUS CARD */}
                         <motion.div

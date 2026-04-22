@@ -30,25 +30,28 @@ const SidebarCustom = () => {
     );
   };
   return (
-    <div
-      className={`
-        bg-[#DDE8E2]
-        md:rounded-full mt-15 mb-50
-        shadow-2xl
-        flex
-        items-center
-        gap-6 sm:gap-15
-        py-4 sm:py-6
-        w-full md:w-[8vw] lg:w-[5vw]
-        sm:max-h-[650px]
-        min-w-[44px]
-        mx-auto sm:mx-[1.5vw]
-        fixed bottom-0 left-0 sm:static
-        flex-row sm:flex-col
-        justify-center sm:justify-start
-        z-50
-      `}
-    >
+ <div
+  className={`
+    mt-10
+    mr-2
+  fixed sm:absolute z-50
+
+    /* 📱 Mobile (bottom navbar) */
+    bottom-0 left-0 w-full
+    flex flex-row items-center justify-between
+    h-[65px] px-6
+
+    /* 💻 Tablet & Desktop (left sidebar) */
+    sm:top-1/2 sm:left-4 sm:-translate-y-1/2
+    sm:h-[70vh] sm:w-[80px]
+    sm:flex-col sm:justify-start
+    sm:gap-15 sm:py-6
+
+    bg-[#DDE8E2]
+    sm:rounded-full
+    shadow-xl backdrop-blur-md
+  `}
+>
       <NavItem to="/userDashboard" icon="fa-house" />
       <button
         onClick={handleAddClick}

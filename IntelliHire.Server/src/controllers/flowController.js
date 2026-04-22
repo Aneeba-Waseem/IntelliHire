@@ -30,7 +30,7 @@ export default class FlowController {
 
       const { candidateId, jobId, candidateType } = req.body;
 
-      if (!candidateId || typeof candidateId !== "string") {
+      if (!candidateId) {
         return res.status(400).json({
           success: false,
           error:   "Invalid candidateId — must be a non-empty string",

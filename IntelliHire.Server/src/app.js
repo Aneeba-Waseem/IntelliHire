@@ -11,6 +11,7 @@ import  finalizeHiring  from "./routes/finalizeHiring.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import resumeRoutes from "./routes/resumeRoutes.js"
 import userRoutes from "./routes/userRoutes.js";
+import evaluationRoutes from "./routes/evaluationRoutes.js"
 const app = express();
 
 app.use(cors({
@@ -32,5 +33,5 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/resume", resumeRoutes);
 app.use("/api/user", userRoutes);
 app.use("/uploads", express.static("uploads"));
-
+app.use("/api/evaluation", saveEvaluation)
 export default app;

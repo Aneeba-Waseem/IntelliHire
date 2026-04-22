@@ -1,15 +1,20 @@
 import React, { useState } from "react";
-import { User, Building2, Mail, Lock } from "lucide-react";
+import { User, Building2, Mail, Lock, Eye, EyeOff } from "lucide-react";
+// import { User, Building2, Mail, Lock,  } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { registerUser } from "../../features/auth/authThunks";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
-export default function SignUpForm() {
+export default function SignUpForm({ onSwitchToLogin }) 
+{  
+  
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
   const navigate = useNavigate();
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     company: "",
@@ -52,11 +57,37 @@ export default function SignUpForm() {
 
     // Check for successful registration
     if (registerUser.fulfilled.match(result)) {
-      navigate("/verify-notice");
-    } else if (registerUser.rejected.match(result)) {
-      // Map backend error to specific field if possible
-      if (result.payload.includes("email")) {
-        setFormErrors((prev) => ({ ...prev, email: result.payload }));
+      toast.success("Account created successfully! Please login.");
+
+      // switch to login form
+      onSwitchToLogin();
+
+      // optional: clear form
+      setFormData({
+        fullName: "",
+        company: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+    }
+    else if (registerUser.rejected.match(result)) {
+      const message =
+        result.payload?.message ||
+        result.payload ||
+        result.error?.message ||
+        "Registration failed";
+
+      if (message.toLowerCase().includes("email")) {
+        setFormErrors((prev) => ({
+          ...prev,
+          email: "Email already exists",
+        }));
+      } else {
+        setFormErrors((prev) => ({
+          ...prev,
+          email: message,
+        }));
       }
     }
   };
@@ -161,10 +192,12 @@ export default function SignUpForm() {
         <label className="block text-sm font-medium text-[#29445D] mb-2">
           Password
         </label>
+
         <div className="relative">
           <Lock className={iconBase} />
+
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             name="password"
             value={formData.password}
             onChange={handleChange}
@@ -172,7 +205,17 @@ export default function SignUpForm() {
             required
             className={inputBase}
           />
+
+          {/* Eye Button */}
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#29445D]"
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
         </div>
+
         {formErrors.password && (
           <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>
         )}
@@ -183,10 +226,12 @@ export default function SignUpForm() {
         <label className="block text-sm font-medium text-[#29445D] mb-2">
           Confirm Password
         </label>
+
         <div className="relative">
           <Lock className={iconBase} />
+
           <input
-            type="password"
+            type={showConfirmPassword ? "text" : "password"}
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
@@ -194,7 +239,17 @@ export default function SignUpForm() {
             required
             className={inputBase}
           />
+
+          {/* Eye Button */}
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#29445D]"
+          >
+            {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
         </div>
+
         {formErrors.confirmPassword && (
           <p className="text-red-500 text-sm mt-1">
             {formErrors.confirmPassword}

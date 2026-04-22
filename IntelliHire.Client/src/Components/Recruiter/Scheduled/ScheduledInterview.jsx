@@ -93,9 +93,9 @@ const handleViewProfile = (profile) => {
         <div className="bg-[#D1DED3] w-full min-h-screen flex flex-row overflow-x-hidden">
 
             {/* Sidebar */}
-            <div className="w-[10%] flex justify-center md:justify-start">
+           <div className="w-[10%] lg:mr-[5px]  sm:mr-[30px] flex justify-center md:justify-start">
                 <SidebarCustom />
-            </div>
+        </div>
 
             {/* Right Section */}
             <div className="w-[90%] flex flex-col gap-10">

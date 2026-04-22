@@ -6,7 +6,7 @@ import Step3Schedule from "./Step3Schedule";
 export default function JobForm() {
   const [step, setStep] = useState(1);
   const [isOpen, setIsOpen] = useState(true);
-  
+
   const [formData, setFormData] = useState({
     jobRole: "",
     domains: [],
@@ -14,23 +14,29 @@ export default function JobForm() {
     experience: "",
     requirements: "",
   });
+
   const [errors, setErrors] = useState({});
 
   const handleNext = () => setStep((prev) => Math.min(prev + 1, 3));
   const handleBack = () => setStep((prev) => Math.max(prev - 1, 1));
+
   const handleSubmit = (interviews) => {
-  console.log("Job Data Submitted:", formData);
-  console.log("Scheduled Interviews:", interviews);
-  setIsOpen(false);   // ← CLOSE MODAL
-};
-if (!isOpen) return null;
-  
+    console.log("Job Data Submitted:", formData);
+    console.log("Scheduled Interviews:", interviews);
+    setIsOpen(false);
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
+
       {/* Progress Steps */}
-      <div className="relative flex items-center justify-between mb-10 px-6">
+     <div className="relative flex items-center justify-between gap-2 sm:gap-4 mb-10 px-2 sm:px-6 overflow-x-auto">
+        {/* background line */}
         <div className="absolute top-1/2 left-0 right-0 h-[3px] bg-[#9CBFAC] -translate-y-1/2 z-0"></div>
+
+        {/* progress line */}
         <div
           className="absolute top-1/2 left-0 h-[3px] -translate-y-1/2 z-0 transition-all duration-500"
           style={{
@@ -38,8 +44,12 @@ if (!isOpen) return null;
             backgroundColor: "#29445D",
           }}
         ></div>
+
         {[1, 2, 3].map((s) => (
-          <div key={s} className="flex flex-col items-center z-10">
+          <div
+            key={s}
+            className="flex flex-col items-center z-10 min-w-[80px]"
+          >
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white border-2 ${
                 s <= step
@@ -49,8 +59,9 @@ if (!isOpen) return null;
             >
               {s}
             </div>
+
             <p
-              className={`mt-2 text-sm sm:text-lg font-bold ${
+              className={`mt-2 text-xs sm:text-lg font-bold text-center ${
                 s <= step ? "text-[#29445D]" : "text-[#719D99]"
               }`}
             >
@@ -74,8 +85,21 @@ if (!isOpen) return null;
           handleNext={handleNext}
         />
       )}
-      {step === 2 && <Step2Resume className="w-full" handleNext={handleNext} handleBack={handleBack} />}
-      {step === 3 && <Step3Schedule handleBack={handleBack} handleSubmit={handleSubmit} />}
+
+      {step === 2 && (
+        <Step2Resume
+          className="w-full"
+          handleNext={handleNext}
+          handleBack={handleBack}
+        />
+      )}
+
+      {step === 3 && (
+        <Step3Schedule
+          handleBack={handleBack}
+          handleSubmit={handleSubmit}
+        />
+      )}
     </div>
   );
 }

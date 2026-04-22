@@ -162,7 +162,8 @@ const JobDescriptionDetails = () => {
           </div>
 
           {/* RIGHT SIDE */}
-     <motion.div variants={item} className="space-y-8">
+     <motion.div variants={item} className= "space-y-6 order-first lg:order-none"
+>
 
   {/* OWNER */}
   <motion.div

@@ -327,7 +327,11 @@ export default function AuthPage() {
                             </div>
                         </div>
                     ) : (
-                        isLogin ? <LoginForm /> : <SignUpForm />
+                        isLogin ? (
+                            <LoginForm />
+                        ) : (
+                            <SignUpForm onSwitchToLogin={() => setIsLogin(true)} />
+                        )
                     )}
 
                     <motion.div
