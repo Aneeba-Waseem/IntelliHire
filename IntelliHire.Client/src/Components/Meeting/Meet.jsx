@@ -608,7 +608,7 @@ const endCall = async () => {
     });
 
     console.log("✅ Evaluation saved");
-
+   
   } catch (err) {
     console.error("❌ Failed to save evaluation:", err);
   }
@@ -625,8 +625,8 @@ const endCall = async () => {
   webrtcStore.webRtcSessionId = null;
   webrtcStore.cameraOn = null;
   webrtcStore.micOn = null;
+ navigate("/FinalMeeting")
 
-  navigate("/");
 };
 
   return (

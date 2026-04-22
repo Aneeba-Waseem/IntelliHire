@@ -1,6 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
 import JobDescription from "./JobDescription.js";
+import User from "./User.js";
 
 const Resume = sequelize.define(
   "Resume",
@@ -17,6 +18,14 @@ const Resume = sequelize.define(
         key: "id",
       },
     },
+    Fk_Candidate: {
+      type: DataTypes.INTEGER,
+      allowNull:false,
+      references: {
+        model: User,
+        key: "AutoId",
+      },
+    },
     name: DataTypes.STRING,
     email: DataTypes.STRING,
     phone: DataTypes.STRING,
@@ -31,6 +40,7 @@ const Resume = sequelize.define(
 );
 
 JobDescription.hasMany(Resume, { foreignKey: "FK_JobDescription" });
+JobDescription.hasOne(Resume, { foreignKey: "Fk_Candidate" });
 Resume.belongsTo(JobDescription, { foreignKey: "FK_JobDescription" });
 
 export default Resume;

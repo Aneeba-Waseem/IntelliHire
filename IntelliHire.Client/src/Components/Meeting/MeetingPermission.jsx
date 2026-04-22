@@ -1,26 +1,24 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { motion as Motion } from "motion/react";
 import SidebarCustom from "../CommonComponents/SidebarCustom";
 import MeetPreJoin from "./MeetPreJoin";
-import { useEffect } from "react";
 
 const MeetingPermissions = () => {
   useEffect(() => {
-    // Scroll to top when component mounts
     window.scrollTo(0, 0);
   }, []);
- 
-  return (
-    <div className="bg-[#D1DED3] w-full min-h-[80vh] flex flex-row overflow-x-hidden overflow-y-hidden">
 
-      {/* Left Sidebar (10%) */}
-      <div className="w-[10%] min-w-[80px] flex items-around justify-center">
+  return (
+    <div className="bg-[#D1DED3] w-full min-h-screen flex flex-col md:flex-row overflow-x-hidden">
+
+      {/* Sidebar */}
+      <div className="w-full md:w-[10%] min-w-[80px] flex justify-center items-start md:items-center py-3 md:py-0">
         {/* <SidebarCustom /> */}
       </div>
 
-      {/* Right Side (90%) */}
+      {/* Right Side */}
       <Motion.div
-        className="w-[90%] min-w-[70px] min-h-[70vh] flex items-around justify-center"
+        className="w-full md:w-[90%] min-h-[70vh] flex justify-center items-center px-4 sm:px-6 md:px-0"
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
@@ -28,14 +26,14 @@ const MeetingPermissions = () => {
 
         {/* Inner container */}
         <Motion.div
-          className="w-full min-h-[60vh] flex items-around justify-center p-3 rounded-lg"
+          className="w-full max-w-5xl min-h-[60vh] flex justify-center items-center p-3 sm:p-5 md:p-6 rounded-lg"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
         >
           <MeetPreJoin />
         </Motion.div>
-        
+
       </Motion.div>
 
     </div>

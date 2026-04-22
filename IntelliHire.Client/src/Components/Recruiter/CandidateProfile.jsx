@@ -100,12 +100,12 @@ const CandidateProfile = () => {
         <div className="flex min-h-screen bg-[#D1DED3]">
 
             {/* SIDEBAR */}
-               <div className="w-[10%] lg:mr-[5px]  sm:mr-[30px] flex justify-center md:justify-start">
+               <div className="xs:w-0 sm:w-[10%] lg:mr-[5px]  sm:mr-[30px] flex justify-center md:justify-start">
                 <SidebarCustom />
                 </div>
 
             {/* MAIN */}
-            <div className="flex-1 px-10 py-8 space-y-10">
+            <div className="xs:w-[100%] sm:w-[90%] flex-1 px-10 py-8 space-y-10">
 
                 {/* HEADER */}
                 <div className="pb-6 border-b border-[#9CBFAC]">

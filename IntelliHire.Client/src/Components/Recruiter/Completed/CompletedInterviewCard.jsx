@@ -23,7 +23,8 @@ const CompletedInterviewCard = ({ interview }) => {
             year: "numeric",
         });
     };
-
+    console.log("Job Id in completed pages" , interview.jobDescriptionId)
+    console.log("candidate ki id in frontend" ,interview.candidateId)
     const formatTime = (timeStr) => {
         const [h, m] = timeStr.split(":");
         const date = new Date();
@@ -36,7 +37,7 @@ const CompletedInterviewCard = ({ interview }) => {
     };
 
     return (
-        <div className="bg-[#F2FAF9] border border-[#C6D3CA] rounded-xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col gap-4">
+        <div className="bg-[#F2FAF5] border border-[#C6D3CA] rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col gap-4">
             {/* Header */}
             <div className="flex justify-between items-center">
                 <h3 className="text-xl font-semibold text-[#29445D]">
@@ -114,37 +115,9 @@ const CompletedInterviewCard = ({ interview }) => {
                 </button> */}
 
                 <button
+                     style={{cursor:"pointer"}}
                     onClick={() =>
-                        navigate("/report/detailed", {
-                            state: {
-                                candidate: "NOOR FATIMA",
-                                duration: "30 MINS",
-                                role: "AI ENGINEER",
-                                score: 4,
-                                summary: [
-                                    { domain: "Web Development", score: 4, notes: "All basics clear" }
-                                ],
-                                strengths: ["Web Development"],
-                                weaknesses: ["Web Development"],
-                                sections: [
-                                    {
-                                        title: "Cloud Computing",
-                                        score: 4.5,
-                                        questions: [
-                                            {
-                                                question: "How would you automate infrastructure provisioning?",
-                                                feedback: "Correctly identified Terraform...",
-                                                score: 4.5
-                                            }
-                                        ]
-                                    }
-                                ],
-                                recommendation: {
-                                    title: "HIRE THE CANDIDATE",
-                                    description: "Correctly identified Terraform..."
-                                }
-                            }
-                        })
+                        navigate(`/report/${interview.candidateId}/${interview.jobDescriptionId}`)
                     }
                     className="flex-1 bg-[#29445D] text-white py-2 rounded-lg"
                 >
@@ -152,6 +125,7 @@ const CompletedInterviewCard = ({ interview }) => {
                 </button>
                 {/* View Details */}
                 <button
+                    style={{cursor:"pointer"}}
                     onClick={() => navigate(`/job/${interview.jobDescriptionId}`)}
                     className="flex-1 bg-[#DDE8E2] text-[#29445D] py-2 rounded-lg hover:bg-[#cddbd3] transition"
                 >

@@ -4,6 +4,7 @@ import SidebarCustom from "../CommonComponents/SidebarCustom";
 import InterviewSchedule from "./InterviewSchedule";
 import InterviewRules from "./InterviewRules";
 import { useNavigate } from "react-router-dom";
+import { loadAuthState } from "../../features/auth/persistAuth";
 
 const MeetInterface = () => {
   const [rulesChecked, setRulesChecked] = useState(false);
@@ -12,17 +13,16 @@ const MeetInterface = () => {
   const handleClick = (e) => {
         navigate('/meetingPermissions')
     };
+ 
+  const authState = loadAuthState();
+
+  const userName = authState?.user?.fullName || "User"; // ✅ FIX HERE
 
   return (
     <div className="bg-[#D1DED3] w-full min-h-screen flex flex-row overflow-x-hidden overflow-y-hidden">
 
-      {/* Left Sidebar (10%) */}
-      <div className="w-[10%] min-w-[80px] flex items-around justify-center">
-        {/* <SidebarCustom /> */}
-      </div>
-
       {/* Right Side (90%) */}
-      <div className="w-[90%] min-w-[80px] flex flex-col items-around justify-center">
+      <div className="w-full min-w-[80px] flex flex-col items-around justify-center">
 
         {/* Top Section */}
         <div className="w-full h-[40%] flex flex-col items-around justify-center">
@@ -33,12 +33,10 @@ const MeetInterface = () => {
             transition={{ duration: 0.8, ease: "easeOut" }}
             viewport={{ once: true }}
           >
-            Hi Ali, <span className="text-[#45767C]">Your Interview is Ready to Start</span>
+            Hi {userName}, <span className="m-5 text-[#45767C]">Your Interview is Ready to Start</span>
           </Motion.h1>
 
-          <div className="mt-10">
-            <InterviewSchedule />
-          </div>
+         
         </div>
 
         {/* Bottom Section */}

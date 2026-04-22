@@ -77,13 +77,13 @@ const JobDescriptionDetails = () => {
     <div className="min-h-screen flex bg-[#D1DED3]">
 
       {/* SIDEBAR */}
-      <div className="w-[10%]">
-        <SidebarCustom />
-      </div>
+        <div className="xs:w-0 sm:w-[10%] lg:mr-[5px] flex justify-center md:justify-start">
+          <SidebarCustom />
+        </div>
 
       {/* MAIN */}
       <motion.div
-        className="w-[90%] px-10 py-8 space-y-10"
+        className="xs:w-[100%] sm:w-[90%] px-10 py-8 space-y-10"
         variants={container}
         initial="hidden"
         animate="show"

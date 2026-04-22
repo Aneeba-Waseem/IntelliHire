@@ -23,6 +23,7 @@ const CompletedInterviews = () => {
       try {
         const data = await getDashboardData();
         setDashboardData(data);
+        console.log("data in completed page",data)
       } catch (err) {
         console.error(err);
       }
@@ -65,15 +66,15 @@ const CompletedInterviews = () => {
   };
 
   return (
-    <div className="bg-[#D1DED3] min-h-screen flex flex-col lg:flex-row">
+    <div className="bg-[#D1DED3] w-full min-h-screen flex flex-row overflow-x-hidden">
 
       {/* SIDEBAR */}
-      <div className="w-[10%] flex justify-center lg:justify-start">
+      <div className="xs:w-0 sm:w-[10%] lg:mr-[5px]  sm:mr-[8%] flex justify-center md:justify-start">
         <SidebarCustom />
       </div>
 
       {/* MAIN */}
-      <div className="flex-1 flex flex-col gap-10 px-4 md:px-6 lg:px-10 py-6">
+      <div className="w-full sm:w-[90%] flex flex-col gap-10">
 
         {/* TOP SECTION */}
         <motion.div
@@ -97,13 +98,16 @@ const CompletedInterviews = () => {
                 className="text-[#29445D]"
                 size="2xl"
               />
-              <h2 className="text-2xl  md:text-3xl lg:text-4xl text-[#29445D] font-bold">
+              <h2
+                className="text-4xl md:text-5xl text-[#29445D]"
+                style={{ fontFamily: "Staatliches, monospace" }}
+              >
                 COMPLETED INTERVIEWS
               </h2>
             </div>
 
             {/* PIE CARD */}
-            <div className="bg-[#F2FAF9] p-5  md:p-6 lg:p-6 rounded-2xl sm:ml-[18%] lg:ml-0 shadow-md flex flex-col xl:flex-row items-center justify-center gap-6
+            <div className="bg-[#F2FAF9] p-5   md:p-6 lg:p-6 rounded-2xl shadow-md flex flex-col xl:flex-row items-center justify-between gap-6
                             w-[80%] md:w-[70%] lg:w-[100%]  xl:w-[70%] mx-auto lg:mx-0">
 
               {/* PIE */}
@@ -145,7 +149,7 @@ const CompletedInterviews = () => {
 
           {/* RIGHT BAR CHART */}
           <motion.div
-            className=" lg:w-full sm:ml-[20%] lg:ml-0 lg:ml-0 flex justify-center lg:justify-start lg:mt-30 xl:mt-20"
+            className=" w-full lg:w-[90%] xl:w-full xl:mt-[5%] flex justify-center"
             variants={itemVariants}
           >
             <ScheduledBars data={barData} />
@@ -154,13 +158,12 @@ const CompletedInterviews = () => {
         </motion.div>
 
         {/* BOTTOM SECTION */}
-        <div className="pb-10 sm:ml-[25%] lg:ml-0">
-
+        <div className="w-full  px-6 pb-10">
           <h2 className="text-2xl md:text-3xl text-[#29445D] mb-6">
             Completed Interviews
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {completedInterviews.map((item) => (
               <CompletedInterviewCard
                 key={item.id}
@@ -172,6 +175,7 @@ const CompletedInterviews = () => {
         </div>
 
       </div>
+
     </div>
   );
 };

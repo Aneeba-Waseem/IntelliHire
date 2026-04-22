@@ -20,10 +20,10 @@ export default function InterviewScheduled({
     React.createElement(
       "p",
       null,
-      "Congratulations! You’ve successfully shortlisted for the ",
-      React.createElement("b", null, jobtitle),
+      "Congratulations! You’ve successfully progressed to the next stage of our hiring process. We’re pleased to inform you that your interview has been scheduled.",
+      // React.createElement("b", null, jobtitle),
       
-      "position. We’re pleased to inform you that your interview has been scheduled."
+      // "position. We’re pleased to inform you that your interview has been scheduled."
     ),
 
     React.createElement("p", null, React.createElement("b", null, "Interview Details:")),

@@ -4,39 +4,42 @@ import { motion as Motion } from "framer-motion";
 
 const InterviewRules = () => {
   const sections = [
-    {
-      title: "Before the Interview",
-      rules: [
-        "Ensure a stable internet connection to avoid interruptions.",
-        "Test your microphone, camera, and speakers before joining.",
-        "Use a compatible device (preferably a laptop or desktop) with an updated browser.",
-        "Choose a quiet, well-lit environment for clear video and audio capture.",
-        "Keep your ID ready for AI-based verification, if required.",
-      ],
-    },
-    {
-      title: "During the Interview",
-      rules: [
-        "Keep your camera and microphone on at all times.",
-        "Avoid external help or background distractions.",
-        "Follow on-screen AI prompts for speaking or recording responses.",
-        "Maintain eye contact with the camera to help the AI assess engagement.",
-        "Speak clearly and at a normal pace for accurate voice analysis.",
-        "Manage your time — each question has a set limit.",
-        "Avoid background movement or noise that may affect tracking accuracy.",
-      ],
-    },
-    {
-      title: "After the Interview",
-      rules: [
-        "Provide feedback when prompted to help improve the AI system.",
-        "Do not refresh or close the browser tab until submission is complete.",
-        "Review your performance summary if the AI provides one.",
-      ],
-    },
-  ];
+  {
+    title: "Before the Interview",
+    rules: [
+      "Ensure a stable internet connection to avoid interruptions.",
+      "Test your microphone, camera, and speakers before joining.",
+      "Use a compatible device (preferably a laptop or desktop) with an updated browser.",
+      "Choose a quiet, well-lit environment for clear video and audio capture.",
+      "Once the AI interview session begins, it must be completed in one continuous attempt and cannot be paused, stopped, or restarted."
+    ],
+  },
+  {
+    title: "During the Interview",
+    rules: [
+      "Keep your camera and microphone on at all times.",
+      "Avoid external help or background distractions.",
+      "Questions will be displayed on screen and may also be read aloud. You can either read or listen, whichever is more comfortable for you.",
+      "Ensure your face remains clearly visible throughout the interview.",
+      "Do not switch tabs or applications during the interview. Keep the interview tab open at all times.",
+      "Do not use external devices or seek outside assistance during the interview.",
+      "Do not refresh or close the browser window, as this may end your session and you may not be able to rejoin.",
+      "You must respond to every question. If you are unsure, clearly state 'I don’t know', but still provide an answer attempt."
+    ],
+  },
+  {
+    title: "After the Interview",
+    rules: [
+      "Once completed, your responses will be automatically submitted — no further action is required.",
+      "The interview is a single attempt and cannot be retaken once completed.",
+      "Your responses will be reviewed by our system and team. If shortlisted, you will be contacted for the next stage."
+    ],
+  },
+];
 
   return (
+
+    
     <div className="w-full px-8 py-10">
       <Motion.h2
         className="text-4xl md:text-3xl font-bold text-[#29445D] mb-10 text-center"

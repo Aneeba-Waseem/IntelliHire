@@ -16,7 +16,7 @@ export const getDashboardData = async (req, res) => {
                 },
                 {
                     model: Resume, // ✅ ADD THIS
-                    attributes: ["name"],
+                    attributes: ["Fk_Candidate","name"],
                 },
                 {
                     model: User,
@@ -50,6 +50,7 @@ export const getDashboardData = async (req, res) => {
             id: i.id,
             jobDescriptionId: i.FK_JobDescription,
             resumeId: i.FK_Resume || "id not defined",
+            candidateId: i.Resume.Fk_Candidate,
             company: i.User?.company || "Unknown Company",
             role: i.JobDescription?.JobRole || "Role",
             date: i.date,

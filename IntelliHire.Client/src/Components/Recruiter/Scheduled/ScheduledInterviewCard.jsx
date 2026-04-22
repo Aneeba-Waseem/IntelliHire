@@ -52,7 +52,7 @@ const ScheduledInterviewCard = ({ interview, onViewProfile }) => {
             year: "numeric",
         });
     };
-
+    console.log("schedules me candidate ",interview.Candidate)
     const formatTime = (timeStr) => {
         const [h, m] = timeStr.split(":");
         const date = new Date();

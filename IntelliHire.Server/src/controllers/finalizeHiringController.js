@@ -74,9 +74,32 @@ export const finalizeHiring = async (req, res) => {
             if (!shortlistedIds.includes(data.resume_id)) continue;
 
             const r = data.parsed_resume;
+// ================= USER =================
+            let user = await User.findOne({
+                where: { email: r.contact_info?.email }
+            });
 
+            if (!user) {
+                const randomPassword = await bcrypt.hash("Temp@1234", 10);
+
+                user = await User.create({
+                    fullName: r.name,
+                    email: r.contact_info?.email,
+                    password: randomPassword,
+                    company: "N/A",
+                    Role: "candidate",
+                    isVerified: true,
+                }, { transaction: t });
+
+            } else {
+                if (user.Role === "recruiter") {
+                    user.Role = "both";
+                    await user.save({ transaction: t });
+                }
+            }
             const resume = await Resume.create({
                 id: data.resume_id,
+                Fk_Candidate: user.AutoId,
                 FK_JobDescription: job.id,
                 name: r.name,
                 email: r.contact_info?.email,
@@ -114,29 +137,7 @@ export const finalizeHiring = async (req, res) => {
                 }, { transaction: t });
             }
 
-            // ================= USER =================
-            let user = await User.findOne({
-                where: { email: r.contact_info?.email }
-            });
-
-            if (!user) {
-                const randomPassword = await bcrypt.hash("Temp@1234", 10);
-
-                user = await User.create({
-                    fullName: r.name,
-                    email: r.contact_info?.email,
-                    password: randomPassword,
-                    company: "N/A",
-                    Role: "candidate",
-                    isVerified: true,
-                }, { transaction: t });
-
-            } else {
-                if (user.Role === "recruiter") {
-                    user.Role = "both";
-                    await user.save({ transaction: t });
-                }
-            }
+            
 
             // ================= INTERVIEW CHECK =================
             const exists = await Interview.findOne({

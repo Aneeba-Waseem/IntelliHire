@@ -19,8 +19,8 @@ import { ModalProvider } from "./Components/Recruiter/JobForm/ModalContext";
 import DetailedReportPage from "./Components/Report/Detailed/DetailedReportPage";
 // import WebSocketTest from "./Components/Meeting/WebSocketConnectivityTest"; 
 
-  
-  // Pass Redux token to the hook - it will only schedule when token exists
+
+// Pass Redux token to the hook - it will only schedule when token exists
 import { Toaster } from "react-hot-toast";
 import { useSelector } from "react-redux";
 // import JobDescription from "./Components/Recruiter/JobDescriptionDetails";
@@ -29,6 +29,7 @@ import CompletedInterviews from "./Components/Recruiter/Completed/CompletedInter
 import CandidateProfile from "./Components/Recruiter/CandidateProfile";
 import ReportPage from "./Components/Report/Detailed/DetailedReportPage";
 import PrintReport from "./Components/Report/Detailed/PrintReport";
+import GoodByePage from "./Components/Meeting/GoodByePage";
 // import CandidateLogin from "./Components/Auth/CandidateLogin";
 function App() {
   const accessToken = useSelector((state) => state.auth.accessToken);
@@ -56,6 +57,7 @@ function App() {
             color: "#fff",
             borderRadius: "10px",
             padding: "12px 16px",
+            zIndex: 9999,
           },
           success: {
             iconTheme: {
@@ -71,39 +73,43 @@ function App() {
           },
         }}
       />
-       <ModalProvider>
-         <SessionProvider>
-      <div>
-        {/* Conditionally render Navbar */}
-        {LandingNavBar && <Navbar />}
-        {!LandingNavBar && !userVerification && !auth && !reportPage && <TopBar />}
+      <ModalProvider>
+        <SessionProvider>
+          <div>
+            {/* Conditionally render Navbar */}
+            {LandingNavBar && <Navbar />}
+            {!LandingNavBar && !userVerification && !auth && !reportPage && <TopBar />}
 
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/heroSection" element={<HeroSection />} />
-          <Route path="/common" element={<CommonPage />} />
-          <Route path="/meetingSection" element={<MeetInterface />} />
-          <Route path="/meetingPermissions" element={<MeetingPermissions />} />
-          <Route path="/userDashboard" element={<Dashboard />} />
-          <Route path="/Meet" element={<Meet />} />
-          <Route path="/verify-notice" element={<VerificationNotice />} />
-          <Route path="/ScheduledInterview" element={<ScheduledInterviews />} />
-           <Route path="/CompletedInterview" element={<CompletedInterviews />} />
-           <Route path="/job/:id" element={<JobDescriptionDetails />} />
-           <Route path="/resume/:resumeId" element={<CandidateProfile />} />
-          {/* <Route path="/WebTest" element={<WebSocketTest/>} /> */}
-          {/* <Route path="/report" element={<ReportPage />} /> */}
-          {/* <Route path="/login" element={<CandidateLogin />} /> */}
-          <Route path="/report/detailed" element={<DetailedReportPage />} />
-          <Route path="/print-report" element={<PrintReport />} />
-          
-        </Routes>
-        {/* Conditionally render Footer */}
-        {!auth && !Meeting && !userVerification && !reportPage && <Footer />}
-      </div>
-      </SessionProvider>
-    </ModalProvider>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/heroSection" element={<HeroSection />} />
+              <Route path="/common" element={<CommonPage />} />
+              <Route path="/meetingSection" element={<MeetInterface />} />
+              <Route path="/meetingPermissions" element={<MeetingPermissions />} />
+              <Route path="/userDashboard" element={<Dashboard />} />
+              <Route path="/Meet" element={<Meet />} />
+              <Route path="/verify-notice" element={<VerificationNotice />} />
+              <Route path="/ScheduledInterview" element={<ScheduledInterviews />} />
+              <Route path="/CompletedInterview" element={<CompletedInterviews />} />
+              <Route path="/FinalMeeting" element={<GoodByePage />} />
+              <Route path="/job/:id" element={<JobDescriptionDetails />} />
+              <Route path="/resume/:resumeId" element={<CandidateProfile />} />
+              {/* <Route path="/WebTest" element={<WebSocketTest/>} /> */}
+              {/* <Route path="/report" element={<ReportPage />} /> */}
+              {/* <Route path="/login" element={<CandidateLogin />} /> */}
+              <Route
+                path="/report/:candidateId/:jobId"
+                element={<DetailedReportPage />}
+              />
+              <Route path="/print-report" element={<PrintReport />} />
+
+            </Routes>
+            {/* Conditionally render Footer */}
+            {!auth && !Meeting && !userVerification && !reportPage && <Footer />}
+          </div>
+        </SessionProvider>
+      </ModalProvider>
     </>
   );
 }

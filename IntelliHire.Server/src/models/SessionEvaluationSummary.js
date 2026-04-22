@@ -7,9 +7,10 @@ const SessionEvaluationSummary = sequelize.define("SessionEvaluationSummary", {
     allowNull: false,
   },
 
-  scorecard: {
+  domainScores: {
+    // [{ domain: "DSA", avgScore: 3.5 }]
     type: DataTypes.JSONB,
-    defaultValue: {},
+    defaultValue: [],
   },
 
   overallScore: {
