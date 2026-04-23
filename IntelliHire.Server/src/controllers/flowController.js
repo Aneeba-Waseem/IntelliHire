@@ -415,7 +415,7 @@ export default class FlowController {
     if (!interview) {
       return res.status(404).json({ message: "Interview not found" });
     }
-
+    console.log("chl ja ullay");
     const { date, time, duration } = interview;
 
     // Combine date + time into a single Date object
@@ -430,7 +430,7 @@ export default class FlowController {
 
     const remainingMinutes = Math.floor(totalSeconds / 60);
     const remainingSeconds = totalSeconds % 60;
-
+    console.log(totalSeconds);
     return res.json({
       remainingMinutes,
       remainingSeconds,
