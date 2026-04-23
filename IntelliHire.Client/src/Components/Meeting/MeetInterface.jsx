@@ -15,47 +15,64 @@ const MeetInterface = () => {
 const [status, setStatus] = useState("loading"); 
 // "waiting" | "ready" | "expired"
 
-const getRemainingTime = async (candidateUserId) => {
-    try {
-        const res = await API.get(
-            `http://localhost:8000/api/flow/interview/remaining-time/${candidateUserId}`
-        );
-        return res.data;
-    } catch (err) {
-        console.error(err);
-        return null;
+const getRemainingTime = async (token, candidateUserId) => {
+  const res = await fetch(
+    `${API_BASE}/flow/interview/remaining-time/${candidateUserId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Failed to fetch remaining time");
+  }
+
+  return data;
 };
 
 useEffect(() => {
   const fetchTime = async () => {
-    const candidateUserId = authState?.user?.UserId;
+    try {
+      const authState = loadAuthState();
 
-    if (!candidateUserId) return;
+      const token = authState?.accessToken;
+      const candidateUserId = authState?.user?.UserId;
 
-    const data = await getRemainingTime(candidateUserId);
-    console.log(data);
+      if (!token || !candidateUserId) return;
 
-    if (!data) return;
+      const data = await getRemainingTime(token, candidateUserId);
 
-    const { remainingMinutes, remainingSeconds } = data;
+      console.log(data);
 
-    const totalSeconds = remainingMinutes * 60 + remainingSeconds;
+      if (!data) return;
 
-    if (totalSeconds > 0) {
-      setStatus("waiting");
-      setRemainingTime(totalSeconds);
-    } else if (totalSeconds <= 0 && totalSeconds > -600) {
-      // within 10 mins after start
-      setStatus("ready");
-    } else {
-      setStatus("expired");
+      const { remainingMinutes, remainingSeconds } = data;
+
+      const totalSeconds = remainingMinutes * 60 + remainingSeconds;
+
+      if (totalSeconds > 0) {
+        setStatus("waiting");
+        setRemainingTime(totalSeconds);
+      } 
+      else if (totalSeconds <= 0 && totalSeconds > -600) {
+        // interview window open (within 10 min grace)
+        setStatus("ready");
+      } 
+      else {
+        // more than 10 min passed
+        setStatus("expired");
+      }
+    } catch (err) {
+      console.error("Failed to fetch interview time:", err);
     }
   };
 
   fetchTime();
 }, []);
-
 
 useEffect(() => {
   if (status !== "waiting") return;
