@@ -2,15 +2,17 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import logo from "../../assets/landing/logo_final.png";
 import { Disclosure } from "@headlessui/react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const navigationItems = [
-  { name: "For Candidates", href: "/" },
-  { name: "For Recruiters", href: "/experience" },
+  { name: "For Candidates", href: "#candidates" },
+  { name: "For Recruiters", href: "#recruiters" },
   { name: "Sign In", href: "/auth" },
 ];
 
 function Navbar() {
+  const navigate = useNavigate();
+
   const location = useLocation();
   const [hoverTab, setHoverTab] = useState(null);
   const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 });
@@ -52,24 +54,32 @@ function Navbar() {
             {navigationItems.map((item, index) => {
               const isActive = activeTabByPath === item.name;
               return (
-                <Link
+                <span
+                style={{onClick:"pointer"}}
                   key={item.name}
-                  to={item.href}
                   ref={(el) => (navRefs.current[index] = el)}
                   onMouseEnter={() => setHoverTab(item.name)}
                   onMouseLeave={() => setHoverTab(null)}
-                  className={`px-2 py-1 cursor-pointer font-semibold transition-colors duration-200 ${
-                    isActive ? "text-[#29445D]" : "text-[#45767C]"
-                  }`}
+                  onClick={() => {
+                    if (item.href.startsWith("#")) {
+                      const el = document.querySelector(item.href);
+                      el?.scrollIntoView({ behavior: "smooth" });
+                    } else {
+                      navigate(item.href);
+                    }
+                  }}
+                  className="px-2 py-1 cursor-pointer font-semibold transition-colors duration-200"
                 >
                   {item.name}
-                </Link>
+                </span>
               );
             })}
           </div>
 
           {/* CTA Button */}
           <motion.button
+            style={{ cursor: "pointer" }}
+            onClick={() => navigate("/auth")}
             whileHover={{
               scale: 1.03,
               boxShadow: "0px 8px 20px rgba(0,0,0,0.15)",

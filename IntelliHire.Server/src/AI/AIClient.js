@@ -15,7 +15,7 @@ import axios from "axios";
  * Everything else is unchanged from the original.
  */
 export default class AIClient {
-  constructor(baseURL = "http://127.0.0.1:8001/api") {
+  constructor(baseURL = "http://localhost:8001/api") {
     this.client = axios.create({
       baseURL,
       timeout: 240_000, // 4 minutes

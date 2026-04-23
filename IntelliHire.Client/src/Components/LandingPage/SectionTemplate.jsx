@@ -1,13 +1,18 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function SectionTemplate({ 
   heading, 
   paragraph, 
   image, 
   reverse = false, // if true, image goes on left, text on right
-  buttonText = "helllo" // pass the button text
-}) {
+  buttonText  // pass the button text
+})
+
+{
+    const navigate = useNavigate();
+
   return (
     <div className={`flex flex-col lg:flex-row items-center my-16 w-full ${reverse ? "lg:flex-row-reverse" : ""}`}>
       
@@ -39,6 +44,8 @@ export default function SectionTemplate({
 
         {buttonText && (
           <motion.button
+            style={{ cursor: "pointer" }}
+            onClick={() => navigate("/auth")}
             whileHover={{ scale: 1.05, boxShadow: "0px 8px 20px rgba(0,0,0,0.15)" }}
             whileTap={{ scale: 0.97 }}
             transition={{ type: "spring", stiffness: 200, damping: 18 }}

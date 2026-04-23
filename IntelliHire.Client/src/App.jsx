@@ -83,7 +83,7 @@ function App() {
             <Routes>
               {/* Public Routes */}
               <Route path="/auth" element={<AuthPage />} />
-              <Route path="/heroSection" element={<HeroSection />} />
+              <Route path="/" element={<HeroSection />} />
               <Route path="/common" element={<CommonPage />} />
               <Route path="/meetingSection" element={<MeetInterface />} />
               <Route path="/meetingPermissions" element={<MeetingPermissions />} />
