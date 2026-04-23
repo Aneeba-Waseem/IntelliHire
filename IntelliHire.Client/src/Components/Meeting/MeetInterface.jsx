@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { motion as Motion } from "motion/react";
+import { motion as Motion } from "framer-motion";
 import SidebarCustom from "../CommonComponents/SidebarCustom";
 import InterviewSchedule from "./InterviewSchedule";
 import InterviewRules from "./InterviewRules";
