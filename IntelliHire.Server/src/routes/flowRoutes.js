@@ -8,6 +8,8 @@ export default function createFlowRoutes(controller) {
   router.post("/answer", authMiddleware, controller.submitAnswer);
   router.get("/report/:sessionId", authMiddleware, controller.getReport);
   router.get("/:jobId/topics", authMiddleware, controller.getTopicsForJob);
+  
+  router.get("/remaining-time/:candidateUserId", authMiddleware, controller.getTopicsForJob);
 
   return router;
 }

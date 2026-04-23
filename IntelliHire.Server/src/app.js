@@ -15,7 +15,7 @@ import evaluationRoutes from "./routes/evaluationRoutes.js"
 const app = express();
 
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: "https://intelli-hire-5k2g.vercel.app",
     credentials: true
 }));
 

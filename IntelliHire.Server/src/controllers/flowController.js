@@ -403,4 +403,43 @@ export default class FlowController {
   _isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
+
+    async getInterviewRemainingTime(req, res) {
+  try {
+    const { candidateUserId } = req.params;
+
+    const interview = await Interview.findOne({
+      where: { candidateUserId }
+    });
+
+    if (!interview) {
+      return res.status(404).json({ message: "Interview not found" });
+    }
+
+    const { date, time, duration } = interview;
+
+    // Combine date + time into a single Date object
+    const interviewDateTime = new Date(`${date}T${time}`);
+
+    const now = new Date();
+
+    const diffMs = interviewDateTime - now;
+
+
+    const totalSeconds = Math.floor(diffMs / 1000);
+
+    const remainingMinutes = Math.floor(totalSeconds / 60);
+    const remainingSeconds = totalSeconds % 60;
+
+    return res.json({
+      remainingMinutes,
+      remainingSeconds,
+      scheduledDuration: duration
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
 }

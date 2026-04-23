@@ -261,6 +261,21 @@ export const getEvaluationReport = async (req, res) => {
         notes: noteText,
       };
     });
+    let recommendation = overallScore < 2.5
+  ? {
+      title: "Reject the Candidate",
+      description: "The candidate does not meet the required criteria and performance expectations.",
+    }
+  : overallScore < 4
+  ? {
+      title: "Consider the Candidate",
+      description: "The candidate shows potential but has some areas that need improvement.",
+    }
+  : {
+      title: "Hire the Candidate",
+      description: "The candidate demonstrates strong skills and is a great fit for the role.",
+    };
+
 
     return res.json({
       candidate: candidate?.fullName || "N/A",
@@ -271,10 +286,7 @@ export const getEvaluationReport = async (req, res) => {
       strengths,
       weaknesses,
       sections,
-      recommendation: {
-        title: "Auto Generated",
-        description: "Based on evaluation data",
-      },
+      recommendation,
     });
 
   } catch (err) {

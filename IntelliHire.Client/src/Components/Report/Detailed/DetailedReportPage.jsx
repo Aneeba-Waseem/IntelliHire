@@ -65,7 +65,8 @@ export default function DetailedReportPage() {
 
   return (
     <motion.div
-      className="min-h-screen bg-[#D1DED3] text-[#29445D] px-6 md:px-12 py-10"
+  className="min-h-screen bg-[#D1DED3] px-4 md:px-10 py-6 md:py-10 text-[#29445D]"
+  style={{ fontFamily: "Staatliches, monospace" }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
@@ -74,32 +75,32 @@ export default function DetailedReportPage() {
       <div className="flex justify-between items-center mb-10">
         <button
           onClick={() => navigate(-1)}
-          className="text-[#29445D] opacity-70 hover:opacity-100 transition text-sm"
+          className="text-[#29445D] opacity-70 hover:opacity-100 transition text-base"
         >
           ← back
         </button>
 
-        <h1 className="text-2xl md:text-4xl font-semibold tracking-tight">
+        <h1 className="text-2xl md:text-4xl">
           Interview Report
         </h1>
 
         <button
         style={{cursor:"pointer"}}
           onClick={() => setShowModal(true)}
-          className="border-2 border-[#29445D] text-[#29445D] rounded-full px-8 py-2 font-semibold hover:bg-[#29445D] hover:text-[#D1DED3] transition"
+          className="border-2 border-[#29445D] text-[#29445D] text-lg rounded-full px-8 py-2 hover:bg-[#29445D] hover:text-[#D1DED3] transition"
         >
           download
         </button>
       </div>
 
       {/* Candidate Card */}
-      <div className="bg-[#F2FAF5]/30 backdrop-blur-xl border border-white/40 rounded-2xl p-6 mb-10 shadow-sm">
+      <div className="bg-[#F2FAF5]/30 backdrop-blur-xl border border-white/40 rounded-2xl p-6 mb-10 shadow-sm text-xl md:text-2xl">
         <div className="flex justify-between flex-col md:flex-row gap-2">
-          <p className="text-lg">
+          <p>
             <span className="opacity-70">Candidate:</span> {candidate}
           </p>
 
-          <p className="text-lg md:text-right">
+          <p className=" md:text-right">
             <span className="opacity-70">Role:</span> {role} |{" "}
             <span className="opacity-70">Score:</span> {score}/5
           </p>
@@ -108,10 +109,10 @@ export default function DetailedReportPage() {
 
       {/* Summary */}
       <div className="mb-10">
-        <h2 className="text-xl text-[#29445D] font-medium mb-4">Score Summary</h2>
+        <h2 className="text-xl md:text-2xl text-[#29445D]  mb-4">Score Summary</h2>
 
         <div className="rounded-2xl overflow-hidden bg-[#F2FAF5]/30 backdrop-blur-xl border border-white/40">
-          <div className="grid text-[#29445D] grid-cols-3 p-4 text-lg font-bold ">
+          <div className="grid text-[#29445D] grid-cols-3 p-4 text-lg md:text-xl ">
             <div>Domain</div>
             <div className="text-center">Score</div>
             <div>Notes</div>
@@ -120,14 +121,15 @@ export default function DetailedReportPage() {
           {summary.length ? summary.map((item, i) => (
             <div
               key={i}
-              className="grid grid-cols-3 p-4 border-t border-white/30 text-sm"
+              className="grid grid-cols-3 p-4 border-t border-white/30 text-lg md:text-xl"
+              style={{ fontFamily: "Barlow Condensed, monospace" }}
             >
               <div>{item.domain}</div>
               <div className="text-center">{item.score}</div>
               <div className="text-[#29445D font-semibold]">{item.notes || "-"}</div>
             </div>
           )) : (
-            <p className="p-4 text-sm opacity-60">No summary available</p>
+            <p className="p-4 text-lg md:text-xl opacity-90" style={{ fontFamily: "Barlow Condensed, monospace" }}>No summary available</p>
           )}
         </div>
       </div>
@@ -136,20 +138,20 @@ export default function DetailedReportPage() {
       <div className="grid md:grid-cols-2 gap-6 mb-10">
 
         <div className="bg-[#F2FAF5]/30 backdrop-blur-xl border border-white/40 rounded-2xl p-6">
-          <h3 className="text-lg font-medium mb-3">Strengths</h3>
-          <ul className="space-y-2 text-sm">
+          <h3 className="text-lg font-medium mb-3 text-xl md:text-2xl ">Strengths</h3>
+          <ul className="space-y-2 text-lg md:text-xl"style={{ fontFamily: "Barlow Condensed, monospace" }}>
             {strengths.length ? strengths.map((s, i) => (
-              <li key={i} className="opacity-80">• {s}</li>
-            )) : <li className="opacity-50">No strengths listed</li>}
+              <li key={i} className="opacity-90">• {s}</li>
+            )) : <li className="opacity-90">No strengths listed</li>}
           </ul>
         </div>
 
         <div className="bg-[#F2FAF5]/30 backdrop-blur-xl border border-white/40 rounded-2xl p-6">
-          <h3 className="text-lg font-medium mb-3">Areas to Improve</h3>
-          <ul className="space-y-2 text-sm">
+          <h3 className="text-lg font-medium mb-3 text-xl md:text-2xl ">Areas to Improve</h3>
+          <ul className="space-y-2 text-lg md:text-xl" style={{ fontFamily: "Barlow Condensed, monospace" }}>
             {weaknesses.length ? weaknesses.map((w, i) => (
-              <li key={i} className="opacity-80">• {w}</li>
-            )) : <li className="opacity-50">No weaknesses listed</li>}
+              <li key={i} className="opacity-90">• {w}</li>
+            )) : <li className="opacity-90">No weaknesses listed</li>}
           </ul>
         </div>
 
@@ -158,13 +160,13 @@ export default function DetailedReportPage() {
       {/* Details */}
       <div className="mb-10">
         <div className="flex items-center gap-3 mb-4">
-          <h2 className="text-xl font-medium">Details</h2>
+          <h2 className="text-xl md:text-2xl  font-medium">Details</h2>
 
           <button
             onClick={() => setShowDetails(!showDetails)}
             className="text-sm text-[#29445D] opacity-70 hover:opacity-100"
           >
-            {showDetails ? "hide" : "show"}
+            {showDetails ? "▲" : "▼"}
           </button>
         </div>
 
@@ -173,20 +175,41 @@ export default function DetailedReportPage() {
             {sections.map((section, idx) => (
               <div
                 key={idx}
-                className="bg-[#F2FAF5]/30 backdrop-blur-xl border border-white/40 rounded-2xl p-6"
+                className="bg-[#F2FAF5]/30 backdrop-blur-xl border border-white/40 rounded-2xl p-6 text-lg md:text-xl"
               >
-                <div className="flex justify-between mb-3">
+                <div className="flex justify-between mb-3" >
                   <h3 className="font-medium">{section.title}</h3>
                   <span className="opacity-80">{section.score}/5</span>
                 </div>
 
-                {section.questions?.map((q, i) => (
-                  <div key={i} className="m-10 text-sm">
-                    <p className="font-semibold text-lg text-[#29445D] m-1" ><span className="font-semibold text-lg">Q:</span > {q.question}</p>
-                    <p className="text-[#29445D] italic m-1">Feedback: {q.notes}</p>
-                    <p className="font-bold text-[#29445D] m-1">Score: {q.score}</p>
-                  </div>
-                ))}
+                {section.questions?.length ? (
+  section.questions.map((q, i) => (
+    <div
+      key={i}
+      className="mt-4 md:mt-6 px-2 md:px-6 text-sm md:text-base"
+      style={{ fontFamily: "Barlow Condensed, monospace" }}
+    >
+      <p className="font-semibold text-base md:text-lg text-[#29445D] mb-1">
+        <span className="font-semibold">Q{i + 1}:</span> {q.question}
+      </p>
+
+      <p className="italic text-[#29445D] opacity-90 mb-1">
+        <span className="font-semibold not-italic">Feedback:</span> {q.notes}
+      </p>
+
+      <p className="font-bold text-[#29445D] text-sm md:text-base">
+        Score: {q.score}
+      </p>
+    </div>
+  ))
+) : (
+  <p
+    className="text-sm md:text-base text-[#29445D] opacity-70 mt-2"
+    style={{ fontFamily: "Barlow Condensed, monospace" }}
+  >
+    No details available
+  </p>
+)}
               </div>
             ))}
           </div>
@@ -195,9 +218,9 @@ export default function DetailedReportPage() {
 
       {/* Recommendation */}
       <div className="bg-[#F2FAF5]/30 backdrop-blur-xl border border-white/40 rounded-2xl p-6">
-        <h2 className="text-lg font-medium mb-2">Recommendation</h2>
-        <p className="opacity-80">{recommendation?.title}</p>
-        <p className="opacity-60 mt-1">{recommendation?.description}</p>
+        <h2 className="text-xl md:text-2xl mb-2">Recommendation</h2>
+        <p className="opacity-90 text-lg md:text-xl" style={{ fontFamily: "Barlow Condensed, monospace" }}>{recommendation?.title}</p>
+        <p className="opacity-80 mt-1 text-lg md:text-xl" style={{ fontFamily: "Barlow Condensed, monospace" }}>{recommendation?.description}</p>
       </div>
 
       {/* Modal (UNCHANGED LOGIC) */}
