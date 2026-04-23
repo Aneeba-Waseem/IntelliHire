@@ -58,7 +58,7 @@ const MeetPreJoin = () => {
     };
 
     return (
-        <div className="flex h-screen w-full bg-[#D1DED3] items-center justify-center p-4">
+        <div className="flex h-[70vh] w-[70vw] bg-[#D1DED3] items-center justify-center p-4">
             <div className="w-2/3 h-3/4 bg-black flex items-center justify-center rounded-lg overflow-hidden">
                 {cameraOn ? (
                     <video

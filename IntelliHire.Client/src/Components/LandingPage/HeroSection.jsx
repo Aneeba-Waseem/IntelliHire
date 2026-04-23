@@ -6,8 +6,10 @@ import { Icon } from '@iconify/react';
 import CardStack from "./CardStack";
 import Stats from "./Stats";
 import LandingSection from "./LandingSection";
+import { useNavigate } from "react-router-dom";
 
 export default function HeroSection() {
+  const navigate = useNavigate();
   return (
     <div className="w-full overflow-hidden">
       {/* Top Hero Section */}
@@ -53,6 +55,16 @@ export default function HeroSection() {
           >
             <Stats />
           </motion.div>
+    <motion.button
+    style={{cursor:"pointer"}}
+  onClick={() => navigate("/auth")}
+  whileHover={{ scale: 1.03 }}
+  whileTap={{ scale: 0.97 }}
+  className="lg:hidden mt-6 mx-auto block rounded-3xl w-[180px] text-[#F2FAF5] py-3 font-semibold
+             bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]"
+>
+  Get Started
+</motion.button>
         </motion.div>
 
         {/* Right Side - Image + CardStack */}
@@ -73,7 +85,7 @@ export default function HeroSection() {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 1, delay: 0.5 }}
           />
-
+          
           {/* CardStack overlapping hero image - hidden on md and smaller */}
           <motion.div
             className="hidden lg:block absolute xl:w-[35%] lg:w-[20%] p-3 flex justify-center items-center -translate-y-16 right-0"
@@ -84,7 +96,7 @@ export default function HeroSection() {
           >
             <CardStack />
           </motion.div>
-
+          
           {/* Read More button */}
           <motion.button
             className="hidden lg:flex mt-100 mr-10 items-center justify-center xl:space-x-2 lg:space-x-0 border-2 border-[#29445D] text-[#29445D] font-bold px-6 py-3 rounded-3xl hover:bg-[#29445D] hover:text-white transition-colors"

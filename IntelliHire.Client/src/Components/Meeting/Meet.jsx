@@ -4,6 +4,7 @@ import { Mic, MicOff, Video, VideoOff, Phone, X } from "lucide-react";
 import { webrtcStore } from "../../store/webRtcStore";
 import { useSession } from "./sessionContext";
 import { loadAuthState } from "../../features/auth/persistAuth";
+ import logo from "../../assets/landing/logo_final.png";
 
 /**
  * MERGED Meet Component
@@ -333,44 +334,44 @@ export default function Meet() {
 
   // ---------- START INTERVIEW ----------
   const startInterview = async () => {
-  try {
-    const token = getToken();
+    try {
+      const token = getToken();
 
-    const res = await fetch("http://localhost:8000/api/flow/start", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        candidateId: getUserId(),
-        jobId: "job123",
-        webrtcSessionId: webRtcSessionId,
-      }),
-    });
+      const res = await fetch("http://localhost:8000/api/flow/start", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          candidateId: getUserId(),
+          jobId: "job123",
+          webrtcSessionId: webRtcSessionId,
+        }),
+      });
 
-    const response = await res.json();
-    const data = response.data;
+      const response = await res.json();
+      const data = response.data;
 
-    console.log("✅ Interview started");
-    console.log("   Interview Session ID:", data.sessionId);
-    console.log("   WebRTC Session ID:", webRtcSessionId);
+      console.log("✅ Interview started");
+      console.log("   Interview Session ID:", data.sessionId);
+      console.log("   WebRTC Session ID:", webRtcSessionId);
 
-    // 🔥 STORE BOTH TO STATE / STORE
-    webrtcStore.interviewSessionId = data.sessionId;
-    webrtcStore.webRtcSessionId = webRtcSessionId;
+      // 🔥 STORE BOTH TO STATE / STORE
+      webrtcStore.interviewSessionId = data.sessionId;
+      webrtcStore.webRtcSessionId = webRtcSessionId;
 
-    sendInterviewSessionIdToBackend(data.sessionId);
+      sendInterviewSessionIdToBackend(data.sessionId);
 
-    setQuestion(data.question);
+      setQuestion(data.question);
 
-    sendQuestionViaWebSocket(data.question);
+      sendQuestionViaWebSocket(data.question);
 
-    startListening();
-  } catch (err) {
-    console.error("Start interview error:", err);
-  }
-};
+      startListening();
+    } catch (err) {
+      console.error("Start interview error:", err);
+    }
+  };
 
   // Send question via WebSocket (TTS)
   const sendQuestionViaWebSocket = (text) => {
@@ -395,9 +396,9 @@ export default function Meet() {
     setCurrentAnswer("");
     setAnswerFeedback("");
     const track = webrtcStore.stream?.getAudioTracks()[0];
-console.log("Track enabled:", track?.enabled);
-console.log("Track state:", track?.readyState);
-console.log("Track settings:", track?.getSettings());
+    console.log("Track enabled:", track?.enabled);
+    console.log("Track state:", track?.readyState);
+    console.log("Track settings:", track?.getSettings());
     listeningStartTimeRef.current = Date.now();
 
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -590,44 +591,44 @@ Message: ${data.message}
     }
   };
 
-const endCall = async () => {
-  console.log("📞 Ending call...");
-  const token = getToken();
-  try {
-    const sessionData = {
-      sessionId: webrtcStore.interviewSessionId
-    };
+  const endCall = async () => {
+    console.log("📞 Ending call...");
+    const token = getToken();
+    try {
+      const sessionData = {
+        sessionId: webrtcStore.interviewSessionId
+      };
 
-    await fetch("http://localhost:8000/api/evaluation/save", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(sessionData), // ✅ only this
-    });
+      await fetch("http://localhost:8000/api/evaluation/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(sessionData), // ✅ only this
+      });
 
-    console.log("✅ Evaluation saved");
-   
-  } catch (err) {
-    console.error("❌ Failed to save evaluation:", err);
-  }
+      console.log("✅ Evaluation saved");
 
-  // 🔥 THEN cleanup (important: after API call)
-  stream?.getTracks().forEach((t) => t.stop());
-  pc?.close();
-  ws?.close();
+    } catch (err) {
+      console.error("❌ Failed to save evaluation:", err);
+    }
 
-  webrtcStore.stream = null;
-  webrtcStore.pc = null;
-  webrtcStore.ws = null;
-  webrtcStore.remoteAudioStream = null;
-  webrtcStore.webRtcSessionId = null;
-  webrtcStore.cameraOn = null;
-  webrtcStore.micOn = null;
- navigate("/FinalMeeting")
+    // 🔥 THEN cleanup (important: after API call)
+    stream?.getTracks().forEach((t) => t.stop());
+    pc?.close();
+    ws?.close();
 
-};
+    webrtcStore.stream = null;
+    webrtcStore.pc = null;
+    webrtcStore.ws = null;
+    webrtcStore.remoteAudioStream = null;
+    webrtcStore.webRtcSessionId = null;
+    webrtcStore.cameraOn = null;
+    webrtcStore.micOn = null;
+    navigate("/FinalMeeting")
+
+  };
 
   return (
     <div className=" bg-[#D1DED3] flex flex-col items-center justify-center relative min-h-[90vh]">
@@ -654,7 +655,7 @@ const endCall = async () => {
       )}
 
       {/* MAIN UNIFIED CONTAINER */}
-      <div className="w-full max-w-7xl bg-[#A9C5C0] rounded-3xl p-12 shadow-lg flex flex-col justify-between gap-5 min-h-[600px]">
+      <div className=" w-[90%] h-[70vh] max-w-7xl bg-[#A9C5C0] rounded-3xl p-12 shadow-lg flex flex-col justify-between gap-5">
 
         {/* TOP: AI AVATAR - Centered */}
         <div className="flex justify-center items-center">
@@ -668,9 +669,17 @@ const endCall = async () => {
             )}
 
             {/* Main AI circle */}
-            <div className={`relative mt-20 w-48 h-48 bg-white rounded-full flex items-center justify-center transition-all duration-300 shadow-lg font-bold text-5xl text-[#29445D] ${isAISpeaking ? "ring-4 ring-gray-400 ring-opacity-80 scale-110" : ""
-              }`}>
-              AI
+           
+
+            <div
+              className={`relative mt-20 w-48 h-48 bg-white rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${isAISpeaking ? "ring-4 ring-gray-400 ring-opacity-80 scale-110" : ""
+                }`}
+            >
+              <img
+                src={logo}
+                alt="AI Logo"
+                className="w-35 h-35 object-contain"
+              />
             </div>
           </div>
         </div>
@@ -681,7 +690,7 @@ const endCall = async () => {
           {/* LEFT: SUBTITLES (AI Question/Live Captions) */}
           <div className="flex-1">
             <div className="text-lg font-bold text-[#29445D] leading-relaxed">
-              {displayedQuestion || ""}
+              {displayedQuestion || "Thinking…"}
               {displayedQuestion && displayedQuestion.length < question.length && (
                 <span className="animate-pulse ml-1">▌</span>
               )}

@@ -49,7 +49,7 @@ export default function SectionTemplate({
             whileHover={{ scale: 1.05, boxShadow: "0px 8px 20px rgba(0,0,0,0.15)" }}
             whileTap={{ scale: 0.97 }}
             transition={{ type: "spring", stiffness: 200, damping: 18 }}
-            className="hidden lg:block mt-5 rounded-3xl w-[50%] text-[#F2FAF5] py-3 font-semibold
+            className="mt-5 rounded-3xl w-[50%] text-[#F2FAF5] py-3 font-semibold
                        bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
                        hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]"
           >
