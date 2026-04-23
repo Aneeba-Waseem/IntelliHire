@@ -39,7 +39,7 @@ function App() {
 
   const location = useLocation();
   // Pages where we don't want Navbar and Footer
-  const LandingNavBar = location.pathname === "/heroSection";
+  const LandingNavBar = location.pathname === "/";
   const auth = location.pathname === "/auth";
   const Meeting = location.pathname === "/Meet";
   // const MeetingPermissions = location.pathname === "/meetingPermissions";
