@@ -173,11 +173,11 @@ const MeetInterface = () => {
           {/* Join Meeting Button */}
           <div className="mt-5 ml-auto mb-7 mr-8">
             <button
-              disabled={!rulesChecked || status !== "ready"}
+              disabled={!rulesChecked}
               className={`rounded-3xl w-[180px] py-5 font-semibold text-[#F2FAF5]
   bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
   hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]
-  ${!rulesChecked || status !== "ready"
+  ${!rulesChecked
                   ? "opacity-50 cursor-not-allowed"
                   : "opacity-100 cursor-pointer"
                 }`}
