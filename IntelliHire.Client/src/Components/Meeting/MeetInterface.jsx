@@ -99,6 +99,7 @@ const formatTime = (seconds) => {
 
 
   const handleClick = (e) => {
+      console.log("handle click called");
         navigate('/meetingPermissions')
     };
  
