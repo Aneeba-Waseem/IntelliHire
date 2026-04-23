@@ -183,7 +183,7 @@ const formatTime = (seconds) => {
                 text-[#F2FAF5]
                 bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
                 hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]
-                ${!rulesChecked || status !== "ready" ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer"}` }
+                ${!rulesChecked  ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer"}` }
 
                 onClick={handleClick}
             >
