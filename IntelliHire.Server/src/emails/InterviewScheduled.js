@@ -71,19 +71,19 @@ export default function InterviewScheduled({
     React.createElement(
       "p",
       null,
-      "If you have any questions or face any technical issues prior to the interview, feel free to reach out to the respective HR."
+      "If you have any questions or face any technical issues prior to the interview, feel free to reach out."
     ),
 
-    React.createElement(
-      "p",
-      null,
-      "Please find HR's information below:"
-    ),
-    console.log("recruiter info in email template", { recruiterName, recruiterEmail, recruiterCompany }),
+    // React.createElement(
+    //   "p",
+    //   null,
+    //   "Please find HR's information below:"
+    // ),
+    // console.log("recruiter info in email template", { recruiterName, recruiterEmail, recruiterCompany }),
    
-    React.createElement("p", null, "Name: ", recruiterName),
-    React.createElement("p", null, "Email: ", recruiterEmail),
-    React.createElement("p", null, "Company website: ", recruiterCompany),
+    // React.createElement("p", null, "Name: ", recruiterName),
+    // React.createElement("p", null, "Email: ", recruiterEmail),
+    // React.createElement("p", null, "Company website: ", recruiterCompany),
 
     React.createElement(
       "p",
