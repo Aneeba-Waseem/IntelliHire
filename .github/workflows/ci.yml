@@ -2,7 +2,7 @@ name: IntelliHire Pipeline
 
 on:
   push:
-    branches: [develop]
+    branches: [main, feature/InterviewFlow]
   pull_request:
     branches: ["**"]
   workflow_dispatch:
