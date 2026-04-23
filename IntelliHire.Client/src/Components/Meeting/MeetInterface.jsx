@@ -17,7 +17,7 @@ const [status, setStatus] = useState("loading");
 
 const getRemainingTime = async (token, candidateUserId) => {
   const res = await fetch(
-    `https://localhost:8000/flow/interview/remaining-time/${candidateUserId}`,
+    `https://localhost:8000/api/flow/remaining-time/${candidateUserId}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
