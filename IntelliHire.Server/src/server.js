@@ -154,16 +154,20 @@ app.post("/generate-pdf", async (req, res) => {
 // --------------------
 (async () => {
   try {
+    // 1. Test DB connection
     await sequelize.authenticate();
-    console.log("PostgreSQL connected...");
+    console.log("✅ Database connected");
 
+    // 2. Create tables if they don’t exist
     await sequelize.sync({ alter: true });
-    console.log("Database synced...");
+    console.log("✅ Tables synced");
 
-    server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    // 3. Start server ONLY after DB is ready
+    app.listen(process.env.PORT, () => {
+      console.log(`🚀 Server running on port ${process.env.PORT}`);
     });
-  } catch (err) {
-    console.error("Database connection failed:", err);
+
+  } catch (error) {
+    console.error("❌ DB connection failed:", error);
   }
 })();
