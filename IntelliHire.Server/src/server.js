@@ -1,6 +1,6 @@
 // server.js
 import dotenv from "dotenv";
-dotenv.config({ path: "./src/.env" });
+// dotenv.config({ path: "./src/.env" });
 
 
 import puppeteer from "puppeteer";
@@ -148,22 +148,27 @@ app.post("/generate-pdf", async (req, res) => {
     res.status(500).send("Failed to generate PDF");
   }
 });
-
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 // --------------------
 // Boot Server
 // --------------------
 (async () => {
   try {
     await sequelize.authenticate();
-    console.log("PostgreSQL connected...");
+    console.log("✅ Database connected");
 
     await sequelize.sync({ alter: true });
-    console.log("Database synced...");
+    console.log("✅ Tables synced");
 
-    server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  } catch (err) {
-    console.error("Database connection failed:", err);
+    const PORT = process.env.PORT || 8000;
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log("Server running on port", PORT);
+});
+
+  } catch (error) {
+    console.error("❌ DB connection failed:", error);
   }
 })();
