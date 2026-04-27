@@ -164,9 +164,9 @@ app.get("/health", (req, res) => {
 
     const PORT = process.env.PORT || 8000;
 
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
+    server.listen(process.env.PORT, "0.0.0.0", () => {
+  console.log("Server running");
+});
 
   } catch (error) {
     console.error("❌ DB connection failed:", error);
