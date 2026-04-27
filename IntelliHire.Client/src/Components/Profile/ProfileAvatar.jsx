@@ -8,7 +8,7 @@ export default function ProfileAvatar({ image, setImage, existingImage }) {
     image
       ? URL.createObjectURL(image)
       : existingImage
-      ? `https://intellihire-production.up.railway.app/uploads/${existingImage}`
+      ? `http://localhost:8000/uploads/${existingImage}`
       : "/profile.jpg";
 
   return (

@@ -1,7 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const API_URL = "https://intellihire-production.up.railway.app/api/auth";
+const API_URL = "http://localhost:8000/api/auth";
 
 // ----------------- THUNKS -----------------
 

@@ -23,7 +23,7 @@ const VerificationNotice = () => {
 
       try {
         // Call backend verify-email endpoint
-        await axios.get(`https://intellihire-production.up.railway.app/api/auth/verify-email?token=${token}`);
+        await axios.get(`http://localhost:8000/api/auth/verify-email?token=${token}`);
 
         setStatus("success");
         setMessage("Your email has been verified successfully! Redirecting to Dashboard...");

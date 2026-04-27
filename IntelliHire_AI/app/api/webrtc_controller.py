@@ -16,7 +16,7 @@ import httpx
 logger = getLogger(__name__)
 router = APIRouter()
 
-INTERVIEW_FLOW_URL = "https://intellihire-production.up.railway.app/api/flow/answer"
+INTERVIEW_FLOW_URL = "http://localhost:8000/api/flow/answer"
 
 # Flow submission timeout — set above your Node.js server's own timeout
 FLOW_SUBMISSION_TIMEOUT = 600.0  # seconds

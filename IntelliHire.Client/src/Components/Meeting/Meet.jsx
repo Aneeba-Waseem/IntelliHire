@@ -599,7 +599,7 @@ Message: ${data.message}
         sessionId: webrtcStore.interviewSessionId
       };
 
-      await fetch("https://intellihire-production.up.railway.app/api/evaluation/save", {
+      await fetch("http://localhost:8000/api/evaluation/save", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

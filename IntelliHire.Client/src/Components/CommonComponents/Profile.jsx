@@ -30,7 +30,7 @@ const Profile = () => {
   };
 
   const imageUrl = user?.profileImage
-    ? `https://intellihire-production.up.railway.app/uploads/${user.profileImage}`
+    ? `http://localhost:8000/uploads/${user.profileImage}`
     : null;
 
   return (

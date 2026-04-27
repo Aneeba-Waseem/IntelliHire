@@ -1,6 +1,6 @@
 import { loadAuthState } from "../features/auth/persistAuth";
 
-const NODE_BASE = "https://intellihire-production.up.railway.app";
+const NODE_BASE = "http://localhost:8000";
 
 export const scheduleInterviewsAPI = async (batchId, interviews) => {
    const authState = loadAuthState();

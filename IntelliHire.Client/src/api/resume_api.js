@@ -4,7 +4,7 @@ import axios from "axios";
 import { loadAuthState } from "../features/auth/persistAuth";
 
 const PYTHON_BASE = "http://localhost:8001";
-const NODE_BASE = "https://intellihire-production.up.railway.app";
+const NODE_BASE = "http://localhost:8000";
 
 /* ---------------- Resume Upload ---------------- */
 export const uploadResumes = async (files, jdText, batchId = null) => {
