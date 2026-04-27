@@ -8,7 +8,7 @@ import jobCacheRoutes from "./routes/jobCache.js";
 import flowRoutes from "./routes/flowRoutes.js";
 import { sendInterviewEmails } from "./routes/interviewEmail.js";
 import  finalizeHiring  from "./routes/finalizeHiring.js";
-import dashboardRoutes from "./routes/DashboardRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 import resumeRoutes from "./routes/resumeRoutes.js"
 import userRoutes from "./routes/userRoutes.js";
 import evaluationRoutes from "./routes/evaluationRoutes.js"
