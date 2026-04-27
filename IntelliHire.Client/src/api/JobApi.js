@@ -1,7 +1,7 @@
 // frontend/api/JobApi.js
 import axios from "axios";
 import { loadAuthState } from "../features/auth/persistAuth";
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = "http://localhost:8000/api";
 
 /* =====================================================
    Helper: Get Auth Headers
