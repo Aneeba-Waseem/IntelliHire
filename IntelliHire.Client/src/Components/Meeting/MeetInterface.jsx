@@ -17,7 +17,7 @@ const MeetInterface = () => {
 
   const getRemainingTime = async (token, candidateUserId) => {
     const res = await fetch(
-      `http://localhost:8000/api/flow/remaining-time/${candidateUserId}`,
+      `https://intellihire-production.up.railway.app/api/flow/remaining-time/${candidateUserId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

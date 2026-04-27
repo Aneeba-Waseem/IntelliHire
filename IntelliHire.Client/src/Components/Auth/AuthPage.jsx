@@ -17,7 +17,7 @@ import { setUser, setAccessToken } from "../../features/auth/authSlice";
 // inside component
 
 const API = axios.create({
-    baseURL: "http://localhost:8000"
+    baseURL: "https://intellihire-production.up.railway.app"
 });
 <TypeAnimation
     sequence={[

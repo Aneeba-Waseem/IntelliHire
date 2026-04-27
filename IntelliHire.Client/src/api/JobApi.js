@@ -1,7 +1,7 @@
 // frontend/api/JobApi.js
 import axios from "axios";
 import { loadAuthState } from "../features/auth/persistAuth";
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = "https://intellihire-production.up.railway.app";
 
 /* =====================================================
    Helper: Get Auth Headers
@@ -76,7 +76,7 @@ export const getStep1Cache = async () => {
 ===================================================== */
 
 export const saveStep2BatchId = async (batchId) => {
-  const res = await fetch("http://localhost:8000/api/jobCache/cacheStep2Batch", {
+  const res = await fetch("https://intellihire-production.up.railway.app/api/jobCache/cacheStep2Batch", {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify({ batchId }),
@@ -85,7 +85,7 @@ export const saveStep2BatchId = async (batchId) => {
 };
 
 export const getStep2BatchId = async () => {
-  const res = await fetch("http://localhost:8000/api/jobCache/cacheStep2Batch", {
+  const res = await fetch("https://intellihire-production.up.railway.app/api/jobCache/cacheStep2Batch", {
     headers: getAuthHeaders(),
   });
   return res.json(); // { batchId }
