@@ -148,7 +148,9 @@ app.post("/generate-pdf", async (req, res) => {
     res.status(500).send("Failed to generate PDF");
   }
 });
-
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 // --------------------
 // Boot Server
 // --------------------
