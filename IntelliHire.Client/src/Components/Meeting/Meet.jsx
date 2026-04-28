@@ -337,7 +337,7 @@ export default function Meet() {
     try {
       const token = getToken();
 
-      const res = await fetch("https://intellihire-production.up.railway.app/api/flow/start", {
+      const res = await fetch("http://localhost:8000/api/flow/start", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
