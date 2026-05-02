@@ -1,5 +1,5 @@
-import User from "../models/User";
-
+import User from "../models/User.js";
+import Interview from "../models/Interview.js";
 /**
  * FlowController.js
  *
@@ -17,6 +17,7 @@ export default class FlowController {
     this.getProgress     = this.getProgress.bind(this);
     this.endInterview    = this.endInterview.bind(this);
     this.getTopicsForJob = this.getTopicsForJob.bind(this);
+    this.getInterviewRemainingTime = this.getInterviewRemainingTime.bind(this);
   }
 
   /* =====================================================

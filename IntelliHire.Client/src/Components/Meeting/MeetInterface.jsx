@@ -5,7 +5,7 @@ import InterviewSchedule from "./InterviewSchedule";
 import InterviewRules from "./InterviewRules";
 import { useNavigate } from "react-router-dom";
 import { loadAuthState } from "../../features/auth/persistAuth";
-import { getRemainingTime } from "../../api/flowApi"; // ✅ ADDED
+import { getRemainingTimeAPI } from "../../api/interviewTimeAPI";
 
 const MeetInterface = () => {
   const [rulesChecked, setRulesChecked] = useState(false);
@@ -16,42 +16,29 @@ const MeetInterface = () => {
   // "waiting" | "ready" | "expired"
 
   useEffect(() => {
-    const fetchTime = async () => {
-      try {
-        const authState = loadAuthState();
+  const fetchTime = async () => {
+    const authState = loadAuthState();
 
-        const token = authState?.accessToken;
-        const candidateUserId = authState?.user?.UserId;
+    const token = authState?.accessToken;
+    const candidateUserId = authState?.user?.UserId;
 
-        if (!token || !candidateUserId) return;
+    console.log("🔥 FRONTEND HIT");
 
-        const data = await getRemainingTime(token, candidateUserId);
+    const data = await getRemainingTimeAPI(token, candidateUserId);
 
-        console.log(data);
+    console.log("📦 FINAL DATA:", data);
 
-        if (!data) return;
+    if (!data) return;
 
-        const { remainingMinutes, remainingSeconds } = data;
+    const { remainingMinutes, remainingSeconds } = data;
 
-        const totalSeconds = remainingMinutes * 60 + remainingSeconds;
+    const totalSeconds = remainingMinutes * 60 + remainingSeconds;
 
-        if (totalSeconds > 0) {
-          setStatus("waiting");
-          setRemainingTime(totalSeconds);
-        }
-        else if (totalSeconds <= 0 && totalSeconds > -600) {
-          setStatus("ready");
-        }
-        else {
-          setStatus("expired");
-        }
-      } catch (err) {
-        console.error("Failed to fetch interview time:", err);
-      }
-    };
+    setRemainingTime(totalSeconds > 0 ? totalSeconds : 0);
+  };
 
-    fetchTime();
-  }, []);
+  fetchTime();
+}, []);
 
   useEffect(() => {
     if (status !== "waiting") return;

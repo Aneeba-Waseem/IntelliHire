@@ -217,7 +217,7 @@ app.use(
   cors({
     origin: "https://intelli-hire-5k2g.vercel.app",
     methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type"],
+    allowedHeaders: ["Content-Type" , "Authorization"],
   })
 );
 
