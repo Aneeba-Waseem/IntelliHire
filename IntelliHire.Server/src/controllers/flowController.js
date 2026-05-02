@@ -1,3 +1,5 @@
+import User from "../models/User";
+
 /**
  * FlowController.js
  *
@@ -408,10 +410,13 @@ export default class FlowController {
   
 async getInterviewRemainingTime(req, res) {
   try {
-    const { candidateUserId } = req.params;
-
+    const {candidateUserId } = req.params;
+    const user = await User.findOne({
+      where: { UserId: candidateUserId },
+      attributes: ["AutoId"],
+    });
     const interview = await Interview.findOne({
-      where: { candidateUserId }
+      where: { candidateUserId: user.AutoId },
     });
 
     if (!interview) {
