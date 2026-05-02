@@ -404,7 +404,9 @@ export default class FlowController {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
-    async getInterviewRemainingTime(req, res) {
+    
+  
+async getInterviewRemainingTime(req, res) {
   try {
     const { candidateUserId } = req.params;
 
@@ -415,7 +417,7 @@ export default class FlowController {
     if (!interview) {
       return res.status(404).json({ message: "Interview not found" });
     }
-    console.log("chl ja ullay");
+    console.log("in the flow controller getting time and date ");
     const { date, time, duration } = interview;
 
     // Combine date + time into a single Date object

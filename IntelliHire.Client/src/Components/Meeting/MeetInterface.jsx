@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion as Motion } from "framer-motion";
 import SidebarCustom from "../CommonComponents/SidebarCustom";
 import InterviewSchedule from "./InterviewSchedule";
 import InterviewRules from "./InterviewRules";
 import { useNavigate } from "react-router-dom";
 import { loadAuthState } from "../../features/auth/persistAuth";
-import { useEffect } from "react";
+import { getRemainingTime } from "../../api/interviewApi"; // ✅ ADDED
 
 const MeetInterface = () => {
   const [rulesChecked, setRulesChecked] = useState(false);
@@ -14,25 +14,6 @@ const MeetInterface = () => {
   const [remainingTime, setRemainingTime] = useState(null);
   const [status, setStatus] = useState("loading");
   // "waiting" | "ready" | "expired"
-
-  const getRemainingTime = async (token, candidateUserId) => {
-    const res = await fetch(
-      `http://localhost:8000/api/flow/remaining-time/${candidateUserId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.message || "Failed to fetch remaining time");
-    }
-
-    return data;
-  };
 
   useEffect(() => {
     const fetchTime = async () => {
@@ -59,11 +40,9 @@ const MeetInterface = () => {
           setRemainingTime(totalSeconds);
         }
         else if (totalSeconds <= 0 && totalSeconds > -600) {
-          // interview window open (within 10 min grace)
           setStatus("ready");
         }
         else {
-          // more than 10 min passed
           setStatus("expired");
         }
       } catch (err) {
@@ -97,20 +76,18 @@ const MeetInterface = () => {
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-
   const handleClick = (e) => {
     console.log("handle click called");
-    navigate('/meetingPermissions')
+    navigate('/meetingPermissions');
   };
 
   const authState = loadAuthState();
-
-  const userName = authState?.user?.fullName || "User"; // ✅ FIX HERE
+  const userName = authState?.user?.fullName || "User";
 
   return (
     <div className="bg-[#D1DED3] w-full min-h-screen flex flex-row overflow-x-hidden overflow-y-hidden">
 
-      {/* Right Side (90%) */}
+      {/* Right Side */}
       <div className="w-full min-w-[80px] flex flex-col items-around justify-center">
 
         {/* Top Section */}
@@ -124,39 +101,41 @@ const MeetInterface = () => {
           >
             Hi {userName}, <span className="m-5 text-[#45767C]">Your Interview is Ready to Start</span>
           </Motion.h1>
-
-
-        </div>
-        <div className="mt-4 text-center">
-
-          {status === "waiting" && (
-            <p className="text-lg md:text-xl text-[#29445D]">
-              Your interview will start in{" "}
-              <span className="text-[#45767C] font-bold">
-                {formatTime(remainingTime)}
-              </span>
-            </p>
-          )}
-
-          {status === "ready" && (
-            <p className="text-lg md:text-xl text-green-700 font-semibold">
-              You can now join the interview
-            </p>
-          )}
-
-          {status === "expired" && (
-            <p className="text-lg md:text-xl text-red-600 font-semibold">
-              You have missed your scheduled time. Please contact HR.
-            </p>
-          )}
-
         </div>
 
         {/* Bottom Section */}
         <div className="w-full flex flex-col items-start mt-7 justify-center px-5">
+
+          {/* ✅ TIMER MOVED HERE (ABOVE RULES) */}
+          <div className="w-full text-center mb-6">
+
+            {status === "waiting" && (
+              <p className="text-lg md:text-xl text-[#29445D]">
+                Your interview will start in{" "}
+                <span className="text-[#45767C] font-bold">
+                  {formatTime(remainingTime)}
+                </span>
+              </p>
+            )}
+
+            {status === "ready" && (
+              <p className="text-lg md:text-xl text-green-700 font-semibold">
+                You can now join the interview
+              </p>
+            )}
+
+            {status === "expired" && (
+              <p className="text-lg md:text-xl text-red-600 font-semibold">
+                You have missed your scheduled time. Please contact HR.
+              </p>
+            )}
+
+          </div>
+
+          {/* RULES */}
           <InterviewRules />
 
-          {/* Checkbox Confirmation */}
+          {/* Checkbox */}
           <div className="flex items-center gap-3 mt-6">
             <input
               type="checkbox"
@@ -170,14 +149,14 @@ const MeetInterface = () => {
             </label>
           </div>
 
-          {/* Join Meeting Button */}
+          {/* Button */}
           <div className="mt-5 ml-auto mb-7 mr-8">
             <button
               disabled={!rulesChecked}
               className={`rounded-3xl w-[180px] py-5 font-semibold text-[#F2FAF5]
-  bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
-  hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]
-  ${!rulesChecked
+              bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
+              hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]
+              ${!rulesChecked
                   ? "opacity-50 cursor-not-allowed"
                   : "opacity-100 cursor-pointer"
                 }`}
@@ -186,8 +165,8 @@ const MeetInterface = () => {
               Next
             </button>
           </div>
-        </div>
 
+        </div>
       </div>
     </div>
   );

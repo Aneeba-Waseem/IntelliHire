@@ -39,3 +39,21 @@ export const getReport = async (token, sessionId) => {
   if (!res.ok) throw new Error(data.message || "Failed to fetch report");
   return data.data;
 };
+
+export const getRemainingTime = async (token, candidateUserId) => {
+  try {
+    const response = await axios.get(
+      `/api/flow/remaining-time/${candidateUserId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("API error:", error);
+    return null;
+  }
+};
