@@ -43,27 +43,39 @@ const MeetInterface = () => {
 }, []);
 
   useEffect(() => {
-    if (status !== "waiting") return;
+  if (status !== "waiting") return;
 
-    const interval = setInterval(() => {
-      setRemainingTime((prev) => {
-        if (prev <= 1) {
-          setStatus("ready");
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+  const interval = setInterval(() => {
+    setRemainingTime((prev) => {
+      if (prev <= 1) {
+        setStatus("ready");
+        clearInterval(interval);
+        return 0;
+      }
+      return prev - 1;
+    });
+  }, 1000);
 
-    return () => clearInterval(interval);
-  }, [status]);
+  return () => clearInterval(interval);
+}, [status]);
 
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
+  const formatTime = (totalSeconds) => {
+  if (totalSeconds === null || totalSeconds < 0) return "0s";
+
+  const days = Math.floor(totalSeconds / (24 * 3600));
+  const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  let result = "";
+
+  if (days > 0) result += `${days}d `;
+  if (hours > 0 || days > 0) result += `${hours}h `;
+  if (minutes > 0 || hours > 0 || days > 0) result += `${minutes}m `;
+  result += `${seconds}s`;
+
+  return result;
+};
 
   const handleClick = (e) => {
     console.log("handle click called");
