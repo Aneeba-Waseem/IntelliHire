@@ -23,7 +23,8 @@ const MeetInterface = () => {
     const candidateUserId = authState?.user?.UserId;
 
     console.log("🔥 FRONTEND HIT");
-
+    console.log("user ki info" ,authState)
+    console.log("candidate ki id",candidateUserId)
     const data = await getRemainingTimeAPI(token, candidateUserId);
 
     console.log("📦 FINAL DATA:", data);

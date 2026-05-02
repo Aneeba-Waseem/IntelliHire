@@ -4,7 +4,7 @@ import Interview from "../models/Interview.js";
 export const getRemainingTime = async (req, res) => {
   try {
     const { candidateUserId } = req.params;
-
+    
     console.log("🔥 TIME API HIT:", candidateUserId);
 
     const user = await User.findOne({
