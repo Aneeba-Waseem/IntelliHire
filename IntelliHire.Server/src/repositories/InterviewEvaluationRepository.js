@@ -57,7 +57,7 @@ export default class InterviewEvaluationRepository {
     return raw ? JSON.parse(raw) : null;
   }
 
-  async clearSession(sessionId) {
-    await redis.del(this._key(sessionId));
-  }
+ async clearSession(sessionId) {
+  return redis.del(this._key(sessionId));
+}
 }

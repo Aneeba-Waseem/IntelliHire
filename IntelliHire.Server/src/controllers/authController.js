@@ -188,7 +188,7 @@ export const getCurrentUser = async (req, res) => {
 export const magicLogin = async (req, res) => {
   try {
     const { token } = req.body;
-    console.log("LOGIN TOKEN:", req.body.token);
+    // console.log("LOGIN TOKEN:", ?req.body.token);
     const record = await MagicLink.findOne({ where: { token } });
 
     if (!record || record.isUsed || new Date() > record.expiresAt) {

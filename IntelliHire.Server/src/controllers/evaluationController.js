@@ -22,9 +22,10 @@ export const saveEvaluation = async (req, res) => {
     }
 
     const { interviewId, questions } = sessionData;
-
+    console.log("interview id " , interviewId)
+    // 🔹 Get interview
     const interview = await Interview.findOne({
-      where: { id: interviewId },
+      where: { id: interviewId  },
       attributes: ["id", "FK_JobDescription", "candidateUserId"],
     });
 
@@ -40,12 +41,42 @@ export const saveEvaluation = async (req, res) => {
     const candidateId = interview.candidateUserId;
     const jobId = interview.FK_JobDescription;
 
-    await InterviewSession.create({
-      id: sessionId,
-      FK_Candidate: candidateId,
-      FK_JobDescription: jobId,
+    // 🔥 CHECK existing session (candidate + job)
+    let existingSession = await InterviewSession.findOne({
+      where: {
+        FK_Candidate: candidateId,
+        FK_JobDescription: jobId,
+      },
     });
 
+    let finalSessionId;
+
+    if (existingSession) {
+      // ================= UPDATE FLOW =================
+      finalSessionId = existingSession.id;
+
+      // 🔥 delete old responses
+      await QuestionResponse.destroy({
+        where: { FK_Session: finalSessionId },
+      });
+
+      // 🔥 delete old summary
+      await SessionEvaluationSummary.destroy({
+        where: { FK_Session: finalSessionId },
+      });
+
+    } else {
+      // ================= CREATE FLOW =================
+      finalSessionId = sessionId;
+
+      await InterviewSession.create({
+        id: finalSessionId,
+        FK_Candidate: candidateId,
+        FK_JobDescription: jobId,
+      });
+    }
+
+    // 🔹 Insert new responses
     const questionRows = questions.map((q) => ({
       questionId: q.questionId,
       domain: q.domain,
@@ -57,15 +88,18 @@ export const saveEvaluation = async (req, res) => {
       depthLevel: q.depthLevel,
       timestamp: q.timestamp,
       evaluation_output: q.evaluation_output,
-      FK_Session: sessionId,
+      FK_Session: finalSessionId,
     }));
 
     await QuestionResponse.bulkCreate(questionRows);
 
+    // 🔹 clear redis
     await repo.clearSession(sessionId);
 
     return res.status(200).json({
-      message: "Evaluation saved successfully",
+      message: existingSession
+        ? "Evaluation updated successfully"
+        : "Evaluation saved successfully",
     });
 
   } catch (error) {

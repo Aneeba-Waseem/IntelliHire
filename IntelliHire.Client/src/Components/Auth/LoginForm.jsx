@@ -29,9 +29,9 @@ export default function LoginForm() {
       localStorage.setItem("accessToken", accessToken);
       axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
 
-      console.log("✅ Login successful");
-      console.log("User ID:", user.userId);
-      console.log("User Name:", user.fullName);
+      // console.log("✅ Login successful");
+      // console.log("User ID:", user.userId);
+      // console.log("User Name:", user.fullName);
 
       // Navigate - Redux will update, which triggers useAuthRefresh in App.jsx
       navigate('/userDashboard');
