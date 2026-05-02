@@ -5,7 +5,7 @@ import InterviewSchedule from "./InterviewSchedule";
 import InterviewRules from "./InterviewRules";
 import { useNavigate } from "react-router-dom";
 import { loadAuthState } from "../../features/auth/persistAuth";
-import { getRemainingTimeAPI } from "../../api/interviewTimeAPI";
+import { getRemainingTimeAPI } from "../../api/interviewTimeApi";
 
 const MeetInterface = () => {
   const [rulesChecked, setRulesChecked] = useState(false);
@@ -69,6 +69,7 @@ const MeetInterface = () => {
   };
 
   const authState = loadAuthState();
+  console.log("user ki info" ,authState )
   const userName = authState?.user?.fullName || "User";
 
   return (
