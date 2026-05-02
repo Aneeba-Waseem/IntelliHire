@@ -9,7 +9,7 @@ export default function createFlowRoutes(controller) {
   router.get("/report/:sessionId", authMiddleware, controller.getReport);
   router.get("/:jobId/topics", authMiddleware, controller.getTopicsForJob);
   
-  router.get("/remaining-time/:candidateUserId", authMiddleware, controller.getTopicsForJob);
+  router.get("/remaining-time/:candidateUserId", authMiddleware, controller.getInterviewRemainingTime);
 
   return router;
 }

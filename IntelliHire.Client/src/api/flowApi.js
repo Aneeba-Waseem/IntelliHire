@@ -1,6 +1,6 @@
 // src/api/flowAPI.js
 const API_BASE = "http://localhost:8000/api/flow";
-
+import axios from "axios";
 export const startInterview = async (token, candidateId = "cand_12345", jobId = "job_67890", candidateType = "generic") => {
     console.log("Starting interview with candidateId:", candidateId, "jobId:", jobId, "candidateType:", candidateType , "token:", token );
     const res = await fetch(`${API_BASE}/start`, {
@@ -42,8 +42,9 @@ export const getReport = async (token, sessionId) => {
 
 export const getRemainingTime = async (token, candidateUserId) => {
   try {
+    console.log("CALLING API... for timr");
     const response = await axios.get(
-      `/api/flow/remaining-time/${candidateUserId}`,
+      `${API_BASE}/remaining-time/${candidateUserId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
