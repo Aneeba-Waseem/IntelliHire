@@ -13,69 +13,81 @@ const MeetInterface = () => {
 
   const [remainingTime, setRemainingTime] = useState(null);
   const [status, setStatus] = useState("loading");
+  const [remainingTime, setRemainingTime] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
   // "waiting" | "ready" | "expired"
 
   useEffect(() => {
-  const fetchTime = async () => {
-    const authState = loadAuthState();
+    const fetchTime = async () => {
+      const authState = loadAuthState();
 
-    const token = authState?.accessToken;
-    const candidateUserId = authState?.user?.userId;
+      const token = authState?.accessToken;
+      const candidateUserId = authState?.user?.userId;
 
-    console.log("🔥 FRONTEND HIT");
-    console.log("user ki info" ,authState)
-    console.log("token" , token)
-    console.log("candidate ki id",candidateUserId)
-    const data = await getRemainingTimeAPI(token, candidateUserId);
+      console.log("🔥 FRONTEND HIT");
+      console.log("user ki info", authState)
+      console.log("token", token)
+      console.log("candidate ki id", candidateUserId)
+      const data = await getRemainingTimeAPI(token, candidateUserId);
 
-    console.log("📦 FINAL DATA:", data);
 
-    if (!data) return;
+      console.log("📦 FINAL DATA:", data);
 
-    const { remainingMinutes, remainingSeconds } = data;
+      if (!data) return;
 
-    const totalSeconds = remainingMinutes * 60 + remainingSeconds;
 
-    setRemainingTime(totalSeconds > 0 ? totalSeconds : 0);
-  };
+      const { remainingMinutes, remainingSeconds } = data;
 
-  fetchTime();
-}, []);
+      const totalSeconds = remainingMinutes * 60 + remainingSeconds;
+      if (totalSeconds > 0) {
+        setRemainingTime(totalSeconds);
+        setIsRunning(true);
+      }
+      setRemainingTime(totalSeconds > 0 ? totalSeconds : 0);
+    };
 
-  useEffect(() => {
+    fetchTime();
+  }, []);
+
+  const endTimeRef = useRef(null);
+
+useEffect(() => {
   if (status !== "waiting") return;
 
+  endTimeRef.current = Date.now() + remainingTime * 1000;
+
   const interval = setInterval(() => {
-    setRemainingTime((prev) => {
-      if (prev <= 1) {
-        setStatus("ready");
-        clearInterval(interval);
-        return 0;
-      }
-      return prev - 1;
-    });
+    const diff = Math.floor((endTimeRef.current - Date.now()) / 1000);
+
+    if (diff <= 0) {
+      setRemainingTime(0);
+      setStatus("ready");
+      clearInterval(interval);
+    } else {
+      setRemainingTime(diff);
+    }
   }, 1000);
 
   return () => clearInterval(interval);
 }, [status]);
 
   const formatTime = (totalSeconds) => {
-  if (totalSeconds === null || totalSeconds < 0) return "0s";
+    if (totalSeconds === null || totalSeconds < 0) return "0s";
 
-  const days = Math.floor(totalSeconds / (24 * 3600));
-  const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
+    const days = Math.floor(totalSeconds / (24 * 3600));
+    const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
 
-  let result = "";
+    let result = "";
 
-  if (days > 0) result += `${days}d `;
-  if (hours > 0 || days > 0) result += `${hours}h `;
-  if (minutes > 0 || hours > 0 || days > 0) result += `${minutes}m `;
-  result += `${seconds}s`;
+    if (days > 0) result += `${days}d `;
+    if (hours > 0 || days > 0) result += `${hours}h `;
+    if (minutes > 0 || hours > 0 || days > 0) result += `${minutes}m `;
+    result += `${seconds}s`;
 
-  return result;
-};
+    return result;
+  };
 
   const handleClick = (e) => {
     console.log("handle click called");
@@ -83,7 +95,7 @@ const MeetInterface = () => {
   };
 
   const authState = loadAuthState();
-  console.log("user ki info" ,authState )
+  console.log("user ki info", authState)
   const userName = authState?.user?.fullName || "User";
 
   return (
@@ -111,14 +123,14 @@ const MeetInterface = () => {
           {/* ✅ TIMER MOVED HERE (ABOVE RULES) */}
           <div className="w-full text-center mb-6">
 
-            
-              <p className="text-lg md:text-xl text-[#29445D]">
-                Your interview will start in{" "}
-                <span className="text-[#45767C] font-bold">
-                  {formatTime(remainingTime)}
-                </span>
-              </p>
-            
+
+            <p className="text-lg md:text-xl text-[#29445D]">
+              Your interview will start in{" "}
+              <span className="text-[#45767C] font-bold">
+                {formatTime(remainingTime)}
+              </span>
+            </p>
+
 
             {status === "ready" && (
               <p className="text-lg md:text-xl text-green-700 font-semibold">
