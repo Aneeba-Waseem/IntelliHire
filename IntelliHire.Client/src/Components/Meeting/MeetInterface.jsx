@@ -99,14 +99,14 @@ const MeetInterface = () => {
           {/* ✅ TIMER MOVED HERE (ABOVE RULES) */}
           <div className="w-full text-center mb-6">
 
-            {status === "waiting" && (
+            
               <p className="text-lg md:text-xl text-[#29445D]">
                 Your interview will start in{" "}
                 <span className="text-[#45767C] font-bold">
                   {formatTime(remainingTime)}
                 </span>
               </p>
-            )}
+            
 
             {status === "ready" && (
               <p className="text-lg md:text-xl text-green-700 font-semibold">
