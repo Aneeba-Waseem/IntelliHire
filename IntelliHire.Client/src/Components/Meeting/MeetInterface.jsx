@@ -20,7 +20,7 @@ const MeetInterface = () => {
     const authState = loadAuthState();
 
     const token = authState?.accessToken;
-    const candidateUserId = authState?.user?.UserId;
+    const candidateUserId = authState?.user?.userId;
 
     console.log("🔥 FRONTEND HIT");
     console.log("user ki info" ,authState)
