@@ -7,12 +7,12 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // ✅ Validate env
-if (!process.env.DB_URL) {
+if (!process.env.DATABASE_URL) {
   throw new Error("DB_URL is not defined");
 }
 
 // ✅ Clean Railway-compatible setup
-const sequelize = new Sequelize(process.env.DB_URL, {
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   logging: false,
 
