@@ -29,4 +29,6 @@ redisClient.on("ready", () => {
   console.log("✅ Redis ready");
 });
 
+// ✅ Export both ways so it works with either import style
 export default redisClient;
+export { redisClient };
