@@ -193,48 +193,59 @@ export default class AIClient {
        }
   ========================================= */
   async analyzeWithConversationalLLM({ question, answer }) {
-    try {
-      if (!question || !answer) {
-        return { decision: "submit" };
-      }
-
-      console.log("[ConvLLM] Analysing answer for follow-up decision...");
-
-      const resp = await this.client.post(
-        "/chatModel/groq/conversational-analysis",
-        { question, answer }
-      );
-
-      const data = resp.data;
-
-      /*
-       * Expected API response shape:
-       *   { decision: "further_explanation" | "submit", followUpText?: string }
-       *
-       * Fallback: if the API returns something unexpected we default to "submit"
-       * so the interview keeps flowing.
-       */
-      const decision = data?.decision;
-
-      if (decision === "further_explanation") {
-        const followUpText =
-          data?.followUpText ||
-          data?.follow_up_text ||
-          data?.message ||
-          "Could you elaborate on that a bit more?";
-
-        console.log("[ConvLLM] Decision: further_explanation →", followUpText);
-        return { decision: "further_explanation", followUpText };
-      }
-
-      console.log("[ConvLLM] Decision: submit");
-      return { decision: "submit" };
-    } catch (err) {
-      console.error("analyzeWithConversationalLLM error:", err.message);
-      // Default to submit on error so the interview never gets stuck
+  try {
+    if (!question || !answer) {
       return { decision: "submit" };
     }
+
+    console.log("[ConvLLM] Analysing answer for follow-up decision...");
+
+    const resp = await this.client.post(
+      "/chatModel/groq/conversational-analysis",
+      { question, answer }
+    );
+
+    const data = resp.data;
+    const decision = data?.decision;
+
+    // ✅ FIXED: Return the actual decision from API
+    if (!decision) {
+      console.log("[ConvLLM] No decision from API, defaulting to submit");
+      return { decision: "submit" };
+    }
+
+    // ✅ NEW: Handle clarification_request
+    if (decision === "clarification_request") {
+      const followUpText =
+        data?.followUpText ||
+        data?.follow_up_text ||
+        "Could you clarify that a bit more?";
+
+      console.log("[ConvLLM] Decision: clarification_request →", followUpText);
+      return { decision: "clarification_request", followUpText };
+    }
+
+    // ✅ Keep existing further_explanation logic
+    if (decision === "further_explanation") {
+      const followUpText =
+        data?.followUpText ||
+        data?.follow_up_text ||
+        data?.message ||
+        "Could you elaborate on that a bit more?";
+
+      console.log("[ConvLLM] Decision: further_explanation →", followUpText);
+      return { decision: "further_explanation", followUpText };
+    }
+
+    // ✅ Return any other decision from API (future-proof)
+    console.log(`[ConvLLM] Decision: ${decision}`);
+    return { decision, followUpText: data?.followUpText };
+
+  } catch (err) {
+    console.error("analyzeWithConversationalLLM error:", err.message);
+    return { decision: "submit" };
   }
+}
 
   /* =========================================
      6️⃣  GENERATE FALLBACK BATCH  ← NEW

@@ -495,7 +495,7 @@ export default class FlowService {
             question: turn.question,
             answer: candidateAnswer,
           });
-          // console.log("decision from groq",decision, "ahjdvf")
+          console.log("decision from groq",decision, "for response", candidateAnswer);
         /* =========================================
            2. HANDLE FOLLOW-UP
         ========================================= */
@@ -503,7 +503,7 @@ export default class FlowService {
            CASE 1: CLARIFICATION REQUEST (NO EVALUATION)
         ===================================================== */
         if (decision === "clarification_request") {
-          // console.log("in the clarfication request bliiiiiiiiiiiiiiiiii")
+          console.log("in the clarfication request bliiiiiiiiiiiiiiiiii")
           const followUpTurn = await this.turnRepo.create({
             sessionId,
             question: followUpText,
@@ -519,6 +519,7 @@ export default class FlowService {
           turn.isSystem = true; // Mark original turn as system to skip evaluation
 
           await this.sessionRepo.updateState(sessionId, state);
+          console.log("returning clarifiction req");
 
           return {
             done: false,
