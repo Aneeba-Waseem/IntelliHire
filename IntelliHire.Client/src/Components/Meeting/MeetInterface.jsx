@@ -11,7 +11,6 @@ const MeetInterface = () => {
   const [rulesChecked, setRulesChecked] = useState(false);
   const navigate = useNavigate();
 
-  const [remainingTime, setRemainingTime] = useState(null);
   const [status, setStatus] = useState("loading");
   const [remainingTime, setRemainingTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
