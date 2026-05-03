@@ -9,17 +9,27 @@ if (!process.env.REDIS_URL) {
   throw new Error("REDIS_URL is not defined");
 }
 
-const redisClient = new Redis(process.env.REDIS_URL);
+let redisClient;
 
-redisClient.on("connect", () => {
-  console.log("✅ Redis connected");
-});
+if (!global.redisClient) {
+  redisClient = new Redis(process.env.REDIS_URL, {
+    retryStrategy(times) {
+      return Math.min(times * 50, 2000);
+    },
+  });
 
-redisClient.on("error", (err) => {
-  console.error("❌ Redis error:", err.message);
-});
+  redisClient.on("connect", () => {
+    console.log("✅ Redis connected");
+  });
 
+  redisClient.on("error", (err) => {
+    console.error("❌ Redis error:", err.message);
+  });
 
-// ✅ Export both ways so it works with either import style
+  global.redisClient = redisClient;
+} else {
+  redisClient = global.redisClient;
+}
+
 export default redisClient;
 export { redisClient };
