@@ -1,11 +1,17 @@
-// redisClient.js (using ioredis)
 import Redis from "ioredis";
 
-if (!process.env.REDIS_URL) {
-  throw new Error("REDIS_URL is missing");
+// Only load dotenv locally
+if (process.env.NODE_ENV !== "production") {
+  const dotenv = await import("dotenv");
+  dotenv.config();
 }
+
+if (!process.env.REDIS_URL) {
+  throw new Error("REDIS_URL is not defined");
+}
+
 const redisClient = new Redis(process.env.REDIS_URL, {
-  tls: {}, // 👈 REQUIRED for Railway
+  tls: {}, // 👈 REQUIRED for public Railway Redis
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
   retryStrategy: (times) => Math.min(times * 50, 2000),
@@ -23,6 +29,4 @@ redisClient.on("ready", () => {
   console.log("✅ Redis ready");
 });
 
-// ✅ Export both ways so it works with either import style
 export default redisClient;
-export { redisClient };
