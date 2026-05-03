@@ -175,9 +175,9 @@
 
 // server.js
 import dotenv from "dotenv";
-if (process.env.NODE_ENV !== "production") {
-  dotenv.config({ path: "./src/.env" });
-}
+dotenv.config({
+  path: process.env.NODE_ENV === "production" ? undefined : ".env",
+});
 
 
 
@@ -213,9 +213,9 @@ import createFlowRoutes from "./routes/flowRoutes.js";
 // --------------------
 // Config & Middleware
 // --------------------
-if (process.env.NODE_ENV !== "production") {
-  dotenv.config();
-}
+dotenv.config({
+  path: process.env.NODE_ENV === "production" ? undefined : ".env",
+});
 const PORT = process.env.PORT || 8000;
 
 app.use(

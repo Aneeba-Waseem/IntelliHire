@@ -2,9 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-if (process.env.NODE_ENV !== "production") {
-  dotenv.config();
-}
+dotenv.config({
+  path: process.env.NODE_ENV === "production" ? undefined : ".env",
+});
 const app = express();
 
 app.use(cors());

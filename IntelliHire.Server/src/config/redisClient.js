@@ -1,16 +1,14 @@
 // redisClient.js (using ioredis)
 import Redis from "ioredis";
 
-const redisClient = new Redis(process.env.REDIS_URL || {
-  host: "localhost",
-  port: 6379,
-  password: undefined,
-  retryStrategy: (times) => {
-    const delay = Math.min(times * 50, 2000);
-    return delay;
-  },
+if (!process.env.REDIS_URL) {
+  throw new Error("REDIS_URL is missing");
+}
+const redisClient = new Redis(process.env.REDIS_URL, {
+  tls: {}, // 👈 REQUIRED for Railway
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
+  retryStrategy: (times) => Math.min(times * 50, 2000),
 });
 
 redisClient.on("error", (err) => {
