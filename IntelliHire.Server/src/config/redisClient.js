@@ -1,12 +1,28 @@
-// redisClient.js
-import { createClient } from "redis";
+// redisClient.js (using ioredis)
+import Redis from "ioredis";
 
-export const redisClient = createClient({ url: "redis://default:GjNDbETRCMcajwkcYkkAMsvdCiJFPFWu@tramway.proxy.rlwy.net:40887" });
+const redis = new Redis(process.env.REDIS_URL || {
+  host: "localhost",
+  port: 6379,
+  password: undefined,
+  retryStrategy: (times) => {
+    const delay = Math.min(times * 50, 2000);
+    return delay;
+  },
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
+});
 
-redisClient.on("error", (err) => console.log("Redis Client Error", err));
+redis.on("error", (err) => {
+  console.error("❌ Redis Error:", err.message);
+});
 
-(async () => {
-  await redisClient.connect();
+redis.on("connect", () => {
   console.log("✅ Redis connected");
-})();
+});
 
+redis.on("ready", () => {
+  console.log("✅ Redis ready");
+});
+
+export default redis;
