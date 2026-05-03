@@ -210,12 +210,15 @@ import InterviewController from "./controllers/InterviewController.js";
 import FlowController from "./controllers/flowController.js";
 import createFlowRoutes from "./routes/flowRoutes.js";
 
+import { initRedis } from "./config/redisClient.js";
+
+const redisClient = initRedis();
 // --------------------
 // Config & Middleware
 // --------------------
-dotenv.config({
-  path: process.env.NODE_ENV === "production" ? undefined : ".env",
-});
+// dotenv.config({
+//   path: process.env.NODE_ENV === "production" ? undefined : ".env",
+// });
 const PORT = process.env.PORT || 8000;
 
 app.use(
