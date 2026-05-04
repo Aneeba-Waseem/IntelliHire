@@ -130,7 +130,7 @@ const MeetInterface = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              Your Interview is Ready to Start
+               Hi {userName}! Your Interview is Ready to Start
             </Motion.h1>
           )}
 
@@ -159,7 +159,7 @@ const MeetInterface = () => {
           {/* EXPIRED */}
           {status === "expired" && (
             <p className="mt-6 text-lg text-red-600 font-semibold">
-              You have missed your scheduled interview time.
+            Oops! You have missed your scheduled interview time.
             </p>
           )}
 
