@@ -22,27 +22,27 @@ const MeetInterface = () => {
 
   // 1. Fetch initial time
   useEffect(() => {
-   const fetchTime = async () => {
-  const authState = loadAuthState();
+    const fetchTime = async () => {
+      const authState = loadAuthState();
 
-  const token = authState?.accessToken;
-  const candidateUserId = authState?.user?.userId;
+      const token = authState?.accessToken;
+      const candidateUserId = authState?.user?.userId;
 
-  const data = await getRemainingTimeAPI(token, candidateUserId);
+      const data = await getRemainingTimeAPI(token, candidateUserId);
 
-  if (!data) return;
+      if (!data) return;
 
-  const { remainingMinutes, remainingSeconds } = data;
-  const totalSeconds = remainingMinutes * 60 + remainingSeconds;
+      const { remainingMinutes, remainingSeconds } = data;
+      const totalSeconds = remainingMinutes * 60 + remainingSeconds;
 
-  if (totalSeconds > 0) {
-    setStatus("waiting");
-    startTimer(totalSeconds);
-  } else {
-    setStatus("ready");
-    setRemainingTime(0);
-  }
-};
+      if (totalSeconds > 0) {
+        setStatus("waiting");
+        startTimer(totalSeconds);
+      } else {
+        setStatus("ready");
+        setRemainingTime(0);
+      }
+    };
 
     fetchTime();
 
@@ -54,26 +54,26 @@ const MeetInterface = () => {
 
   // 2. Timer engine
   const startTimer = (seconds) => {
-  if (intervalRef.current) clearInterval(intervalRef.current); // ADD THIS
+    if (intervalRef.current) clearInterval(intervalRef.current); // ADD THIS
 
-  endTimeRef.current = Date.now() + seconds * 1000;
-  setRemainingTime(seconds);
+    endTimeRef.current = Date.now() + seconds * 1000;
+    setRemainingTime(seconds);
 
-  setStatus("waiting"); // safer here too
+    setStatus("waiting"); // safer here too
 
-  intervalRef.current = setInterval(() => {
-    const diff = Math.floor((endTimeRef.current - Date.now()) / 1000);
+    intervalRef.current = setInterval(() => {
+      const diff = Math.floor((endTimeRef.current - Date.now()) / 1000);
 
-    if (diff <= 0) {
-      setRemainingTime(0);
-      setStatus("ready");
-      clearInterval(intervalRef.current);
-      intervalRef.current = null; // IMPORTANT
-    } else {
-      setRemainingTime(diff);
-    }
-  }, 1000);
-};
+      if (diff <= 0) {
+        setRemainingTime(0);
+        setStatus("ready");
+        clearInterval(intervalRef.current);
+        intervalRef.current = null; // IMPORTANT
+      } else {
+        setRemainingTime(diff);
+      }
+    }, 1000);
+  };
 
   const formatTime = (totalSeconds) => {
     if (totalSeconds === null || totalSeconds < 0) return "0s";
@@ -109,16 +109,60 @@ const MeetInterface = () => {
       <div className="w-full min-w-[80px] flex flex-col items-around justify-center">
 
         {/* Top Section */}
-        <div className="w-full h-[40%] flex flex-col items-around justify-center">
-          <Motion.h1
-            className="text-3xl md:text-4xl font-semibold text-[#29445D] text-center"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            viewport={{ once: true }}
-          >
-            Hi {userName}, <span className="m-5 text-[#45767C]">Your Interview is Ready to Start</span>
-          </Motion.h1>
+        {/* TOP SECTION */}
+        <div className="w-full flex flex-col items-center justify-center mt-10">
+
+          {/* STATUS TEXT */}
+          {status === "waiting" && (
+            <Motion.h1
+              className="text-3xl md:text-4xl font-semibold text-[#29445D] text-center"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              Your Interview Starts Soon
+            </Motion.h1>
+          )}
+
+          {status === "ready" && (
+            <Motion.h1
+              className="text-3xl md:text-4xl font-semibold text-green-700 text-center"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              Your Interview is Ready to Start 🚀
+            </Motion.h1>
+          )}
+
+          {/* TIMER */}
+          {status === "waiting" && (
+            <div className="mt-6 text-center">
+
+              <p className="text-lg text-[#29445D] mb-3">
+                Starting in
+              </p>
+
+              <div className="text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#9CBFAC] bg-clip-text text-transparent tracking-wider">
+                {formatTime(remainingTime)}
+              </div>
+
+            </div>
+          )}
+
+          {/* READY MESSAGE */}
+          {status === "ready" && (
+            <p className="mt-6 text-lg text-[#45767C] font-medium">
+              Click Next to join your interview session
+            </p>
+          )}
+
+          {/* EXPIRED */}
+          {status === "expired" && (
+            <p className="mt-6 text-lg text-red-600 font-semibold">
+              You have missed your scheduled interview time.
+            </p>
+          )}
+
         </div>
 
         {/* Bottom Section */}
@@ -168,7 +212,23 @@ const MeetInterface = () => {
           </div>
 
           {/* Button */}
-          <div className="mt-5 ml-auto mb-7 mr-8">
+          {status === "ready" && (
+            <div className="mt-5 ml-auto mb-7 mr-8">
+              <button
+                disabled={!rulesChecked}
+                className={`rounded-3xl w-[180px] py-5 font-semibold text-[#F2FAF5]
+      bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
+      hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]
+      ${!rulesChecked
+                    ? "opacity-50 cursor-not-allowed"
+                    : "opacity-100 cursor-pointer"
+                  }`}
+                onClick={handleClick}
+              >
+                Next
+              </button>
+            </div>
+          )} <div className="mt-5 ml-auto mb-7 mr-8">
             <button
               disabled={!rulesChecked}
               className={`rounded-3xl w-[180px] py-5 font-semibold text-[#F2FAF5]
