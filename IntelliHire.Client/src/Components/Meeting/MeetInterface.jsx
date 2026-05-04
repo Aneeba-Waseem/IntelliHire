@@ -163,8 +163,12 @@ const MeetInterface = () => {
               id="rulesCheck"
               checked={rulesChecked}
               onChange={() => setRulesChecked(!rulesChecked)}
-              className="w-5 h-5 accent-[#45767C]"
+              className={`w-5 h-5 accent-[#45767C]  ${(status !== "ready")
+                  ? "opacity-50 cursor-not-allowed"
+                  : "opacity-100 cursor-pointer"
+                }`  }
               disabled={status !== "ready"}   // optional safety
+              
             />
             <label htmlFor="rulesCheck" className="text-[#29445D] font-medium">
               I have read and understood the interview rules
