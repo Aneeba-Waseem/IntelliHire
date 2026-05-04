@@ -15,12 +15,10 @@ const MeetInterface = () => {
   const [status, setStatus] = useState("loading");
   const [remainingTime, setRemainingTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
-  // "waiting" | "ready" | "expired"
 
   const endTimeRef = useRef(null);
   const intervalRef = useRef(null);
 
-  // 1. Fetch initial time
   useEffect(() => {
     const fetchTime = async () => {
       const authState = loadAuthState();
@@ -51,15 +49,13 @@ const MeetInterface = () => {
     };
   }, []);
 
-
-  // 2. Timer engine
   const startTimer = (seconds) => {
-    if (intervalRef.current) clearInterval(intervalRef.current); // ADD THIS
+    if (intervalRef.current) clearInterval(intervalRef.current);
 
     endTimeRef.current = Date.now() + seconds * 1000;
     setRemainingTime(seconds);
 
-    setStatus("waiting"); // safer here too
+    setStatus("waiting");
 
     intervalRef.current = setInterval(() => {
       const diff = Math.floor((endTimeRef.current - Date.now()) / 1000);
@@ -68,7 +64,7 @@ const MeetInterface = () => {
         setRemainingTime(0);
         setStatus("ready");
         clearInterval(intervalRef.current);
-        intervalRef.current = null; // IMPORTANT
+        intervalRef.current = null;
       } else {
         setRemainingTime(diff);
       }
@@ -93,26 +89,22 @@ const MeetInterface = () => {
     return result;
   };
 
-  const handleClick = (e) => {
+  const handleClick = () => {
     console.log("handle click called");
     navigate('/meetingPermissions');
   };
 
   const authState = loadAuthState();
-  console.log("user ki info", authState)
   const userName = authState?.user?.fullName || "User";
 
   return (
     <div className="bg-[#D1DED3] w-full min-h-screen flex flex-row overflow-x-hidden overflow-y-hidden">
 
-      {/* Right Side */}
       <div className="w-full min-w-[80px] flex flex-col items-around justify-center">
 
-        {/* Top Section */}
         {/* TOP SECTION */}
         <div className="w-full flex flex-col items-center justify-center mt-10">
 
-          {/* STATUS TEXT */}
           {status === "waiting" && (
             <Motion.h1
               className="text-3xl md:text-4xl font-semibold text-[#29445D] text-center"
@@ -120,7 +112,7 @@ const MeetInterface = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-             Hi {userName}! Your Interview will start soon
+              Hi {userName}! Your Interview will start soon
             </Motion.h1>
           )}
 
@@ -130,14 +122,12 @@ const MeetInterface = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
             >
-               Hi {userName}! Your Interview is Ready to Start
+              Hi {userName}! Your Interview is Ready to Start
             </Motion.h1>
           )}
 
-          {/* TIMER */}
           {status === "waiting" && (
             <div className="mt-6 text-center">
-
               <p className="text-lg text-[#29445D] mb-3">
                 Starting in
               </p>
@@ -145,110 +135,63 @@ const MeetInterface = () => {
               <div className="text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#9CBFAC] bg-clip-text text-transparent tracking-wider">
                 {formatTime(remainingTime)}
               </div>
-
             </div>
           )}
 
-          {/* READY MESSAGE */}
           {status === "ready" && (
             <p className="mt-6 text-lg text-[#45767C] font-medium">
               Click Next to join your interview session
             </p>
           )}
 
-          {/* EXPIRED */}
           {status === "expired" && (
             <p className="mt-6 text-lg text-red-600 font-semibold">
-            Oops! You have missed your scheduled interview time.
+              Oops! You have missed your scheduled interview time.
             </p>
           )}
 
         </div>
 
-        {/* Bottom Section */}
+        {/* RULES + BUTTON */}
         <div className="w-full flex flex-col items-start mt-7 justify-center px-5">
 
-          {/* ✅ TIMER MOVED HERE (ABOVE RULES) */}
-          <div className="w-full text-center mb-6">
+          {status === "ready" && (
+            <>
+              <InterviewRules />
 
+              <div className="flex items-center gap-3 mt-6">
+                <input
+                  type="checkbox"
+                  id="rulesCheck"
+                  checked={rulesChecked}
+                  onChange={() => setRulesChecked(!rulesChecked)}
+                  className="w-5 h-5 accent-[#45767C]"
+                />
+                <label htmlFor="rulesCheck" className="text-[#29445D] font-medium">
+                  I have read and understood the interview rules
+                </label>
+              </div>
 
-            {/* <p className="text-lg md:text-xl text-[#29445D]">
-              Your interview will start in{" "}
-              <span className="text-[#45767C] font-bold">
-                {formatTime(remainingTime)}
-              </span>
-            </p> */}
-
-
-            {status === "ready" && (
-              <p className="text-lg md:text-xl text-green-700 font-semibold">
-                You can now join the interview
-              </p>
-            )}
-
-            {status === "expired" && (
-              <p className="text-lg md:text-xl text-red-600 font-semibold">
-                You have missed your scheduled time. Please contact HR.
-              </p>
-            )}
-
-          </div>
-
-        {status === "ready" && (
-  <>
-    {/* RULES */}
-    <InterviewRules />
-
-    {/* Checkbox */}
-    <div className="flex items-center gap-3 mt-6">
-      <input
-        type="checkbox"
-        id="rulesCheck"
-        checked={rulesChecked}
-        onChange={() => setRulesChecked(!rulesChecked)}
-        className="w-5 h-5 accent-[#45767C]"
-      />
-      <label htmlFor="rulesCheck" className="text-[#29445D] font-medium">
-        I have read and understood the interview rules
-      </label>
-    </div>
-  </>
-)}
-{status === "ready" && (
-  <div className="mt-5 ml-auto mb-7 mr-8">
-    <button
-      disabled={!rulesChecked}
-      className={`rounded-3xl w-[180px] py-5 font-semibold text-[#F2FAF5]
-      bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
-      hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]
-      ${!rulesChecked
-          ? "opacity-50 cursor-not-allowed"
-          : "opacity-100 cursor-pointer"
-        }`}
-      onClick={handleClick}
-    >
-      Next
-    </button>
-  </div>
-)}
-         
-          <div className="mt-5 ml-auto mb-7 mr-8">
-            <button
-              disabled={!rulesChecked}
-              className={`rounded-3xl w-[180px] py-5 font-semibold text-[#F2FAF5]
-              bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
-              hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]
-              ${!rulesChecked
-                  ? "opacity-50 cursor-not-allowed"
-                  : "opacity-100 cursor-pointer"
-                }`}
-              onClick={handleClick}
-            >
-              Next
-            </button>
-          </div>
+              <div className="mt-5 ml-auto mb-7 mr-8">
+                <button
+                  disabled={!rulesChecked}
+                  className={`rounded-3xl w-[180px] py-5 font-semibold text-[#F2FAF5]
+                  bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
+                  hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]
+                  ${!rulesChecked
+                      ? "opacity-50 cursor-not-allowed"
+                      : "opacity-100 cursor-pointer"
+                    }`}
+                  onClick={handleClick}
+                >
+                  Next
+                </button>
+              </div>
+            </>
+          )}
 
         </div>
+
       </div>
     </div>
   );
