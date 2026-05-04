@@ -120,7 +120,7 @@ const MeetInterface = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              Your Interview will start soon
+             Hi {userName}! Your Interview will start soon
             </Motion.h1>
           )}
 
@@ -130,7 +130,7 @@ const MeetInterface = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              Your Interview is Ready to Start 
+              Your Interview is Ready to Start
             </Motion.h1>
           )}
 
@@ -210,9 +210,7 @@ const MeetInterface = () => {
               I have read and understood the interview rules
             </label>
           </div>
-
-          {/* Button */}
-         {status === "ready" && (
+{status === "ready" && (
   <div className="mt-5 ml-auto mb-7 mr-8">
     <button
       disabled={!rulesChecked}
@@ -229,7 +227,8 @@ const MeetInterface = () => {
     </button>
   </div>
 )}
- <div className="mt-5 ml-auto mb-7 mr-8">
+         
+          <div className="mt-5 ml-auto mb-7 mr-8">
             <button
               disabled={!rulesChecked}
               className={`rounded-3xl w-[180px] py-5 font-semibold text-[#F2FAF5]
