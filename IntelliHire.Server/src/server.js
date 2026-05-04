@@ -210,9 +210,9 @@ import InterviewController from "./controllers/InterviewController.js";
 import FlowController from "./controllers/flowController.js";
 import createFlowRoutes from "./routes/flowRoutes.js";
 
-import { initRedis } from "./config/redisClient.js";
+// import { initRedis } from "./config/redisClient.js";
 
-const redisClient = initRedis();
+// const redisClient = initRedis();
 // --------------------
 // Config & Middleware
 // --------------------
@@ -343,9 +343,15 @@ app.post("/generate-pdf", async (req, res) => {
     await sequelize.sync({ alter: true });
     console.log("Database synced...");
 
-    server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
+    server.listen(PORT, async () => {
+  console.log(`Server running on port ${PORT}`);
+
+  try {
+    await redisClient.connect(); // 🔥 connect once here
+  } catch (err) {
+    console.error("❌ Redis initial connection failed");
+  }
+});
   } catch (err) {
     console.error("Database connection failed:", err);
   }

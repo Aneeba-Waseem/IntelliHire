@@ -2,14 +2,17 @@ import Redis from "ioredis";
 
 let redisClient;
 
-export function initRedis() {
-  if (redisClient) return redisClient;
-
+if (!global.redisClient) {
   redisClient = new Redis(process.env.REDIS_URL, {
+    lazyConnect: true,              // 🔥 DO NOT auto-connect
+    maxRetriesPerRequest: 3,
     retryStrategy(times) {
-      return Math.min(times * 100, 3000);
+      if (times > 5) {
+        console.error("❌ Redis: stopped retrying");
+        return null; // stop reconnect loop
+      }
+      return Math.min(times * 200, 2000);
     },
-    enableOfflineQueue: false,
   });
 
   redisClient.on("connect", () => {
@@ -20,7 +23,13 @@ export function initRedis() {
     console.error("❌ Redis error:", err.message);
   });
 
-  return redisClient;
+  redisClient.on("close", () => {
+    console.warn("⚠️ Redis connection closed");
+  });
+
+  global.redisClient = redisClient;
+} else {
+  redisClient = global.redisClient;
 }
 
-export default () => redisClient;
+export { redisClient };
