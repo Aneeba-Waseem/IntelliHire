@@ -25,8 +25,11 @@ const MeetInterface = () => {
 
       const token = authState?.accessToken;
       const candidateUserId = authState?.user?.userId;
+      const params = new URLSearchParams(window.location.search);
 
-      const data = await getRemainingTimeAPI(token, candidateUserId);
+      const interviewId = params.get("interviewId");
+      // const token = params.get("token");
+      const data = await getRemainingTimeAPI(token, candidateUserId ,interviewId);
 
       if (!data) return;
 
@@ -164,11 +167,11 @@ const MeetInterface = () => {
               checked={rulesChecked}
               onChange={() => setRulesChecked(!rulesChecked)}
               className={`w-5 h-5 accent-[#45767C]  ${(status !== "ready")
-                  ? "opacity-50 cursor-not-allowed"
-                  : "opacity-100 cursor-pointer"
-                }`  }
+                ? "opacity-50 cursor-not-allowed"
+                : "opacity-100 cursor-pointer"
+                }`}
               disabled={status !== "ready"}   // optional safety
-              
+
             />
             <label htmlFor="rulesCheck" className="text-[#29445D] font-medium">
               I have read and understood the interview rules

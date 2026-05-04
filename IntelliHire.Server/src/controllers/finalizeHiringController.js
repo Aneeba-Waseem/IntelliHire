@@ -174,13 +174,17 @@ export const finalizeHiring = async (req, res) => {
                 isUsed: false,
             }, { transaction: t });
 
-            const link = `https://intelli-hire-5k2g.vercel.app/auth?token=${token}`;
+        
+
+            // const link = `https://intelli-hire-5k2g.vercel.app/auth?token=${token}`;
+            const link = `https://intelli-hire-5k2g.vercel.app/auth?token=${token}&interviewId=${interview.id}`;
             // ================= EMAIL PAYLOAD =================
             emailPayload.push({
                 email: r.contact_info?.email,
                 name: r.name,
                 date: iData?.date,
                 time: iData?.time,
+                  
                 jobtitle: step1.jobRole,
                 recruiterName: recruiter.fullName,
                 recruiterEmail: recruiter.email,
@@ -195,8 +199,8 @@ export const finalizeHiring = async (req, res) => {
 
         // ================= SEND EMAILS =================
         await sendInterviewEmails(emailPayload);
-
-        await t.commit();
+     await t.commit();
+       
 
         res.json({ message: "Hiring data saved successfully" });
 

@@ -4,7 +4,8 @@ import Interview from "../models/Interview.js";
 export const getRemainingTime = async (req, res) => {
   try {
     const { candidateUserId } = req.params;
-    
+    const { interviewId } = req.query; // ✅ IMPORTANT
+
     console.log("🔥 TIME API HIT:", candidateUserId);
 
     const user = await User.findOne({
@@ -19,7 +20,10 @@ export const getRemainingTime = async (req, res) => {
     }
 
     const interview = await Interview.findOne({
-      where: { candidateUserId: user.AutoId },
+      where: {
+        id: interviewId,              // ✅ USE EXACT INTERVIEW
+        candidateUserId: user.AutoId
+      },
     });
 
     if (!interview) {

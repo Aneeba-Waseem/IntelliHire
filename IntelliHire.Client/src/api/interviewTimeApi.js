@@ -2,13 +2,17 @@ import axios from "axios";
 
 const BASE_URL = "http://localhost:8000/api/interview-time";
 
-export const getRemainingTimeAPI = async (token, candidateUserId) => {
+export const getRemainingTimeAPI = async (token, candidateUserId ,interviewId) => {
   try {
+    
     console.log("🚀 Calling NEW TIME API...");
 
     const res = await axios.get(
       `${BASE_URL}/remaining-time/${candidateUserId}`,
       {
+         params: {
+          interviewId,   // ✅ THIS IS IMPORTANT
+        },
         headers: {
           Authorization: `Bearer ${token}`,
         },

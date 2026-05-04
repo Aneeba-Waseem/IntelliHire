@@ -398,7 +398,7 @@ const PORT = process.env.PORT || 8000;
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "https://intelli-hire-5k2g.vercel.app",
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type"],
   })
@@ -438,7 +438,7 @@ const server = createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "https://intelli-hire-5k2g.vercel.app",
     methods: ["GET", "POST", "PUT", "DELETE"],
   },
 });
@@ -460,7 +460,7 @@ app.post("/generate-pdf", async (req, res) => {
     const page = await browser.newPage();
 
     // Step 1: Open page FIRST
-    await page.goto("http://localhost:5173/print-report", {
+    await page.goto("https://intelli-hire-5k2g.vercel.app/print-report", {
       waitUntil: "domcontentloaded",
     });
 

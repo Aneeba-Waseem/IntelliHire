@@ -4,7 +4,7 @@ import { Mic, MicOff, Video, VideoOff, Phone, X } from "lucide-react";
 import { webrtcStore } from "../../store/webRtcStore";
 import { useSession } from "./sessionContext";
 import { loadAuthState } from "../../features/auth/persistAuth";
- import logo from "../../assets/landing/logo_final.png";
+import logo from "../../assets/landing/logo_final.png";
 
 /**
  * MERGED Meet Component
@@ -669,7 +669,7 @@ Message: ${data.message}
             )}
 
             {/* Main AI circle */}
-           
+
 
             <div
               className={`relative mt-20 w-48 h-48 bg-white rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${isAISpeaking ? "ring-4 ring-gray-400 ring-opacity-80 scale-110" : ""
