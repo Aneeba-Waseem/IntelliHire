@@ -120,7 +120,7 @@ const MeetInterface = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              Your Interview Starts Soon
+              Your Interview will start soon
             </Motion.h1>
           )}
 
@@ -130,7 +130,7 @@ const MeetInterface = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              Your Interview is Ready to Start 🚀
+              Your Interview is Ready to Start 
             </Motion.h1>
           )}
 
@@ -172,12 +172,12 @@ const MeetInterface = () => {
           <div className="w-full text-center mb-6">
 
 
-            <p className="text-lg md:text-xl text-[#29445D]">
+            {/* <p className="text-lg md:text-xl text-[#29445D]">
               Your interview will start in{" "}
               <span className="text-[#45767C] font-bold">
                 {formatTime(remainingTime)}
               </span>
-            </p>
+            </p> */}
 
 
             {status === "ready" && (
@@ -212,23 +212,24 @@ const MeetInterface = () => {
           </div>
 
           {/* Button */}
-          {status === "ready" && (
-            <div className="mt-5 ml-auto mb-7 mr-8">
-              <button
-                disabled={!rulesChecked}
-                className={`rounded-3xl w-[180px] py-5 font-semibold text-[#F2FAF5]
+         {status === "ready" && (
+  <div className="mt-5 ml-auto mb-7 mr-8">
+    <button
+      disabled={!rulesChecked}
+      className={`rounded-3xl w-[180px] py-5 font-semibold text-[#F2FAF5]
       bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
       hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]
       ${!rulesChecked
-                    ? "opacity-50 cursor-not-allowed"
-                    : "opacity-100 cursor-pointer"
-                  }`}
-                onClick={handleClick}
-              >
-                Next
-              </button>
-            </div>
-          )} <div className="mt-5 ml-auto mb-7 mr-8">
+          ? "opacity-50 cursor-not-allowed"
+          : "opacity-100 cursor-pointer"
+        }`}
+      onClick={handleClick}
+    >
+      Next
+    </button>
+  </div>
+)}
+ <div className="mt-5 ml-auto mb-7 mr-8">
             <button
               disabled={!rulesChecked}
               className={`rounded-3xl w-[180px] py-5 font-semibold text-[#F2FAF5]
