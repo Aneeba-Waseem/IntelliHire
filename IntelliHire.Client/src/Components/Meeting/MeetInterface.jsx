@@ -17,6 +17,10 @@ const MeetInterface = () => {
   const [isRunning, setIsRunning] = useState(false);
   // "waiting" | "ready" | "expired"
 
+  const endTimeRef = useRef(null);
+  const intervalRef = useRef(null);
+
+  // 1. Fetch initial time
   useEffect(() => {
     const fetchTime = async () => {
       const authState = loadAuthState();
@@ -24,52 +28,55 @@ const MeetInterface = () => {
       const token = authState?.accessToken;
       const candidateUserId = authState?.user?.userId;
 
-      console.log("🔥 FRONTEND HIT");
-      console.log("user ki info", authState)
-      console.log("token", token)
-      console.log("candidate ki id", candidateUserId)
       const data = await getRemainingTimeAPI(token, candidateUserId);
-
-
-      console.log("📦 FINAL DATA:", data);
 
       if (!data) return;
 
+      const { remainingMinutes, remainingSeconds } = data;
+      const totalSeconds = remainingMinutes * 60 + remainingSeconds;
 
       const { remainingMinutes, remainingSeconds } = data;
-
       const totalSeconds = remainingMinutes * 60 + remainingSeconds;
+
       if (totalSeconds > 0) {
-        setRemainingTime(totalSeconds);
-        setIsRunning(true);
+        setStatus("waiting");   // 👈 ADD HERE
+        startTimer(totalSeconds);
+      } else {
+        setStatus("ready");     // 👈 ADD HERE
+        setRemainingTime(0);
       }
-      setRemainingTime(totalSeconds > 0 ? totalSeconds : 0);
     };
 
     fetchTime();
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, []);
 
-  const endTimeRef = useRef(null);
 
-useEffect(() => {
-  if (status !== "waiting") return;
+  // 2. Timer engine
+  const startTimer = (seconds) => {
+  if (intervalRef.current) clearInterval(intervalRef.current); // ADD THIS
 
-  endTimeRef.current = Date.now() + remainingTime * 1000;
+  endTimeRef.current = Date.now() + seconds * 1000;
+  setRemainingTime(seconds);
 
-  const interval = setInterval(() => {
+  setStatus("waiting"); // safer here too
+
+  intervalRef.current = setInterval(() => {
     const diff = Math.floor((endTimeRef.current - Date.now()) / 1000);
 
     if (diff <= 0) {
       setRemainingTime(0);
       setStatus("ready");
-      clearInterval(interval);
+      clearInterval(intervalRef.current);
+      intervalRef.current = null; // IMPORTANT
     } else {
       setRemainingTime(diff);
     }
   }, 1000);
-
-  return () => clearInterval(interval);
-}, [status]);
+};
 
   const formatTime = (totalSeconds) => {
     if (totalSeconds === null || totalSeconds < 0) return "0s";
