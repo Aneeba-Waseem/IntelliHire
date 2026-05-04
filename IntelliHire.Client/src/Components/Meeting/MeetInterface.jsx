@@ -154,37 +154,40 @@ const MeetInterface = () => {
 
         {/* RULES + BUTTON */}
         <div className="w-full flex flex-col items-start mt-7 justify-center px-5">
-<InterviewRules />
+          <div className={`${status !== "ready" ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
+  
+  <InterviewRules />
 
-{/* Checkbox */}
-<div className="flex items-center gap-3 mt-6">
-  <input
-    type="checkbox"
-    id="rulesCheck"
-    checked={rulesChecked}
-    onChange={() => setRulesChecked(!rulesChecked)}
-    className="w-5 h-5 accent-[#45767C]"
-    disabled={status !== "ready"}   // optional safety
-  />
-  <label htmlFor="rulesCheck" className="text-[#29445D] font-medium">
-    I have read and understood the interview rules
-  </label>
+  <div className="flex items-center gap-3 mt-6">
+    <input
+      type="checkbox"
+      id="rulesCheck"
+      checked={rulesChecked}
+      onChange={() => setRulesChecked(!rulesChecked)}
+      className="w-5 h-5 accent-[#45767C]"
+      disabled={status !== "ready"}
+    />
+    <label htmlFor="rulesCheck" className="text-[#29445D] font-medium">
+      I have read and understood the interview rules
+    </label>
+  </div>
+
 </div>
-<div className="mt-5 ml-auto mb-7 mr-8">
-  <button
-    disabled={status !== "ready" || !rulesChecked}
-    className={`rounded-3xl w-[180px] py-5 font-semibold text-[#F2FAF5]
+          <div className="mt-5 ml-auto mb-7 mr-8">
+            <button
+              disabled={status !== "ready" || !rulesChecked}
+              className={`rounded-3xl w-[180px] py-5 font-semibold text-[#F2FAF5]
     bg-gradient-to-r from-[#29445D] via-[#45767C] to-[#719D99]
     hover:from-[#45767C] hover:via-[#719D99] hover:to-[#9CBFAC]
     ${(status !== "ready" || !rulesChecked)
-        ? "opacity-50 cursor-not-allowed"
-        : "opacity-100 cursor-pointer"
-      }`}
-    onClick={handleClick}
-  >
-    Next
-  </button>
-</div>
+                  ? "opacity-50 cursor-not-allowed"
+                  : "opacity-100 cursor-pointer"
+                }`}
+              onClick={handleClick}
+            >
+              Next
+            </button>
+          </div>
 
         </div>
 
