@@ -22,30 +22,27 @@ const MeetInterface = () => {
 
   // 1. Fetch initial time
   useEffect(() => {
-    const fetchTime = async () => {
-      const authState = loadAuthState();
+   const fetchTime = async () => {
+  const authState = loadAuthState();
 
-      const token = authState?.accessToken;
-      const candidateUserId = authState?.user?.userId;
+  const token = authState?.accessToken;
+  const candidateUserId = authState?.user?.userId;
 
-      const data = await getRemainingTimeAPI(token, candidateUserId);
+  const data = await getRemainingTimeAPI(token, candidateUserId);
 
-      if (!data) return;
+  if (!data) return;
 
-      const { remainingMinutes, remainingSeconds } = data;
-      const totalSeconds = remainingMinutes * 60 + remainingSeconds;
+  const { remainingMinutes, remainingSeconds } = data;
+  const totalSeconds = remainingMinutes * 60 + remainingSeconds;
 
-      const { remainingMinutes, remainingSeconds } = data;
-      const totalSeconds = remainingMinutes * 60 + remainingSeconds;
-
-      if (totalSeconds > 0) {
-        setStatus("waiting");   // 👈 ADD HERE
-        startTimer(totalSeconds);
-      } else {
-        setStatus("ready");     // 👈 ADD HERE
-        setRemainingTime(0);
-      }
-    };
+  if (totalSeconds > 0) {
+    setStatus("waiting");
+    startTimer(totalSeconds);
+  } else {
+    setStatus("ready");
+    setRemainingTime(0);
+  }
+};
 
     fetchTime();
 
