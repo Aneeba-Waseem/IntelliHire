@@ -6,6 +6,7 @@ import InterviewRules from "./InterviewRules";
 import { useNavigate } from "react-router-dom";
 import { loadAuthState } from "../../features/auth/persistAuth";
 import { getRemainingTimeAPI } from "../../api/interviewTimeApi";
+import { useRef } from "react";
 
 const MeetInterface = () => {
   const [rulesChecked, setRulesChecked] = useState(false);
