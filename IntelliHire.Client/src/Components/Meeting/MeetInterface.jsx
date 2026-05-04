@@ -154,25 +154,22 @@ const MeetInterface = () => {
 
         {/* RULES + BUTTON */}
         <div className="w-full flex flex-col items-start mt-7 justify-center px-5">
-          <div className={`${status !== "ready" ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
-  
-  <InterviewRules />
+          <InterviewRules />
 
-  <div className="flex items-center gap-3 mt-6">
-    <input
-      type="checkbox"
-      id="rulesCheck"
-      checked={rulesChecked}
-      onChange={() => setRulesChecked(!rulesChecked)}
-      className="w-5 h-5 accent-[#45767C]"
-      disabled={status !== "ready"}
-    />
-    <label htmlFor="rulesCheck" className="text-[#29445D] font-medium">
-      I have read and understood the interview rules
-    </label>
-  </div>
-
-</div>
+          {/* Checkbox */}
+          <div className="flex items-center gap-3 mt-6">
+            <input
+              type="checkbox"
+              id="rulesCheck"
+              checked={rulesChecked}
+              onChange={() => setRulesChecked(!rulesChecked)}
+              className="w-5 h-5 accent-[#45767C]"
+              disabled={status !== "ready"}   // optional safety
+            />
+            <label htmlFor="rulesCheck" className="text-[#29445D] font-medium">
+              I have read and understood the interview rules
+            </label>
+          </div>
           <div className="mt-5 ml-auto mb-7 mr-8">
             <button
               disabled={status !== "ready" || !rulesChecked}
