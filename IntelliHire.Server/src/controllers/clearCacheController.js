@@ -12,22 +12,16 @@ export const clearAllCache = async (req, res) => {
             where: { UserId: userId },
             attributes: ["AutoId"]
         });
-
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        const id = user.AutoId;
-
+        id = user.AutoId ;
         const step1Key = `job:${id}:step1`;
         const step2Key = `job:${id}:step2:batchId`;
         const batchKey = batchId;
         const statusKey = `${batchId}_status`;
 
-        await redisClient.del(step1Key);
-        await redisClient.del(step2Key);
-        await redisClient.del(batchKey);
-        await redisClient.del(statusKey);
+        await redis.del(step1Key);
+        await redis.del(step2Key);
+        await redis.del(batchKey);
+        await redis.del(statusKey);
 
         console.log("🧹 Cache cleared");
 
