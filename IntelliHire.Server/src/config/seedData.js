@@ -1,5 +1,5 @@
-import DomainsList from "./models/DomainsList.js";
-import TechStacksList from "./models/TechStacksList.js";
+import DomainsList from "../models/DomainsList.js";
+import TechStacksList from "../models/TechStacksList.js";
 
 const seedData = async () => {
   try {
