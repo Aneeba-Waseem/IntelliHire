@@ -14,6 +14,10 @@ export default function DetailedReportPage() {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const data = await getEvaluation(candidateId, jobId);
