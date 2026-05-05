@@ -45,21 +45,26 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendInterviewEmails = async (emailData) => {
   for (const i of emailData) {
-
-    const html = await render(
-      React.createElement(InterviewScheduled, {
-        name: i.name,
-        date: i.date,
-        time: i.time,
-        link: i.link,
-      })
-    );
-
-    await resend.emails.send({
-      from: "onboarding@resend.dev",
-      to: i.email,
-      subject: "Your Interview Schedule",
-      html,
-    });
+    try {
+      const html = await render(
+        React.createElement(InterviewScheduled, {
+          name: i.name,
+          date: i.date,
+          time: i.time,
+          link: i.link,
+        })
+      );
+  
+      const res = await resend.emails.send({
+        from: "onboarding@resend.dev",
+        to: i.email,
+        subject: "Your Interview Schedule",
+        html,
+      });
+  
+      console.log("SUCCESS:", res);
+    } catch (err) {
+      console.error("ERROR:", err);
+    }
   }
 };
