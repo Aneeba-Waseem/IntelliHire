@@ -12,6 +12,8 @@ import { Server } from "socket.io";
 // App, DB & Redis
 import app from "./app.js";
 import sequelize from "./config/db.js";
+
+import seedData from "./config/seedData.js";
 import { getRedisClient } from "./config/redisClient.js";
 
 const redisClient = getRedisClient();
