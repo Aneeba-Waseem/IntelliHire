@@ -27,6 +27,7 @@ aiortc
 asyncio
 scipy
 fastapi 
+openai
 uvicorn 
 av
 aiohttp_cors
