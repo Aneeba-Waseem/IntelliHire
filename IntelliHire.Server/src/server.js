@@ -163,10 +163,10 @@ app.post("/generate-pdf", async (req, res) => {
 
     if (!global._serverStarted) {
       global._serverStarted = true;
-    
+
       server.listen(PORT, async () => {
         console.log(`Server running on port ${PORT}`);
-    
+
         try {
           if (redisClient.status === "wait") {
             await redisClient.connect();
@@ -176,12 +176,11 @@ app.post("/generate-pdf", async (req, res) => {
         }
       });
     }
-  });
+
   } catch (err) {
     console.error("Database connection failed:", err);
   }
 })();
-
 
 // Local
 // import dotenv from "dotenv";
