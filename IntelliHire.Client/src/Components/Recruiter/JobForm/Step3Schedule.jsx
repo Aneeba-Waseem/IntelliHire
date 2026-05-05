@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getStep2BatchId } from "../../../api/JobApi";
+import { getStep2BatchId ,clearAllCacheAPI} from "../../../api/JobApi";
 import { getBatchStatus } from "../../../api/resume_api";
 import { scheduleInterviewsAPI } from "../../../api/interviewSchedule";
 import toast from "react-hot-toast";
@@ -68,6 +68,7 @@ export default function Step3Schedule({ handleBack, handleSubmit }) {
       }
 
       await scheduleInterviewsAPI(batchId, interviews);
+      await clearAllCacheAPI(batchId);
 
       toast.success(`Emails sent to ${interviews.length} candidate(s)`);
       handleSubmit(interviews);

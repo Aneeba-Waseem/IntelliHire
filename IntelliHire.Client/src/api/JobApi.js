@@ -92,6 +92,16 @@ export const getStep2BatchId = async () => {
 };
 
 
+export const clearAllCacheAPI = async (batchId) => {
+  const res = await fetch(`${BASE_URL}/jobCache/clearAll`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ batchId }),
+  });
+
+  return res.json();
+};
+
 
 /* =====================================================
    OPTIONAL: Save Job to DB
@@ -112,8 +122,6 @@ export const saveJobDescription = async (data) => {
     throw err;
   }
 };
-
-
 
 export const getJobDescription = async (id) => {
   const authState = loadAuthState();
