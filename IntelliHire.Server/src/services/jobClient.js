@@ -5,15 +5,19 @@ import Domain from "../models/Domain.js";
 import TechStack from "../models/TechStack.js";
 import User from "../models/User.js";
 
-export const getCacheStep1 = async (candidateId) => {
+export const getCacheStep1 = async (candidateId, interviewId) => {
   try {
     const user = await User.findOne({
       where: { UserId: candidateId },
       attributes: ["AutoId"],
     });
     // 🔹 1. Get interview for candidate
+
     const interview = await Interview.findOne({
-      where: { candidateUserId: user.AutoId },
+      where: {
+        id: interviewId,
+        candidateUserId: user.AutoId
+      },
       attributes: ["FK_JobDescription"],
     });
 

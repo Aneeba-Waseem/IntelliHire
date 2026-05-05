@@ -31,9 +31,9 @@ export default class FlowService {
   /* =====================================================
      TOPICS
   ===================================================== */
-  async getTopicsForJob(candidateId) {
+  async getTopicsForJob(candidateId, interviewId) {
     try {
-      const jobData = await getCacheStep1(candidateId);
+      const jobData = await getCacheStep1(candidateId, interviewId);
       if (!jobData || Object.keys(jobData).length === 0) return ["general"];
 
       const topics = [
@@ -392,7 +392,7 @@ export default class FlowService {
   //   }
   // }
 
-  async startInterview({ candidateId, jobId, candidateType, token }) {
+  async startInterview({ candidateId, jobId, interviewId, candidateType, token }) {
     if (!candidateId || !jobId)
       throw new Error("candidateId and jobId are required");
 
@@ -411,7 +411,7 @@ export default class FlowService {
     /* =========================================
        1. LOAD TOPICS
     ========================================= */
-    const topics = await this.getTopicsForJob(candidateId);
+    const topics = await this.getTopicsForJob(candidateId, interviewId);
     state.currentTopic = topics[0];
 
     /* =========================================
@@ -429,8 +429,10 @@ export default class FlowService {
     });
     console.log(user);
     const interview = await Interview.findOne({
-      where: { candidateUserId: user.AutoId },
-      attributes: ["id"],
+      where: {
+        id: interviewId,
+        candidateUserId: user.AutoId
+      }
     });
 
     await this.evalRepo.initSession(session.id, interview.id);
@@ -495,7 +497,7 @@ export default class FlowService {
             question: turn.question,
             answer: candidateAnswer,
           });
-          console.log("decision from groq",decision, "for response", candidateAnswer);
+        console.log("decision from groq", decision, "for response", candidateAnswer);
         /* =========================================
            2. HANDLE FOLLOW-UP
         ========================================= */

@@ -31,7 +31,7 @@ export default class FlowController {
     try {
       console.log(`[${requestId}] Starting interview:`, req.body);
 
-      const { candidateId, jobId, candidateType } = req.body;
+      const { candidateId, jobId,interviewId, candidateType } = req.body;
 
       if (!candidateId) {
         return res.status(400).json({
@@ -70,6 +70,7 @@ export default class FlowController {
         candidateId,
         jobId,
         candidateType: candidateType || "generic",
+        interviewId,
         token,
       });
 

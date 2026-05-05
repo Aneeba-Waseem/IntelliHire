@@ -351,6 +351,7 @@ const interviewId = searchParams.get("interviewId");
         body: JSON.stringify({
           candidateId: getUserId(),
           jobId: "job123",
+          interviewId: interviewId,   // ✅ ADD THIS
           webrtcSessionId: webRtcSessionId,
         }),
       });
