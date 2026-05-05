@@ -1,8 +1,10 @@
 import express from "express";
-import { redisClient } from "../config/redisClient.js";
+import { getRedisClient } from "../config/redisClient.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+const redisClient = getRedisClient();
 
 // Save/update Step1 data in Redis
 router.post("/cacheStep1", authMiddleware, async (req, res) => {
