@@ -56,7 +56,7 @@ export const sendInterviewEmails = async (emailData) => {
     );
 
     await resend.emails.send({
-      from: process.env.FROM_EMAIL || "noreply.intellihire.ai@gmail.com",
+      from: "onboarding@resend.dev",
       to: i.email,
       subject: "Your Interview Schedule",
       html,
