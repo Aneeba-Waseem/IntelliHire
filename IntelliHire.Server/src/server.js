@@ -15,7 +15,9 @@ import { Server } from "socket.io";
 // App, DB & Redis
 import app from "./app.js";
 import sequelize from "./config/db.js";
-import { redisClient } from "./config/redisClient.js";
+import { getRedisClient } from "./config/redisClient.js";
+
+const redisClient = getRedisClient();
 
 // Models (register associations)
 import "./index.js";
@@ -160,24 +162,16 @@ app.post("/generate-pdf", async (req, res) => {
     console.log("Database synced...");
 
     server.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
-
-  try {
-  await redisClient.connect();
-} catch (err) {
-  console.error("❌ Redis initial connection failed");
-
-  // Optional retry later (non-spam)
-  setTimeout(async () => {
+    console.log(`Server running on port ${PORT}`);
+  
     try {
-      await redisClient.connect();
-      console.log("🔄 Redis reconnected later");
-    } catch {
-      console.log("❌ Redis still unavailable");
+      if (redisClient.status === "wait") {
+        await redisClient.connect();
+      }
+    } catch (err) {
+      console.error("❌ Redis connection failed:", err.message);
     }
-  }, 10000); // retry once after 10s
-}
-});
+  });
   } catch (err) {
     console.error("Database connection failed:", err);
   }
