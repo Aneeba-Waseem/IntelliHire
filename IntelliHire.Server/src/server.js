@@ -12,6 +12,8 @@ import { Server } from "socket.io";
 // App, DB & Redis
 import app from "./app.js";
 import sequelize from "./config/db.js";
+
+import seedData from "./config/seedData.js";
 import { getRedisClient } from "./config/redisClient.js";
 
 const redisClient = getRedisClient();
@@ -162,6 +164,10 @@ app.get("/health", (req, res) => {
 
     await sequelize.sync({ alter: true });
     console.log("✅ Database synced...");
+    // seeding
+    await seedData();
+
+    console.log("🌱 Seeding done");
 
     if (!global._serverStarted) {
       global._serverStarted = true;
