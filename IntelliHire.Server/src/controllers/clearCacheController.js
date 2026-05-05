@@ -1,6 +1,6 @@
-import { redisClient } from "../config/redisClient.js";
-import User from "../models/User.js";
+import { getRedisClient } from "../config/redisClient.js";
 
+const redis = getRedisClient();
 export const clearAllCache = async (req, res) => {
     try {
         const { batchId, userId } = req.body;

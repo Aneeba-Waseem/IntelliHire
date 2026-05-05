@@ -1,7 +1,9 @@
 // cacheRepositories/InterviewTurnRepository.js
 import crypto from "crypto";
 import InterviewTurn from "../cacheModels/InterviewTurn.js";
-import { redisClient } from "../config/redisClient.js";
+import { getRedisClient } from "../config/redisClient.js";
+
+const redisClient = getRedisClient();
 
 export default class InterviewTurnRepository {
   constructor() {

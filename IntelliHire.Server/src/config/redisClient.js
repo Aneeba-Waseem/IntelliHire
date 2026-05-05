@@ -1,46 +1,35 @@
-// import Redis from "ioredis";
+import Redis from "ioredis";
 
-// let redisClient;
+let client = null;
 
-// if (!global.redisClient) {
-//   redisClient = new Redis(process.env.REDIS_URL, {
-//     lazyConnect: true,              // 🔥 DO NOT auto-connect
-//     maxRetriesPerRequest: 3,
-//     retryStrategy(times) {
-//       if (times > 5) {
-//         console.error("❌ Redis: stopped retrying");
-//         return null; // stop reconnect loop
-//       }
-//       return Math.min(times * 200, 2000);
-//     },
-//   });
+export function getRedisClient() {
+  if (!client) {
+    client = new Redis(process.env.REDIS_URL, {
+      lazyConnect: true,
+      maxRetriesPerRequest: 1,
+      enableOfflineQueue: false,
+    });
 
-//   redisClient.on("connect", () => {
-//     console.log("✅ Redis connected");
-//   });
+    client.on("connect", () => {
+      console.log("✅ Redis connected");
+    });
 
-//   redisClient.on("error", (err) => {
-//     console.error("❌ Redis error:", err.message);
-//   });
+    client.on("error", (err) => {
+      console.error("❌ Redis error:", err.message);
+    });
+  }
 
-//   redisClient.on("close", () => {
-//     console.warn("⚠️ Redis connection closed");
-//   });
+  return client;
+}
+// Local
 
-//   global.redisClient = redisClient;
-// } else {
-//   redisClient = global.redisClient;
-// }
+// import { createClient } from "redis";
 
-// export { redisClient };
-// redisClient.js
-import { createClient } from "redis";
+// export const redisClient = createClient({ url: "redis://127.0.0.1:6379" });
 
-export const redisClient = createClient({ url: "redis://127.0.0.1:6379" });
+// redisClient.on("error", (err) => console.log("Redis Client Error", err));
 
-redisClient.on("error", (err) => console.log("Redis Client Error", err));
-
-(async () => {
-  await redisClient.connect();
-  console.log("✅ Redis connected");
-})();
+// (async () => {
+//   await redisClient.connect();
+//   console.log("✅ Redis connected");
+// })();

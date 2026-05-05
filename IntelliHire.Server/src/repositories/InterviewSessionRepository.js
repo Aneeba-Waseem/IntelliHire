@@ -2,7 +2,9 @@
 import crypto from "crypto";
 import InterviewSession from "../cacheModels/InterviewSession.js";
 import InterviewState from "../cacheModels/InterviewState.js";
-import { redisClient } from "../config/redisClient.js";
+import { getRedisClient } from "../config/redisClient.js";
+
+const redisClient = getRedisClient();
 
 export default class InterviewSessionRepository {
   /* =====================================================
