@@ -93,10 +93,13 @@ export const getStep2BatchId = async () => {
 
 
 export const clearAllCacheAPI = async (batchId) => {
+  const authState = loadAuthState();
+  const userId = authState?.user?.userId;
+
   const res = await fetch(`http://localhost:8000/api/cache/clearAll`, {
     method: "DELETE",
     headers: getAuthHeaders(),
-    body: JSON.stringify({ batchId }),
+    body: JSON.stringify({ batchId, userId }),
   });
 
   return res.json();

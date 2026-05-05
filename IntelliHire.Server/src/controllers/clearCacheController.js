@@ -1,14 +1,16 @@
 import { redisClient } from "../config/redisClient.js";
 export const clearAllCache = async (req, res) => {
     try {
-        const { batchId } = req.body;
+        const { batchId, userId } = req.body;
 
-        const userId = req.user.userId; // from auth middleware
+        console.log("batchId:", batchId);
+        console.log("userId:", userId);
+
         const user = await User.findOne({
             where: { UserId: userId },
             attributes: ["AutoId"]
         });
-        id = user.AutoIs=d
+        id = user.AutoId ;
         const step1Key = `job:${id}:step1`;
         const step2Key = `job:${id}:step2:batchId`;
         const batchKey = batchId;
