@@ -125,7 +125,7 @@ const interviewId = searchParams.get("interviewId");
 
           {status === "ready" && (
             <Motion.h1
-              className="text-3xl md:text-4xl font-semibold text-green-700 text-center"
+              className="text-3xl md:text-4xl font-semibold text-[#29445D] text-center"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
             >
