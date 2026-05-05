@@ -7,7 +7,7 @@ export const getRemainingTime = async (req, res) => {
     const { interviewId } = req.query; // ✅ IMPORTANT
 
     console.log("🔥 TIME API HIT:", candidateUserId);
-
+    console.log("interview ki id at backend", interviewId)
     const user = await User.findOne({
       where: { UserId: candidateUserId },
       attributes: ["AutoId"],

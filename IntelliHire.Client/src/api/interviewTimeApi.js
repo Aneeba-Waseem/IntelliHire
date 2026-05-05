@@ -6,7 +6,7 @@ export const getRemainingTimeAPI = async (token, candidateUserId ,interviewId) =
   try {
     
     console.log("🚀 Calling NEW TIME API...");
-
+    console.log("interview id at frontend" , interviewId);
     const res = await axios.get(
       `${BASE_URL}/remaining-time/${candidateUserId}`,
       {
