@@ -46,12 +46,7 @@ const PORT = process.env.PORT || 8000;
 //     allowedHeaders: ["Content-Type" , "Authorization"],
 //   })
 // );
-app.use(cors({
-  origin: ["https://intelli-hire-5k2g.vercel.app"],
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+
 app.use(express.json());
 
 redisClient.on("error", (err) =>
