@@ -161,15 +161,20 @@ app.post("/generate-pdf", async (req, res) => {
     await sequelize.sync({ alter: true });
     console.log("Database synced...");
 
-    server.listen(PORT, async () => {
-    console.log(`Server running on port ${PORT}`);
-  
-    try {
-      if (redisClient.status === "wait") {
-        await redisClient.connect();
-      }
-    } catch (err) {
-      console.error("❌ Redis connection failed:", err.message);
+    if (!global._serverStarted) {
+      global._serverStarted = true;
+    
+      server.listen(PORT, async () => {
+        console.log(`Server running on port ${PORT}`);
+    
+        try {
+          if (redisClient.status === "wait") {
+            await redisClient.connect();
+          }
+        } catch (err) {
+          console.error("❌ Redis connection failed:", err.message);
+        }
+      });
     }
   });
   } catch (err) {
