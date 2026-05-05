@@ -31,6 +31,7 @@
     "pg-hstore": "^2.3.4",
     "puppeteer": "^24.42.0",
     "redis": "^5.10.0",
+    "resend": "^6.12.2",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.3"
   }

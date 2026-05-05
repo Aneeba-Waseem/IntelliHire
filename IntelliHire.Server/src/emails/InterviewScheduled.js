@@ -16,7 +16,7 @@ export default function InterviewScheduled({
     { style: { fontFamily: "Arial", lineHeight: "1.6" } },
 
     React.createElement("p", null, `Hi ${name},`),
-     console.log("job in email"  , {jobtitle}),
+    //  console.log("job in email"  , {jobtitle}),
     React.createElement(
       "p",
       null,
