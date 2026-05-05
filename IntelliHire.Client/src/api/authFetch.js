@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = "https://intellihire-production.up.railway.app/api";
 
 // ─── Core refresh logic ───────────────────────────────────────────────────────
 export const refreshAccessToken = async () => {

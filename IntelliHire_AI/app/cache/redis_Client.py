@@ -1,7 +1,13 @@
 import redis
 import json
 
-r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
+REDIS_URL = "redis://default:QPvHLeGbDPlAAiPrcLPJporEkLbvoRvn@switchyard.proxy.rlwy.net:29241"
+
+r = redis.Redis.from_url(
+    REDIS_URL,
+    decode_responses=True
+)
+# r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
 
 def save_resume(batch_id: str, resume_profile: dict):
     r.hset(batch_id, resume_profile["resume_id"], json.dumps(resume_profile))

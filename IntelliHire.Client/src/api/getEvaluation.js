@@ -4,7 +4,7 @@ export const getEvaluation = async (candidateId, jobId) => {
   const authState = loadAuthState();
    const token = authState?.accessToken;
   const res = await fetch(
-    `http://localhost:8000/api/evaluation/report/${candidateId}/${jobId}`,
+    `https://intellihire-production.up.railway.app/api/evaluation/report/${candidateId}/${jobId}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,

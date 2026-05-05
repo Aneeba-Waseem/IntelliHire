@@ -1,7 +1,7 @@
 import axios from "axios";
 import { loadAuthState } from "../features/auth/persistAuth";
 
-const API = "http://localhost:8000/api/dashboard";
+const API = "https://intellihire-production.up.railway.app/api/dashboard";
 
 export const getDashboardData = async () => {
     const authState = loadAuthState();

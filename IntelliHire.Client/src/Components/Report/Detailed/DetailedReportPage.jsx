@@ -41,7 +41,7 @@ export default function DetailedReportPage() {
   }
 
   const handleDownload = async (includeDetails) => {
-    const res = await fetch("http://localhost:8000/generate-pdf", {
+    const res = await fetch("https://intellihire-production.up.railway.app/generate-pdf", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ report, includeDetails }),

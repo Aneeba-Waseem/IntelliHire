@@ -2,7 +2,7 @@ import axios from "axios";
 import { loadAuthState } from "../features/auth/persistAuth";
 
 const API = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: "https://intellihire-production.up.railway.app",
 });
 
 export const updateProfile = async (data) => {

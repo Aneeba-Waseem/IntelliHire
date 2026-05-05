@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:8000/api/interview-time";
+const BASE_URL = "https://intellihire-production.up.railway.app/api/interview-time";
 
 export const getRemainingTimeAPI = async (token, candidateUserId ,interviewId) => {
   try {

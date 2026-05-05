@@ -1,5 +1,5 @@
 // src/api/flowAPI.js
-const API_BASE = "http://localhost:8000/api/flow";
+const API_BASE = "https://intellihire-production.up.railway.app/api/flow";
 import axios from "axios";
 export const startInterview = async (token, candidateId = "cand_12345", jobId = "job_67890", candidateType = "generic") => {
     console.log("Starting interview with candidateId:", candidateId, "jobId:", jobId, "candidateType:", candidateType , "token:", token );

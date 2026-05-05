@@ -342,7 +342,7 @@ const interviewId = searchParams.get("interviewId");
     try {
       const token = getToken();
 
-      const res = await fetch("http://localhost:8000/api/flow/start", {
+      const res = await fetch("https://intellihire-production.up.railway.app/api/flow/start", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -605,7 +605,7 @@ Message: ${data.message}
         sessionId: webrtcStore.interviewSessionId
       };
 
-      await fetch("http://localhost:8000/api/evaluation/save", {
+      await fetch("https://intellihire-production.up.railway.app/api/evaluation/save", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
