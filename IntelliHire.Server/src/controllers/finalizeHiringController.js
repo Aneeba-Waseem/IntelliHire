@@ -7,7 +7,10 @@ import Qualification from "../models/Qualification.js";
 import Experience from "../models/Experience.js";
 import Project from "../models/Project.js";
 import Interview from "../models/Interview.js";
-import { redisClient as redis } from "../config/redisClient.js";
+import { getRedisClient } from "../config/redisClient.js";
+
+const redis = getRedisClient();
+
 import { sendInterviewEmails } from "../routes/interviewEmail.js";
 
 import User from "../models/User.js";
