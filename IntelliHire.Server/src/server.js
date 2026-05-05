@@ -162,6 +162,10 @@ app.get("/health", (req, res) => {
 
     await sequelize.sync({ alter: true });
     console.log("✅ Database synced...");
+    // seeding
+    await seedData();
+
+    console.log("🌱 Seeding done");
 
     if (!global._serverStarted) {
       global._serverStarted = true;
