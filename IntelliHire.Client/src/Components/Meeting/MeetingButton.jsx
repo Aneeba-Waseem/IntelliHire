@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { webrtcStore } from "../../store/webRtcStore";
 import { useSession } from "./sessionContext";
 import { v4 as uuidv4 } from "uuid";
@@ -9,6 +9,11 @@ const MeetingButton = ({ stream, cameraOn, micOn }) => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { setWebRtcSessionId } = useSession();
+  
+const [searchParams] = useSearchParams();
+
+// const token = searchParams.get("token");
+const interviewId = searchParams.get("interviewId");
 
   const getAuthHeaders = () => {
     const authState = loadAuthState();
@@ -311,7 +316,8 @@ stream.getVideoTracks().forEach(track => {
                   }
                 }, 500);
 
-                navigate("/Meet");
+                // navigate("/Meet");
+                navigate(`/Meet?interviewId=${interviewId}`);
               }
             }, 500);
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Mic, MicOff, Video, VideoOff, Phone, X } from "lucide-react";
 import { webrtcStore } from "../../store/webRtcStore";
 import { useSession } from "./sessionContext";
@@ -31,6 +31,11 @@ export default function Meet() {
   const storeSessionId = webrtcStore.webRtcSessionId;
   const webRtcSessionId = contextSessionId || storeSessionId;
 
+  
+const [searchParams] = useSearchParams();
+
+// const token = searchParams.get("token");
+const interviewId = searchParams.get("interviewId");
   const localVideoRef = useRef(null);
   const remoteAudioRef = useRef(null);
 

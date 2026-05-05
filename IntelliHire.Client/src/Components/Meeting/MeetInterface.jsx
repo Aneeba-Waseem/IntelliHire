@@ -3,7 +3,7 @@ import { motion as Motion } from "framer-motion";
 import SidebarCustom from "../CommonComponents/SidebarCustom";
 import InterviewSchedule from "./InterviewSchedule";
 import InterviewRules from "./InterviewRules";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { loadAuthState } from "../../features/auth/persistAuth";
 import { getRemainingTimeAPI } from "../../api/interviewTimeApi";
 import { useRef } from "react";
@@ -25,6 +25,11 @@ const MeetInterface = () => {
 
       const token = authState?.accessToken;
       const candidateUserId = authState?.user?.userId;
+      
+const [searchParams] = useSearchParams();
+
+// const token = searchParams.get("token");
+const interviewId = searchParams.get("interviewId");
       const params = new URLSearchParams(window.location.search);
 
       const interviewId = params.get("interviewId");
@@ -94,7 +99,9 @@ const MeetInterface = () => {
 
   const handleClick = () => {
     console.log("handle click called");
-    navigate('/meetingPermissions');
+    // navigate('/meetingPermissions');
+    navigate(`/meetingPermissions?interviewId=${interviewId}`);
+
   };
 
   const authState = loadAuthState();
