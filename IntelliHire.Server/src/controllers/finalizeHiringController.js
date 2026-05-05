@@ -59,7 +59,7 @@ export const finalizeHiring = async (req, res) => {
         }
 
         const batchId = await redis.get(`job:${userId}:step2:batchId`);
-        const resumes = await redis.hgetall(key)
+        const resumes = await redis.hgetall(batchId)
         //  await redis.hGetAll(batchId);
 
         const shortlistedIds = interviews.map(i => i.resume_id);
