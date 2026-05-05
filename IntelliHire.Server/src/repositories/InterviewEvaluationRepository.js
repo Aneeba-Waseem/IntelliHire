@@ -1,6 +1,6 @@
-import Redis from "ioredis";
+import { getRedisClient } from "../config/redisClient.js";
 
-const redis = new Redis();
+const redis = getRedisClient();
 
 export default class InterviewEvaluationRepository {
   _key(sessionId) {
