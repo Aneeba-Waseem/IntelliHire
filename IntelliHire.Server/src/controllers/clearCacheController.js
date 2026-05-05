@@ -1,5 +1,4 @@
-import redis from "../config/redisClient.js";
-
+import { redisClient } from "../config/redisClient.js";
 export const clearAllCache = async (req, res) => {
   try {
     const { batchId } = req.body;
