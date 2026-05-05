@@ -15,7 +15,9 @@ const MeetInterface = () => {
   const [status, setStatus] = useState("loading");
   const [remainingTime, setRemainingTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
+  const params = new URLSearchParams(window.location.search);
 
+  const interviewId = params.get("interviewId");
   const endTimeRef = useRef(null);
   const intervalRef = useRef(null);
 
@@ -25,9 +27,7 @@ const MeetInterface = () => {
 
       const token = authState?.accessToken;
       const candidateUserId = authState?.user?.userId;
-      const params = new URLSearchParams(window.location.search);
-
-      const interviewId = params.get("interviewId");
+    
       // const token = params.get("token");
       const data = await getRemainingTimeAPI(token, candidateUserId ,interviewId);
 
