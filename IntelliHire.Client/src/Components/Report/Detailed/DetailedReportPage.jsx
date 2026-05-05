@@ -28,7 +28,9 @@ export default function DetailedReportPage() {
     fetchData();
   }, [candidateId, jobId]);
 
-  if (loading) return <div className="p-6 text-[#29445D]">Loading...</div>;
+  if (loading) return  <div className="h-screen flex items-center justify-center bg-[#D1DED3]">
+                Loading...
+            </div>;
 
   if (!report) {
     return <div className="p-6 text-[#29445D]">No report found.</div>;
