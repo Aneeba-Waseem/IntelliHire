@@ -36,6 +36,6 @@ app.use("/api/resume", resumeRoutes);
 app.use("/api/user", userRoutes);
 app.use("/uploads", express.static("uploads"));
 app.use("/api/evaluation", evaluationRoutes)
-app.use("api/cache" , clearCacheRoutes )
+app.use("/api/cache" , clearCacheRoutes )
 app.use("/api/interview-time", interviewTimeRoutes);
 export default app;
