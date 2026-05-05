@@ -8,11 +8,7 @@ dotenv.config({
 // const app = express();
 
 // app.use(cors());
-<<<<<<< HEAD
-app.use(express.json());
-=======
 // app.use(express.json());
->>>>>>> a61217de6089bcf3d1de51a1752f458b1d428e76
 
 // app.get('/', (req, res) => {
 //     res.send('Server is running');
