@@ -15,11 +15,14 @@ import evaluationRoutes from "./routes/evaluationRoutes.js"
 import interviewTimeRoutes from "./routes/interviewTimeRoutes.js";
 import clearCacheRoutes from "./routes/clearCacheRoutes.js"
 const app = express();
-
 app.use(cors({
-    origin: "https://intelli-hire-5k2g.vercel.app",
-    credentials: true
+  origin: "https://intelli-hire-5k2g.vercel.app",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
 }));
+
+app.options("*", cors());
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());

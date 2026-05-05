@@ -39,14 +39,21 @@ import createFlowRoutes from "./routes/flowRoutes.js";
 
 const PORT = process.env.PORT || 8000;
 
-app.use(
-  cors({
-    origin: "https://intelli-hire-5k2g.vercel.app",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type" , "Authorization"],
-  })
-);
+// app.use(
+//   cors({
+//     origin: "https://intelli-hire-5k2g.vercel.app",
+//     methods: ["GET", "POST", "PUT", "DELETE"],
+//     allowedHeaders: ["Content-Type" , "Authorization"],
+//   })
+// );
+// app.use(cors({
+//   origin: "https://intelli-hire-5k2g.vercel.app",
+//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization"],
+//   credentials: true
+// }));
 
+// app.options("*", cors());
 app.use(express.json());
 
 redisClient.on("error", (err) =>
@@ -77,6 +84,7 @@ export { flowController };
 // --------------------
 // HTTP & Socket.IO Setup
 // --------------------
+app.set("trust proxy", 1);
 const server = createServer(app);
 
 const io = new Server(server, {
