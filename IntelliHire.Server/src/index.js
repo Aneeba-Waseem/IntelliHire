@@ -5,14 +5,18 @@ import dotenv from 'dotenv';
 dotenv.config({
   path: process.env.NODE_ENV === "production" ? undefined : ".env",
 });
-const app = express();
+// const app = express();
 
 // app.use(cors());
+<<<<<<< HEAD
 app.use(express.json());
+=======
+// app.use(express.json());
+>>>>>>> a61217de6089bcf3d1de51a1752f458b1d428e76
 
-app.get('/', (req, res) => {
-    res.send('Server is running');
-});
+// app.get('/', (req, res) => {
+//     res.send('Server is running');
+// });
 console.log("Loaded env variables in the index:");
 console.log("DB_USER:", process.env.DB_USER);
 console.log("DB_PASSWORD:", process.env.DB_PASSWORD);
