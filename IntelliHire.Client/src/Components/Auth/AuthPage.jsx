@@ -13,6 +13,7 @@ import { Pointer } from "lucide-react";
 import { UserCheck, Lock } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { setUser, setAccessToken } from "../../features/auth/authSlice";
+// import { useSearchParams } from "react-router-dom";
 
 // inside component
 
@@ -34,6 +35,11 @@ const API = axios.create({
 export default function AuthPage() {
     const navigate = useNavigate();
     const dispatch = useDispatch();
+    
+const [searchParams] = useSearchParams();
+
+// const token = searchParams.get("token");
+const interviewId = searchParams.get("interviewId");
 
     const [isLogin, setIsLogin] = useState(true);
 
@@ -314,7 +320,8 @@ export default function AuthPage() {
                                         dispatch(setUser(user));
                                         dispatch(setAccessToken(accessToken));
 
-                                        navigate("/meetingSection");
+                                        // navigate("/meetingSection");
+                                        navigate(`/meetingSection?interviewId=${interviewId}`);
                                     }}
                                     className={`w-full py-3 rounded-lg font-medium transition
                                         ${isConfirmed
